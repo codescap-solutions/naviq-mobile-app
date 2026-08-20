@@ -15,8 +15,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'app/geofencing/view_model/bloc/geofence_bloc.dart';
+import 'app/subscription/widgets/global_upgrade_banner.dart';
 import 'core/di/injector.dart';
 import 'core/navigation/app_router.dart';
+import 'core/navigation/current_route_tracker.dart';
 import 'core/navigation/route_names.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_strings.dart';
@@ -82,6 +84,7 @@ class ChildTrackApp extends StatelessWidget {
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,
+        navigatorObservers: [CurrentRouteTracker()],
         title: AppStrings.appTitle,
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
@@ -93,7 +96,12 @@ class ChildTrackApp extends StatelessWidget {
                 AppSnackbar.showError(context, AppStrings.networkError);
               }
             },
-            child: widget ?? const SizedBox.shrink(),
+            child: Stack(
+              children: [
+                widget ?? const SizedBox.shrink(),
+                const GlobalUpgradeBanner(),
+              ],
+            ),
           );
         },
         home: SplashScreen(),

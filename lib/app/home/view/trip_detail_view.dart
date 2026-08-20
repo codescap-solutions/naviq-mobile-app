@@ -10,6 +10,8 @@ import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/services/tracking/kalman_filter_service.dart';
 import 'package:child_track/core/services/tracking/timeline_engine.dart';
 import 'package:child_track/core/services/tracking/trip_playback_controller.dart';
+import 'package:child_track/core/services/subscription_feature_gate.dart';
+import 'package:child_track/app/subscription/widgets/subscription_popup_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
@@ -380,6 +382,9 @@ class _TripDetailViewState extends State<TripDetailView> {
 
   @override
   Widget build(BuildContext context) {
+    if (SubscriptionFeatureGate.showsHomePlaybackPromo()) {
+      return _buildPlaybackPromoScreen(context);
+    }
     return BlocProvider.value(
       value: _homepageBloc,
       child: BlocBuilder<HomepageBloc, HomepageState>(
@@ -775,6 +780,94 @@ class _TripDetailViewState extends State<TripDetailView> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// Free-tier substitute for real route playback. No ad SDK is integrated
+  /// in this app, so this is a static in-app upgrade promo rather than a
+  /// real advertisement — see subscription restriction plan notes.
+  Widget _buildPlaybackPromoScreen(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.backgroundColor,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        title: Text(
+          'Trip Playback',
+          style: AppTextStyles.headline5.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 88,
+                height: 88,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF0066FF), Color(0xFF6F9EFF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.route_rounded,
+                  color: Colors.white,
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Full Route Playback is a Paid Feature',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.headline5.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Upgrade your plan to watch this trip\'s route play back on the map, step by step.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body2.copyWith(
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0066FF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  onPressed: () => SubscriptionPopup.show(
+                    context,
+                    SubscriptionFeatureGate.nextTier(),
+                  ),
+                  child: const Text(
+                    'Upgrade Now',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

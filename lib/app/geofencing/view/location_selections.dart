@@ -6,6 +6,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
+import 'package:child_track/core/services/subscription_feature_gate.dart';
+import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
 import '../../map/view/map_view.dart';
 import '../view_model/bloc/geofence_bloc.dart';
 import '../view_model/bloc/geofence_event.dart';
@@ -1032,6 +1034,26 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
         ),
       );
       return;
+    }
+
+    // Defense-in-depth: the entry points that push this screen already
+    // block creation once the tier's zone limit is hit, but re-check here
+    // against the bloc's last known list in case it changed meanwhile
+    // (e.g. created from another device/tab while this sheet was open).
+    final geofenceState = context.read<GeofenceBloc>().state;
+    if (geofenceState is GeofencesLoaded) {
+      final limit = SubscriptionFeatureGate.geofenceLimit();
+      if (geofenceState.geofences.length >= limit) {
+        UpgradeRestrictionDialog.show(
+          context,
+          title: 'Geofence Limit Reached',
+          message:
+              'Your current plan allows up to $limit geofence zone${limit == 1 ? '' : 's'}. '
+              'Upgrade to add more.',
+          suggestedTier: SubscriptionFeatureGate.nextTier(),
+        );
+        return;
+      }
     }
 
     final request = CreateGeofenceRequest(

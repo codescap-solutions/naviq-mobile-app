@@ -15,6 +15,8 @@ import 'package:child_track/core/constants/app_text_styles.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:child_track/core/services/csv_file_logger.dart';
+import 'package:child_track/core/services/subscription_feature_gate.dart';
+import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
 import 'account_view.dart';
 import 'devices_view.dart';
 import 'notification_settings_view.dart';
@@ -764,6 +766,13 @@ class _SettingsViewState extends State<SettingsView> {
                 subtitle: const Text('Real-time assistance'),
                 onTap: () {
                   Navigator.pop(sheetContext);
+                  if (!SubscriptionFeatureGate.helpChannels().chat) {
+                    UpgradeRestrictionDialog.showHelpChannelBlocked(
+                      context,
+                      'Chat',
+                    );
+                    return;
+                  }
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -804,6 +813,13 @@ class _SettingsViewState extends State<SettingsView> {
                 subtitle: const Text('+91 90371 62751'),
                 onTap: () {
                   Navigator.pop(sheetContext);
+                  if (!SubscriptionFeatureGate.helpChannels().call) {
+                    UpgradeRestrictionDialog.showHelpChannelBlocked(
+                      context,
+                      'Call',
+                    );
+                    return;
+                  }
                   _launchContactUrl(Uri(scheme: 'tel', path: '+919037162751'));
                 },
               ),
@@ -1075,7 +1091,7 @@ class _SettingsViewState extends State<SettingsView> {
     showAboutDialog(
       context: context,
       applicationName: 'NaviQ',
-      applicationVersion: 'Naviq Dev 1.0.4(Aug-16)',
+      applicationVersion: 'Naviq Dev 1.0.4(Aug-20)',
       applicationIcon: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(

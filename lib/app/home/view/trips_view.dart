@@ -15,6 +15,10 @@ import 'package:intl/intl.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:child_track/core/utils/map_marker_utils.dart';
 import 'package:child_track/core/widgets/trips_shimmer.dart';
+import 'package:child_track/core/services/subscription_feature_gate.dart';
+import 'package:child_track/core/services/subscription_manager.dart';
+import 'package:child_track/app/subscription/models/subscription_plan.dart';
+import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
 
 /// Trips List View - Shows all trips
 class TripsView extends StatefulWidget {
@@ -29,6 +33,7 @@ class _TripsViewState extends State<TripsView> {
   final ScrollController _scrollController = ScrollController();
   BitmapDescriptor? _sourceIcon;
   BitmapDescriptor? _destinationIcon;
+  bool _historyLimitDialogShown = false;
 
   @override
   void initState() {
@@ -67,10 +72,50 @@ class _TripsViewState extends State<TripsView> {
       if (state is HomepageSuccess &&
           !state.isLoadingTrips &&
           !state.hasReachedMax) {
+        if (_reachedTierHistoryCutoff(state.trips)) {
+          _showHistoryLimitDialogOnce();
+          return;
+        }
         final nextPage = (state.tripsPage ?? 1) + 1;
         _homepageBloc.add(GetTrips(page: nextPage, pageSize: 10));
       }
     }
+  }
+
+  /// True once the oldest trip already loaded is at/past the current
+  /// tier's history window — further pages would only contain trips the
+  /// tier isn't allowed to browse, so pagination should stop there instead
+  /// of relying on the backend to cut the list off.
+  bool _reachedTierHistoryCutoff(List<Trip> trips) {
+    // Premium's 30-day window is the max window any tier gets, and the
+    // spec explicitly calls for no popup on Premium — don't cap it.
+    if (SubscriptionManager.instance.currentTier == SubscriptionTier.premium) {
+      return false;
+    }
+    if (trips.isEmpty) return false;
+    final cutoff = DateTime.now().subtract(
+      SubscriptionFeatureGate.tripHistoryWindow(),
+    );
+    final oldest = trips.last; // newest-first pages, so last = oldest loaded
+    final oldestStart = DateTime.tryParse(oldest.startTime);
+    if (oldestStart == null) return false;
+    return oldestStart.isBefore(cutoff);
+  }
+
+  void _showHistoryLimitDialogOnce() {
+    if (_historyLimitDialogShown || !mounted) return;
+    _historyLimitDialogShown = true;
+    final days = SubscriptionFeatureGate.tripHistoryWindow().inHours < 24
+        ? '24 hours'
+        : '${SubscriptionFeatureGate.tripHistoryWindow().inDays} days';
+    UpgradeRestrictionDialog.show(
+      context,
+      title: 'Trip History Limit',
+      message:
+          'Your current plan shows the last $days of trip history. '
+          'Upgrade to see older trips.',
+      suggestedTier: SubscriptionFeatureGate.nextTier(),
+    );
   }
 
   bool get _isBottom {

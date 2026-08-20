@@ -42,6 +42,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../social_apps/view_model/time_limit_repository.dart';
+import 'package:child_track/core/services/subscription_feature_gate.dart';
+import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -3943,6 +3945,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 'Contact Support',
                 'Chat with our team',
                 onTap: () {
+                  if (!SubscriptionFeatureGate.helpChannels().chat) {
+                    UpgradeRestrictionDialog.showHelpChannelBlocked(
+                      context,
+                      'Chat',
+                    );
+                    return;
+                  }
                   Navigator.push(
                     context,
                     MaterialPageRoute(
