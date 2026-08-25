@@ -7,8 +7,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/services/shared_prefs_service.dart';
+import '../../../core/services/subscription_feature_gate.dart';
 import '../../../core/di/injector.dart';
 import '../../../core/utils/app_snackbar.dart';
+import '../../subscription/widgets/upgrade_restriction_dialog.dart';
 import '../../home/view_model/bloc/homepage_bloc.dart';
 import 'location_selections.dart';
 import 'place_selection_view.dart';
@@ -412,6 +414,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
             );
             return;
           }
+          if (!_canCreateNewGeofence()) return;
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -474,6 +477,24 @@ class _GeoFencingViewState extends State<GeoFencingView> {
     );
   }
 
+  /// Returns true if a new geofence may be created under the current
+  /// subscription tier's zone limit. Shows the upgrade dialog and returns
+  /// false when the limit is already reached. Editing an existing geofence
+  /// is never gated by this — only creation.
+  bool _canCreateNewGeofence() {
+    final limit = SubscriptionFeatureGate.geofenceLimit();
+    if (_geofences.length < limit) return true;
+    UpgradeRestrictionDialog.show(
+      context,
+      title: 'Geofence Limit Reached',
+      message:
+          'Your current plan allows up to $limit geofence zone${limit == 1 ? '' : 's'}. '
+          'Upgrade to add more.',
+      suggestedTier: SubscriptionFeatureGate.nextTier(),
+    );
+    return false;
+  }
+
   void _navigateToLocationSelection({Geofence? geofence}) {
     Navigator.push(
       context,
@@ -519,6 +540,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
   }
 
   void _navigateToPlaceSelection() {
+    if (!_canCreateNewGeofence()) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -643,6 +665,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
           );
           return;
         }
+        if (!_canCreateNewGeofence()) return;
         Navigator.push(
           context,
           MaterialPageRoute(

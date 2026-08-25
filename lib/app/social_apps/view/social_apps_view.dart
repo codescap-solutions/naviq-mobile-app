@@ -13,11 +13,30 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
+import 'package:child_track/core/services/subscription_feature_gate.dart';
 import 'package:child_track/core/widgets/common_button.dart';
 import 'package:child_track/core/widgets/social_apps_shimmer.dart';
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:child_track/app/subscription/models/subscription_plan.dart';
+import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
 import 'widgets/social_app_item.dart';
+
+/// Free & Basic tiers may only *view* app usage/screen-time data; taking
+/// action (lock an app, set/remove a time limit, block/unblock all) needs
+/// Smart or Premium. Shared by [_SocialAppsViewState] and [_ScreenTimeHeader].
+bool _guardScreenTimeAction(BuildContext context) {
+  if (SubscriptionFeatureGate.canTakeScreenTimeAction()) return true;
+  UpgradeRestrictionDialog.show(
+    context,
+    title: 'Upgrade to Take Action',
+    message:
+        'Your current plan only lets you view app usage. Upgrade to Smart or Premium '
+        'to lock apps and set screen-time limits.',
+    suggestedTier: SubscriptionTier.smart,
+  );
+  return false;
+}
 
 class SocialAppsView extends StatefulWidget {
   const SocialAppsView({super.key});
@@ -346,6 +365,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
                         usage: app.usageTimeFormatted,
                         isLocked: isLocked,
                         onLockToggle: (isLocked, duration) {
+                          if (!_guardScreenTimeAction(context)) return;
                           _appLockBloc.add(
                             ToggleAppLock(
                               packageName: app.packageName,
@@ -357,6 +377,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
                         },
                         dailyLimitMinutes: limitItem?.dailyLimitMinutes,
                         onSetDailyLimit: (minutes) {
+                          if (!_guardScreenTimeAction(context)) return;
                           if (minutes == null) {
                             _timeLimitBloc.add(RemoveTimeLimit(app.packageName));
                           } else {
@@ -408,6 +429,7 @@ class _ScreenTimeHeader extends StatelessWidget {
       allPackages.every((p) => lockedPackages.contains(p));
 
   Future<void> _onBlockAll(BuildContext context) async {
+    if (!_guardScreenTimeAction(context)) return;
     if (allPackages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No apps to block')),
@@ -442,6 +464,7 @@ class _ScreenTimeHeader extends StatelessWidget {
   }
 
   void _onUnblockAll(BuildContext context) {
+    if (!_guardScreenTimeAction(context)) return;
     for (final pkg in allPackages) {
       if (lockedPackages.contains(pkg)) {
         appLockBloc?.add(
