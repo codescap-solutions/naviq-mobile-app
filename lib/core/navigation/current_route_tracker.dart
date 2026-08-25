@@ -9,8 +9,21 @@ import 'package:flutter/material.dart';
 class CurrentRouteTracker extends NavigatorObserver {
   static final ValueNotifier<String?> currentRouteName = ValueNotifier(null);
 
+  /// True whenever the current top-most route is a dialog/bottom-sheet
+  /// (anything pushed via showDialog/showModalBottomSheet, both of which are
+  /// PopupRoutes) rather than a full page. These routes are almost always
+  /// unnamed (route.settings.name is null), so currentRouteName alone can't
+  /// tell app-wide chrome like the floating upgrade banner to get out of the
+  /// way — it would just see a null route name, which isn't in any
+  /// screen-based exclusion list, and keep rendering (and intercepting
+  /// taps) on top of the sheet/dialog. Confirmed on-device: the banner sat
+  /// on top of the Help bottom sheet and ate taps meant for its "Call
+  /// Support" row.
+  static final ValueNotifier<bool> isModalRouteActive = ValueNotifier(false);
+
   void _update(Route<dynamic>? route) {
     currentRouteName.value = route?.settings.name;
+    isModalRouteActive.value = route is PopupRoute;
   }
 
   @override
