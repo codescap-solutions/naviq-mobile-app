@@ -6,7 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/services/revenue_cat_service.dart';
+import 'package:child_track/core/services/subscription_manager.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
+import '../../subscription/models/subscription_plan.dart';
 import '../../subscription/view/subscription_multi_plan_view.dart';
 
 class DevicesView extends StatefulWidget {
@@ -104,7 +106,15 @@ class _DevicesViewState extends State<DevicesView> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : (_simulatedPurchased ? _buildPurchasedView() : _buildNonPurchasedView()),
-      bottomNavigationBar: _buildDebugToggle(),
+      bottomNavigationBar: kDebugMode
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_buildDebugTierSwitcher() != null) _buildDebugTierSwitcher()!,
+                if (_buildDebugToggle() != null) _buildDebugToggle()!,
+              ],
+            )
+          : null,
     );
   }
 
@@ -161,6 +171,88 @@ class _DevicesViewState extends State<DevicesView> {
           ],
         ),
       ),
+    );
+  }
+
+  // ── Debug tier switcher ─────────────────────────────────────────────────────
+  // The toggle above only flips this screen's own local "purchased" demo
+  // state — it never touched SubscriptionManager.instance, which is the
+  // actual source of truth the tier-gated features (geofence limits, trip
+  // history window, Social Apps lock actions, Help channels, the floating
+  // upgrade banner, ...) read via SubscriptionFeatureGate. Without going
+  // through a real RevenueCat sandbox purchase, there was no way to exercise
+  // those gates end-to-end. debugSetTier exists specifically for this (see
+  // its doc comment in subscription_manager.dart) but was never wired to any
+  // UI. debugSetTier only changes in-memory state for the current app
+  // session — it doesn't touch RevenueCat or the backend, so a real
+  // checkAndUpdateStatus() call (app restart, or a real purchase) overrides
+  // it back to the real entitlement.
+  Widget? _buildDebugTierSwitcher() {
+    if (!kDebugMode) return null;
+    return AnimatedBuilder(
+      animation: SubscriptionManager.instance,
+      builder: (context, _) {
+        final current = SubscriptionManager.instance.currentTier;
+        return Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              Text(
+                "Debug tier:",
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: SubscriptionTier.values.map((tier) {
+                    final isSelected = tier == current;
+                    return GestureDetector(
+                      onTap: () {
+                        // ignore: invalid_use_of_visible_for_testing_member
+                        SubscriptionManager.instance.debugSetTier(tier);
+                        AppSnackbar.showSuccess(
+                          context,
+                          'Debug tier set to ${tier.id} (this session only)',
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.primaryColor : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? AppColors.primaryColor : const Color(0xFFCBD5E1),
+                          ),
+                        ),
+                        child: Text(
+                          tier.id,
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: isSelected ? Colors.white : AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
