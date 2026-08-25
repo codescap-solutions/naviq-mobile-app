@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:child_track/app/home/model/home_model.dart';
 import 'package:child_track/app/home/model/trip_detail_model.dart';
 import 'package:child_track/app/home/model/trip_list_model.dart';
 import 'package:child_track/core/services/api_endpoints.dart';
 import 'package:child_track/core/services/base_service.dart';
 import 'package:child_track/core/services/dio_client.dart';
+import 'package:dio/dio.dart';
 
 class HomeRepository extends BaseService {
   HomeRepository({required DioClient dioClient}) : super(dioClient);
@@ -382,5 +384,85 @@ class HomeRepository extends BaseService {
   Future<BaseResponse> deleteParentContact(String id) async {
     final response = await delete(ApiEndpoints.parentContactDetail(id));
     return response;
+  }
+
+  // ── Family Management (secondary guardians) ──────────────────────────────
+  // Backend: guardian.controller.js. The primary parent (self, role 2) is
+  // always included first with is_default:true, followed by any role-3
+  // secondary guardians linked under the same parentId.
+
+  Future<BaseResponse<List<dynamic>>> getGuardians() async {
+    final response = await get<List<dynamic>>(ApiEndpoints.guardians);
+    if (response.isSuccess && response.data != null) {
+      return BaseResponse.success(data: response.data!, message: response.message);
+    }
+    return BaseResponse.error(
+      message: response.message,
+      statusCode: response.statusCode,
+    );
+  }
+
+  /// Creates a real, independently-loginable guardian account (role 3) tied
+  /// to this parent's family — not just a local display entry. Server
+  /// enforces the plan's guardian-count limit and rejects an
+  /// already-registered phone number.
+  Future<BaseResponse> addGuardian({
+    required String name,
+    required String phoneNumber,
+  }) async {
+    final response = await post(
+      ApiEndpoints.guardians,
+      data: {'name': name, 'phone_number': phoneNumber},
+    );
+    return response;
+  }
+
+  /// Renames a guardian (or self). Server allows a guardian to rename only
+  /// themselves; the primary parent can rename anyone in their family.
+  Future<BaseResponse> updateGuardianName({
+    required String id,
+    required String name,
+  }) async {
+    final response = await put(
+      ApiEndpoints.guardianDetail(id),
+      data: {'name': name},
+    );
+    return response;
+  }
+
+  Future<BaseResponse> deleteGuardian(String id) async {
+    final response = await delete(ApiEndpoints.guardianDetail(id));
+    return response;
+  }
+
+  /// Multipart upload — field name must be "file" (server: multer
+  /// `upload.single("file")` in guardian.routes).
+  Future<BaseResponse<String>> uploadGuardianAvatar({
+    required String id,
+    required File file,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          file.path,
+          filename: 'avatar_guardian_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        ),
+      });
+      final response = await post(
+        ApiEndpoints.guardianAvatar(id),
+        data: formData,
+      );
+      if (response.isSuccess && response.data != null) {
+        final avatarUrl = response.data['avatar_url'] as String?;
+        if (avatarUrl != null) {
+          return BaseResponse.success(data: avatarUrl, message: response.message);
+        }
+      }
+      return BaseResponse.error(
+        message: response.message.isEmpty ? 'Failed to upload avatar' : response.message,
+      );
+    } catch (e) {
+      return BaseResponse.error(message: 'Error uploading avatar: ${e.toString()}');
+    }
   }
 }

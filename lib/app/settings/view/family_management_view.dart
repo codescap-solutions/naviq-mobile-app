@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
+import 'package:child_track/app/home/view_model/home_repo.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 
 class FamilyManagementView extends StatefulWidget {
@@ -17,66 +17,59 @@ class FamilyManagementView extends StatefulWidget {
 
 class _FamilyManagementViewState extends State<FamilyManagementView> {
   final SharedPrefsService _sharedPrefsService = injector<SharedPrefsService>();
+  final HomeRepository _homeRepo = injector<HomeRepository>();
   final ImagePicker _imagePicker = ImagePicker();
   List<Map<String, dynamic>> _guardians = [];
   bool _isPrimaryParent = true;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _isPrimaryParent = _sharedPrefsService.isPrimaryParent;
-    _loadGuardians();
+    _fetchGuardians();
   }
 
-  void _loadGuardians() {
-    final String? guardiansJson = _sharedPrefsService.getString('family_guardians');
-    final String parentName = _sharedPrefsService.getString('parent_name') ?? 'Rahul Pandey';
-    final String parentPhone = _sharedPrefsService.getString('parent_phone') ?? '+91 87654 32109';
-    final String? parentAvatar = _sharedPrefsService.getString('parent_avatar');
+  // Backed by GET /parent/guardians (guardian.controller.js: getGuardians) —
+  // this used to read/write a local-only 'family_guardians' SharedPreferences
+  // key, so "adding a guardian" never actually created an account or reached
+  // the server: the person could never log in and see the child. Now this is
+  // the real family list — the primary parent first (is_default:true),
+  // followed by any real role-3 guardian accounts.
+  Future<void> _fetchGuardians() async {
+    setState(() => _isLoading = true);
+    final response = await _homeRepo.getGuardians();
+    if (!mounted) return;
 
-    if (guardiansJson != null && guardiansJson.isNotEmpty) {
-      try {
-        final List<dynamic> decoded = jsonDecode(guardiansJson);
-        setState(() {
-          _guardians = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
-        });
-        
-        // Ensure the default parent matches the current user info
-        final defaultIndex = _guardians.indexWhere((e) => e['is_default'] == true);
-        if (defaultIndex != -1) {
-          setState(() {
-            _guardians[defaultIndex]['name'] = parentName;
-            _guardians[defaultIndex]['phone_number'] = parentPhone;
-            if (parentAvatar != null) {
-              _guardians[defaultIndex]['avatar_url'] = parentAvatar;
-            }
-          });
-          _saveGuardiansToStorage();
+    if (response.isSuccess && response.data != null) {
+      setState(() {
+        _guardians = response.data!
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+        _isLoading = false;
+      });
+
+      // Keep the locally-cached parent_name/parent_avatar in sync with the
+      // server's own record — other screens read those keys directly.
+      final defaultGuardian = _guardians.firstWhere(
+        (g) => g['is_default'] == true,
+        orElse: () => <String, dynamic>{},
+      );
+      if (defaultGuardian.isNotEmpty) {
+        _sharedPrefsService.setString('parent_name', defaultGuardian['name'] ?? '');
+        if (defaultGuardian['avatar_url'] != null) {
+          _sharedPrefsService.setString('parent_avatar', defaultGuardian['avatar_url']);
         }
-        return;
-      } catch (e) {
-        // Fallback to default
+      }
+    } else {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        AppSnackbar.showError(
+          context,
+          response.message.isEmpty ? 'Failed to load family members' : response.message,
+        );
       }
     }
-
-    // Default list setup
-    setState(() {
-      _guardians = [
-        {
-          'id': 'primary_parent_owner',
-          'name': parentName,
-          'phone_number': parentPhone,
-          'avatar_url': parentAvatar,
-          'is_default': true,
-        }
-      ];
-    });
-    _saveGuardiansToStorage();
-  }
-
-  void _saveGuardiansToStorage() {
-    final String encoded = jsonEncode(_guardians);
-    _sharedPrefsService.setString('family_guardians', encoded);
   }
 
   Future<void> _pickImageForGuardian(int index) async {
@@ -133,18 +126,30 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
     );
   }
 
-  void _updateGuardianAvatar(int index, String path) {
-    setState(() {
-      _guardians[index]['avatar_url'] = path;
-    });
-    _saveGuardiansToStorage();
+  Future<void> _updateGuardianAvatar(int index, String path) async {
+    final guardian = _guardians[index];
+    final id = guardian['id'] as String?;
+    if (id == null) return;
 
-    // If it's the primary parent, sync to parent_avatar settings key
-    if (_guardians[index]['is_default'] == true) {
-      _sharedPrefsService.setString('parent_avatar', path);
+    final response = await _homeRepo.uploadGuardianAvatar(id: id, file: File(path));
+    if (!mounted) return;
+
+    if (response.isSuccess && response.data != null) {
+      setState(() {
+        _guardians[index]['avatar_url'] = response.data;
+      });
+
+      if (guardian['is_default'] == true) {
+        _sharedPrefsService.setString('parent_avatar', response.data!);
+      }
+
+      AppSnackbar.showSuccess(context, 'Profile photo updated successfully');
+    } else {
+      AppSnackbar.showError(
+        context,
+        response.message.isEmpty ? 'Failed to update photo' : response.message,
+      );
     }
-
-    AppSnackbar.showSuccess(context, 'Profile photo updated successfully');
   }
 
   Widget _buildAvatar(String? path) {
@@ -203,139 +208,159 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            bool isSubmitting = false;
+
+            Future<void> submit() async {
+              final name = nameController.text.trim();
+              final phone = phoneController.text.trim();
+              if (name.isEmpty || phone.isEmpty) {
+                AppSnackbar.showError(context, 'Please enter both name and phone number');
+                return;
+              }
+
+              setSheetState(() => isSubmitting = true);
+              // Real account: POST /parent/guardians creates a role-3 User
+              // linked to this family — the phone number can then actually
+              // log in (OTP, same as any parent) and see this child.
+              final response = await _homeRepo.addGuardian(name: name, phoneNumber: phone);
+              if (!mounted) return;
+              setSheetState(() => isSubmitting = false);
+
+              if (response.isSuccess) {
+                Navigator.pop(context);
+                await _fetchGuardians();
+                if (mounted) AppSnackbar.showSuccess(context, '$name added as guardian');
+              } else {
+                AppSnackbar.showError(
+                  context,
+                  response.message.isEmpty ? 'Failed to add guardian' : response.message,
+                );
+              }
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Add Guardian',
+                          style: GoogleFonts.manrope(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0C1D37),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.black, size: 24),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
                     Text(
-                      'Add Guardian',
+                      'Name',
                       style: GoogleFonts.manrope(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
                         color: const Color(0xFF0C1D37),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.black, size: 24),
-                      onPressed: () => Navigator.pop(context),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        hintText: 'Enter Name',
+                        hintStyle: GoogleFonts.manrope(color: const Color(0xFF94A3B8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Phone Number',
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF0C1D37),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        hintText: 'Enter Phone Number',
+                        hintStyle: GoogleFonts.manrope(color: const Color(0xFF94A3B8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0066FF),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: isSubmitting ? null : submit,
+                        child: isSubmitting
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                              )
+                            : Text(
+                                'Continue',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  'Name',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0C1D37),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    hintText: 'Enter Name',
-                    hintStyle: GoogleFonts.manrope(color: const Color(0xFF94A3B8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Phone Number',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0C1D37),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    hintText: 'Enter Phone Number',
-                    hintStyle: GoogleFonts.manrope(color: const Color(0xFF94A3B8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0066FF),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
-                    ),
-                    onPressed: () {
-                      final name = nameController.text.trim();
-                      final phone = phoneController.text.trim();
-                      if (name.isEmpty || phone.isEmpty) {
-                        AppSnackbar.showError(context, 'Please enter both name and phone number');
-                        return;
-                      }
-                      
-                      setState(() {
-                        _guardians.add({
-                          'id': 'guardian_${DateTime.now().millisecondsSinceEpoch}',
-                          'name': name,
-                          'phone_number': phone,
-                          'avatar_url': null,
-                          'is_default': false,
-                        });
-                      });
-                      _saveGuardiansToStorage();
-                      Navigator.pop(context);
-                      AppSnackbar.showSuccess(context, '$name added as guardian');
-                    },
-                    child: Text(
-                      'Continue',
-                      style: GoogleFonts.manrope(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -343,6 +368,7 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
 
   void _showEditGuardianSheet(int index) {
     final guardian = _guardians[index];
+    final id = guardian['id'] as String?;
     final editController = TextEditingController(text: guardian['name']);
 
     showModalBottomSheet(
@@ -350,100 +376,126 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            bool isSubmitting = false;
+
+            Future<void> submit() async {
+              final newName = editController.text.trim();
+              if (newName.isEmpty) {
+                AppSnackbar.showError(context, 'Name cannot be empty');
+                return;
+              }
+              if (id == null) {
+                Navigator.pop(context);
+                return;
+              }
+
+              setSheetState(() => isSubmitting = true);
+              final response = await _homeRepo.updateGuardianName(id: id, name: newName);
+              if (!mounted) return;
+              setSheetState(() => isSubmitting = false);
+
+              if (response.isSuccess) {
+                setState(() {
+                  _guardians[index]['name'] = newName;
+                });
+                if (guardian['is_default'] == true) {
+                  _sharedPrefsService.setString('parent_name', newName);
+                }
+                Navigator.pop(context);
+                if (mounted) AppSnackbar.showSuccess(context, 'Name updated successfully');
+              } else {
+                AppSnackbar.showError(
+                  context,
+                  response.message.isEmpty ? 'Failed to update name' : response.message,
+                );
+              }
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.black, size: 24),
-                      onPressed: () => Navigator.pop(context),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.black, size: 24),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      'Edit Name',
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF0C1D37),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: editController,
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.black, width: 2.0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: isSubmitting ? null : submit,
+                        child: isSubmitting
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black),
+                              )
+                            : Text(
+                                'Update',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black,
+                                ),
+                              ),
+                      ),
                     ),
                   ],
                 ),
-                Text(
-                  'Edit Name',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0C1D37),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: editController,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.black, width: 2.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () {
-                      final newName = editController.text.trim();
-                      if (newName.isEmpty) {
-                        AppSnackbar.showError(context, 'Name cannot be empty');
-                        return;
-                      }
-
-                      setState(() {
-                        _guardians[index]['name'] = newName;
-                      });
-                      _saveGuardiansToStorage();
-
-                      // If it's the primary parent, sync to parent_name key
-                      if (guardian['is_default'] == true) {
-                        _sharedPrefsService.setString('parent_name', newName);
-                      }
-
-                      Navigator.pop(context);
-                      AppSnackbar.showSuccess(context, 'Name updated successfully');
-                    },
-                    child: Text(
-                      'Update',
-                      style: GoogleFonts.manrope(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -451,6 +503,7 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
 
   void _confirmDeleteGuardian(int index) {
     final guardian = _guardians[index];
+    final id = guardian['id'] as String?;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -470,13 +523,28 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
           ),
           TextButton(
             child: Text('Delete', style: GoogleFonts.manrope(color: Colors.red, fontWeight: FontWeight.bold)),
-            onPressed: () {
-              setState(() {
-                _guardians.removeAt(index);
-              });
-              _saveGuardiansToStorage();
+            onPressed: () async {
               Navigator.pop(context);
-              AppSnackbar.showSuccess(context, 'Guardian deleted');
+              if (id == null) return;
+
+              // DELETE /parent/guardians/:id — soft-deletes the guardian's
+              // account server-side and revokes their refresh tokens, so
+              // they're logged out immediately, not just removed from this
+              // list on this device.
+              final response = await _homeRepo.deleteGuardian(id);
+              if (!mounted) return;
+
+              if (response.isSuccess) {
+                setState(() {
+                  _guardians.removeAt(index);
+                });
+                AppSnackbar.showSuccess(context, 'Guardian deleted');
+              } else {
+                AppSnackbar.showError(
+                  context,
+                  response.message.isEmpty ? 'Failed to delete guardian' : response.message,
+                );
+              }
             },
           ),
         ],
@@ -532,143 +600,149 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
         ),
       ),
       body: SafeArea(
-        child: _guardians.isEmpty
-            ? Center(
-                child: Text(
-                  'No family members found.',
-                  style: GoogleFonts.manrope(
-                    fontSize: 16,
-                    color: const Color(0xFF94A3B8),
-                  ),
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: _guardians.length,
-                itemBuilder: (context, index) {
-                  final guardian = _guardians[index];
-                  final isDefault = guardian['is_default'] == true;
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 16.0),
-                    padding: const EdgeInsets.all(16.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0C1D37).withValues(alpha: 0.04),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
+        child: RefreshIndicator(
+          onRefresh: _fetchGuardians,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _guardians.isEmpty
+                  ? ListView(
                       children: [
-                        // Avatar
-                        GestureDetector(
-                          onTap: () {
-                            // If they are not primary parent, restrict updating avatar?
-                            // No, the prompt says "if they add another adult... they can view child data, they can't edit any think child data".
-                            // It doesn't restrict them from updating their own parent details if they want.
-                            // However, we can allow updating photo.
-                            if (!_isPrimaryParent && isDefault) {
-                              // Secondary parent editing primary parent is restricted, but editing themselves is ok.
-                              // Let's keep it simple and allow image picking for everyone.
-                              _pickImageForGuardian(index);
-                            } else if (_isPrimaryParent) {
-                              _pickImageForGuardian(index);
-                            } else {
-                              AppSnackbar.showError(context, 'Only primary parent can edit other members');
-                            }
-                          },
-                          child: _buildAvatar(guardian['avatar_url']),
-                        ),
-                        const SizedBox(width: 16),
-                        // Name and Phone
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                guardian['name'] ?? '',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF0C1D37),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    CupertinoIcons.phone,
-                                    size: 14,
-                                    color: Color(0xFF94A3B8),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    guardian['phone_number'] ?? '',
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 13,
-                                      color: const Color(0xFF64748B),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Actions (Edit, Delete)
-                        if (_isPrimaryParent) ...[
-                          // Edit Button
-                          GestureDetector(
-                            onTap: () => _showEditGuardianSheet(index),
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFEFF6FF),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                CupertinoIcons.pencil,
-                                color: Color(0xFF0066FF),
-                                size: 18,
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.6,
+                          child: Center(
+                            child: Text(
+                              'No family members found.',
+                              style: GoogleFonts.manrope(
+                                fontSize: 16,
+                                color: const Color(0xFF94A3B8),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          // Delete Button (Only for custom guardians)
-                          if (!isDefault)
-                            GestureDetector(
-                              onTap: () => _confirmDeleteGuardian(index),
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFFEF2F2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  CupertinoIcons.trash,
-                                  color: Color(0xFFEF4444),
-                                  size: 18,
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16.0),
+                      itemCount: _guardians.length,
+                      itemBuilder: (context, index) {
+                        final guardian = _guardians[index];
+                        final isDefault = guardian['is_default'] == true;
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16.0),
+                          padding: const EdgeInsets.all(16.0),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF0C1D37).withValues(alpha: 0.04),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Avatar
+                              GestureDetector(
+                                onTap: () {
+                                  if (!_isPrimaryParent && isDefault) {
+                                    _pickImageForGuardian(index);
+                                  } else if (_isPrimaryParent) {
+                                    _pickImageForGuardian(index);
+                                  } else {
+                                    AppSnackbar.showError(context, 'Only primary parent can edit other members');
+                                  }
+                                },
+                                child: _buildAvatar(guardian['avatar_url']),
+                              ),
+                              const SizedBox(width: 16),
+                              // Name and Phone
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      guardian['name'] ?? '',
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF0C1D37),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          CupertinoIcons.phone,
+                                          size: 14,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          guardian['phone_number'] ?? '',
+                                          style: GoogleFonts.manrope(
+                                            fontSize: 13,
+                                            color: const Color(0xFF64748B),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                            )
-                          else
-                            const SizedBox(width: 36), // spacing match
-                        ] else ...[
-                          // Secondary guardians cannot edit/delete members
-                          const SizedBox.shrink(),
-                        ],
-                      ],
+                              // Actions (Edit, Delete)
+                              if (_isPrimaryParent) ...[
+                                // Edit Button
+                                GestureDetector(
+                                  onTap: () => _showEditGuardianSheet(index),
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFEFF6FF),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      CupertinoIcons.pencil,
+                                      color: Color(0xFF0066FF),
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Delete Button (Only for custom guardians)
+                                if (!isDefault)
+                                  GestureDetector(
+                                    onTap: () => _confirmDeleteGuardian(index),
+                                    child: Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFFEF2F2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        CupertinoIcons.trash,
+                                        color: Color(0xFFEF4444),
+                                        size: 18,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  const SizedBox(width: 36), // spacing match
+                              ] else ...[
+                                // Secondary guardians cannot edit/delete members
+                                const SizedBox.shrink(),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
+        ),
       ),
       floatingActionButton: _isPrimaryParent
           ? FloatingActionButton(
