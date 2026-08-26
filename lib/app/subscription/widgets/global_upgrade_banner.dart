@@ -23,7 +23,19 @@ class _GlobalUpgradeBannerState extends State<GlobalUpgradeBanner> {
   // Screens where upgrade chrome doesn't belong: auth/onboarding (not
   // signed in yet), splash (nothing to show over), and the child-device SOS
   // screen (subscription is a parent-side concern).
+  //
+  // '/' covers the splash screen specifically — this claimed to already be
+  // excluded (see above), but wasn't: main.dart boots via
+  // `MaterialApp(home: SplashScreen())` rather than a named initial route,
+  // and Flutter gives a bare `home:` widget the implicit route name '/', not
+  // null and not a RouteNames constant. Confirmed live on a fresh install:
+  // the banner rendered over the splash screen, before any account exists
+  // to have a tier for. Every later screen in the app (Home, Settings,
+  // Account, Devices, ...) is reached via plain unnamed MaterialPageRoute
+  // pushes, whose route name is null, not '/' — so this only ever matches
+  // the one true initial frame, not real content screens.
   static const _excludedRoutes = {
+    '/',
     RouteNames.login,
     RouteNames.otp,
     RouteNames.onBoarding,
