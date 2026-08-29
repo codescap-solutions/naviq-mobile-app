@@ -82,9 +82,27 @@ class _SubscriptionMultiPlanViewState extends State<SubscriptionMultiPlanView> {
                       !snapshot.hasData ||
                       snapshot.data!.data == null ||
                       snapshot.data!.data!.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
-                      child: Text('Failed to load plans.'),
+                    // Previously a dead end — the only way to retry a
+                    // failed/empty plans fetch was leaving this screen and
+                    // coming back (which re-runs initState). Every other
+                    // fetch-failure screen in the app (geofencing, social
+                    // apps) offers an explicit Retry button; this matches.
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Column(
+                        children: [
+                          const Text('Failed to load plans.'),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _plansFuture = _repository.getPlans(forceRefresh: true);
+                              });
+                            },
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
                     );
                   }
 

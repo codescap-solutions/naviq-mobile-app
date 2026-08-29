@@ -19,6 +19,14 @@ class _ParentsContactViewState extends State<ParentsContactView> {
   final SharedPrefsService _sharedPrefsService = injector<SharedPrefsService>();
   List<Map<String, dynamic>> _contacts = [];
   bool _isPrimaryParent = true;
+  // Only meaningful while _contacts is still empty: on a first-ever open
+  // (nothing cached in SharedPreferences yet), _contacts stays [] for
+  // however long the background fetch below takes — without this flag that
+  // rendered the "No contacts found." empty state immediately, which then
+  // flashed to the real list once data arrived. On a repeat open with a
+  // populated cache, _loadContacts() already fills _contacts synchronously
+  // before this ever matters.
+  bool _isLoadingBackend = true;
 
   @override
   void initState() {
@@ -42,6 +50,8 @@ class _ParentsContactViewState extends State<ParentsContactView> {
       }
     } catch (e) {
       // Fallback silently to SharedPreferences loaded contacts
+    } finally {
+      if (mounted) setState(() => _isLoadingBackend = false);
     }
   }
 
@@ -189,13 +199,15 @@ class _ParentsContactViewState extends State<ParentsContactView> {
       body: SafeArea(
         child: _contacts.isEmpty
             ? Center(
-                child: Text(
-                  'No contacts found.',
-                  style: GoogleFonts.manrope(
-                    fontSize: 16,
-                    color: const Color(0xFF94A3B8),
-                  ),
-                ),
+                child: _isLoadingBackend
+                    ? const CircularProgressIndicator()
+                    : Text(
+                        'No contacts found.',
+                        style: GoogleFonts.manrope(
+                          fontSize: 16,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
               )
             : ListView.builder(
                 padding: const EdgeInsets.all(16.0),

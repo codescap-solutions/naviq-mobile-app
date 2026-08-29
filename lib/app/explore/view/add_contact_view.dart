@@ -25,7 +25,8 @@ class AddContactView extends StatefulWidget {
 class _AddContactViewState extends State<AddContactView> {
   final SharedPrefsService _sharedPrefsService = injector<SharedPrefsService>();
   final _formKey = GlobalKey<FormState>();
-  
+  bool _isSubmitting = false;
+
   late final TextEditingController _nameController;
   late final TextEditingController _relationController;
   late final TextEditingController _phoneController;
@@ -62,7 +63,20 @@ class _AddContactViewState extends State<AddContactView> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+    // Guards against double-submit from rapid taps while the request below
+    // is in flight — this button previously had no loading/disabled state
+    // at all, so nothing stopped a second tap from firing a duplicate
+    // addParentContact/editParentContact call.
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await _submitContact();
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
 
+  Future<void> _submitContact() async {
     final name = _nameController.text.trim();
     final relation = _relationController.text.trim();
     final phone = _phoneController.text.trim();
@@ -379,15 +393,24 @@ class _AddContactViewState extends State<AddContactView> {
                       ),
                       elevation: 0,
                     ),
-                    onPressed: _saveContact,
-                    child: Text(
-                      isEditMode ? 'Update' : 'Save Contact',
-                      style: GoogleFonts.manrope(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    onPressed: _isSubmitting ? null : _saveContact,
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            isEditMode ? 'Update' : 'Save Contact',
+                            style: GoogleFonts.manrope(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
               ],

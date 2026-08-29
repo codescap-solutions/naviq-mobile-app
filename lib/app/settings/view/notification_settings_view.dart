@@ -29,6 +29,7 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
   };
 
   final Map<String, bool> _backendValues = {};
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -51,13 +52,25 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
           _backendValues[entry.value] =
               (section?['enabled'] as bool?) ?? true;
         }
+      } else if (mounted) {
+        // Previously fully silent — defaults (true) still render so the
+        // screen isn't broken, but a genuine fetch failure used to give no
+        // indication these toggles might not reflect the real saved state.
+        AppSnackbar.showError(
+          context,
+          'Could not load your saved notification settings — showing defaults.',
+        );
       }
     } catch (_) {
-      // Leave defaults (true) — the toggle will still render, just
-      // optimistically, and the next successful load will correct it.
+      if (mounted) {
+        AppSnackbar.showError(
+          context,
+          'Could not load your saved notification settings — showing defaults.',
+        );
+      }
     } finally {
       if (mounted) {
-        setState(() {});
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -128,7 +141,9 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           child: Column(
             children: [
