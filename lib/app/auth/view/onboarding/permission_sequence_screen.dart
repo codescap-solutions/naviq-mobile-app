@@ -9,7 +9,6 @@ import 'package:child_track/core/services/location_service.dart';
 import 'package:child_track/core/services/background_location_service.dart';
 import 'package:child_track/core/services/device_info_service.dart';
 import 'package:child_track/app/childapp/view_model/repository/device_info_service.dart';
-import 'package:child_track/app/childapp/view_model/repository/child_repo.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/utils/app_logger.dart';
 import 'package:child_track/app/childapp/view/sos_view.dart';
@@ -99,8 +98,18 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
     try {
       switch (step) {
         case PermissionStep.location:
+          // Only 'always' actually satisfies this step. Accepting
+          // whileInUse here let a child pass this screen having only
+          // granted foreground location — background_location_service.dart
+          // (and the whole point of this app) needs Always, so this used to
+          // silently wave the child through to SosView with tracking that
+          // would go dark the moment the app backgrounded, matching a real
+          // report: "location off aayittum SOS screen il pokunnu."
+          // requestAlwaysAllowPermission() in the explicit-tap path below
+          // already gets this right (only advances on true 'always');
+          // this silent auto-check just hadn't matched that.
           final permission = await Geolocator.checkPermission();
-          isGranted = permission == LocationPermission.always || permission == LocationPermission.whileInUse;
+          isGranted = permission == LocationPermission.always;
           break;
         case PermissionStep.notification:
           final status = await Permission.notification.status;
@@ -110,16 +119,23 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
           isGranted = await Permission.ignoreBatteryOptimizations.isGranted;
           break;
         case PermissionStep.usageData:
+          // This step is the *permission* gate only — whether Screen Time
+          // authorization (iOS) / usage-access (Android) is granted at the
+          // OS level. It used to also require a non-empty getAppMappings()
+          // response on iOS, conflating "permission granted" with "the
+          // separate app-selection flow (MappingContextScreen/
+          // AppCatalogScreen) already finished and synced". Since this
+          // check re-runs silently on every app resume
+          // (didChangeAppLifecycleState), a child who granted Screen Time
+          // but whose mapping save hadn't gone through yet (network hiccup,
+          // picked no apps, still mid-flow) got permanently stuck seeing
+          // "not granted" and bounced straight back to this same screen —
+          // matching a real report of the permission screen looping even
+          // after granting it. The explicit "Allow Access" tap below
+          // already pushes into the mapping flow as its own separate step
+          // once raw authorization is confirmed; that's where mapping
+          // completeness belongs, not here.
           isGranted = await injector<ChildInfoService>().checkUsagePermission();
-          if (Platform.isIOS && isGranted) {
-            final deviceId = await injector<ChildInfoService>().getDeviceId();
-            final res = await injector<ChildRepo>().getAppMappings(deviceId);
-            if (res.isSuccess && res.data != null && res.data!.isNotEmpty) {
-              isGranted = true;
-            } else {
-              isGranted = false;
-            }
-          }
           break;
         case PermissionStep.accessibility:
           isGranted = await injector<DeviceInfoService>()
@@ -226,7 +242,24 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
               }
             }
 
-            // Once Screen Time authorized: Navigate through App Mapping Context & Catalog sequence
+            // Screen Time authorization is what this onboarding step gates
+            // on — advance right away instead of waiting on app-mapping
+            // completion (matches FindMyKids: grant the permission, you're
+            // through; picking which apps to monitor is a separate,
+            // optional step that can be finished or skipped any time from
+            // Settings). This used to block here until getAppMappings()
+            // came back non-empty — if the child backed out of
+            // AppCatalogScreen with nothing selected (which had no way to
+            // continue with zero apps chosen either — see that screen's own
+            // fix) or the save failed, they landed back on this exact
+            // screen with authorized still true, tapped Allow Access again,
+            // and got sent straight back into the same mapping flow —
+            // a real reported loop.
+            _advanceToNextStep();
+
+            // Still offer app selection immediately while we have their
+            // attention, but purely as a bonus — its outcome no longer
+            // gates onboarding completion.
             if (mounted) {
               Navigator.push(
                 context,
@@ -242,14 +275,7 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                     },
                   ),
                 ),
-              ).then((_) async {
-                // When returning, verify if mappings successfully configured on backend
-                final deviceId = await injector<ChildInfoService>().getDeviceId();
-                final res = await injector<ChildRepo>().getAppMappings(deviceId);
-                if (res.isSuccess && res.data != null && res.data!.isNotEmpty) {
-                  _advanceToNextStep();
-                }
-              });
+              );
             }
           } else {
             final granted = await injector<ChildInfoService>()

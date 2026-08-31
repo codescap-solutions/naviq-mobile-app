@@ -170,31 +170,41 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
-          if (_selectedApps.isNotEmpty)
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  CupertinoPageRoute(
-                    builder: (context) => MappingProgressScreen(
-                      selectedApps: _selectedApps.toList(),
-                    ),
+          // Previously this button only existed when _selectedApps was
+          // non-empty — a child who didn't want to lock/monitor any
+          // specific app yet had no way off this screen except the back
+          // arrow, which unwound the whole onboarding step (see
+          // permission_sequence_screen.dart's fix). Monitoring specific
+          // apps is optional (configurable later from Settings), so not
+          // selecting any is a valid choice, not a dead end.
+          TextButton(
+            onPressed: () {
+              if (_selectedApps.isEmpty) {
+                Navigator.pop(context, true);
+                return;
+              }
+              Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (context) => MappingProgressScreen(
+                    selectedApps: _selectedApps.toList(),
                   ),
-                ).then((success) {
-                  if (success == true && mounted) {
-                    Navigator.pop(context);
-                  }
-                });
-              },
-              child: const Text(
-                "Next",
-                style: TextStyle(
-                  color: Color(0xFF0066FF),
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
                 ),
+              ).then((success) {
+                if (success == true && mounted) {
+                  Navigator.pop(context);
+                }
+              });
+            },
+            child: Text(
+              _selectedApps.isEmpty ? "Skip for now" : "Next",
+              style: const TextStyle(
+                color: Color(0xFF0066FF),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
+          ),
         ],
       ),
       body: _isLoading
