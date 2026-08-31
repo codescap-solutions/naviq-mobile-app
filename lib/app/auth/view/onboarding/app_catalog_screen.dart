@@ -42,6 +42,14 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
   Map<String, List<CatalogAppItem>> _groupedApps = {};
   List<CatalogAppItem> _customApps = [];
   bool _isLoading = true;
+  // A failed/unsuccessful catalog fetch used to leave _groupedApps empty
+  // with no signal why — the screen just rendered near-blank (only the
+  // "+ Add Custom App" link, since the empty-state message only shows when
+  // there's an active search query). A child landing here right after
+  // granting Screen Time access, on a flaky connection, had no way to tell
+  // "nothing to pick from" apart from "still broken", and no way to retry
+  // short of leaving and re-entering the whole flow.
+  bool _hasError = false;
   String _searchQuery = "";
   final Set<CatalogAppItem> _selectedApps = {};
 
@@ -62,6 +70,10 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
   }
 
   Future<void> _fetchCatalog() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
     try {
       final res = await _childRepo.getScreenTimeApps();
       if (res.isSuccess && res.data != null) {
@@ -80,12 +92,14 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
       } else {
         setState(() {
           _isLoading = false;
+          _hasError = true;
         });
       }
     } catch (e) {
       AppLogger.error("Failed to load catalog: $e");
       setState(() {
         _isLoading = false;
+        _hasError = true;
       });
     }
   }
@@ -197,7 +211,9 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
               });
             },
             child: Text(
-              _selectedApps.isEmpty ? "Skip for now" : "Next",
+              _selectedApps.isEmpty
+                  ? "Skip for now"
+                  : "Next (${_selectedApps.length})",
               style: const TextStyle(
                 color: Color(0xFF0066FF),
                 fontSize: 16,
@@ -213,12 +229,71 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0066FF)),
               ),
             )
+          : _hasError
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(CupertinoIcons.exclamationmark_triangle,
+                        color: Colors.grey[500], size: 36),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Couldn't load the app list",
+                      style: TextStyle(
+                          color: Colors.grey[300],
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      "Check your connection and try again — or skip this for now and add apps later from Settings.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0066FF),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
+                      ),
+                      onPressed: _fetchCatalog,
+                      child: const Text("Retry",
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text("Skip for now",
+                          style: TextStyle(color: Colors.grey[400])),
+                    ),
+                  ],
+                ),
+              ),
+            )
           : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // This step no longer blocks onboarding on its own (see
+                    // permission_sequence_screen.dart) — the "Skip for now"
+                    // button above makes that possible, but a child staring
+                    // at a full app grid with no explanation could still
+                    // assume they *must* pick something to continue.
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12.0),
+                      child: Text(
+                        "Optional — pick apps to monitor now, or skip and add them later from Settings.",
+                        style: TextStyle(color: Color(0xFF8E8E93), fontSize: 12.5),
+                      ),
+                    ),
                     // Search bar
                     Container(
                       height: 48,

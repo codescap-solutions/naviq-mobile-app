@@ -198,14 +198,21 @@ class _SosViewState extends State<SosView> with WidgetsBindingObserver {
     if (mounted) setState(() => _oemBannerInfo = oem);
   }
 
-  // Non-blocking nudge for "Allow all the time" location — same
-  // re-check-on-resume, never-block pattern as the OEM banner above.
-  // iOS is intentionally excluded: the standard permission_sequence_screen
-  // flow already drives toward LocationPermission.always there via an
-  // explicit system prompt, and repeatedly re-surfacing this on iOS would
-  // just nag over Apple's own "Change to Always Allow" one-time dialog.
+  // Non-blocking nudge for "Allow all the time" / "Always Allow" location —
+  // same re-check-on-resume, never-block pattern as the OEM banner above.
+  // Used to skip iOS entirely on the assumption that
+  // permission_sequence_screen's onboarding flow already drove the child to
+  // LocationPermission.always there, making a repeat nudge unnecessary
+  // noise over Apple's own one-time dialog. Confirmed wrong two ways: that
+  // onboarding step's own silent recheck used to accept 'While Using' as
+  // good enough (see its fix), so a child could reach this screen without
+  // Always at all — and even with the onboarding gap closed, nothing
+  // stopped the child from later downgrading it back to While Using (or
+  // denying it) from iOS Settings, with no in-app screen ever catching
+  // that regression. getBackgroundLocationStatus() already had a correct
+  // iOS branch (LocationPermission.always check) from the start; only this
+  // early-return kept it from ever running.
   Future<void> _checkBackgroundLocationStatus() async {
-    if (!Platform.isAndroid) return;
     final status = await LocationService().getBackgroundLocationStatus();
     if (mounted) {
       setState(() => _showBackgroundLocationBanner = status == 'denied');
@@ -370,11 +377,13 @@ class _BackgroundLocationBanner extends StatelessWidget {
   });
 
   Future<void> _openSettings() async {
-    // No single documented Android intent reliably jumps straight into the
-    // granular "Location" permission sub-page across every OEM/API level —
-    // the App Info page (openAppSettings, ACTION_APPLICATION_DETAILS_SETTINGS)
-    // is the one portable, always-resolvable route, one tap from
-    // Permissions → Location → "Allow all the time".
+    // openAppSettings() (permission_handler) is cross-platform: on Android
+    // there's no single documented intent that jumps straight into the
+    // granular Location permission sub-page across every OEM/API level, so
+    // the App Info page is the one portable, always-resolvable route, one
+    // tap from Permissions → Location → "Allow all the time". On iOS it
+    // opens this app's own Settings page directly, one tap from
+    // Location → "Always".
     await openAppSettings();
   }
 
@@ -408,10 +417,17 @@ class _BackgroundLocationBanner extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Turn on "Allow all the time" location for instant safe-place alerts',
-                  style: TextStyle(
+                  // Match each OS's own permission-dialog label exactly —
+                  // Android's is "Allow all the time", iOS's is "Always" /
+                  // "Always Allow". Telling an iOS child to look for text
+                  // that doesn't exist on their Settings screen is exactly
+                  // the kind of gap that makes a nudge get ignored.
+                  Platform.isIOS
+                      ? 'Turn on "Always Allow" location for instant safe-place alerts'
+                      : 'Turn on "Allow all the time" location for instant safe-place alerts',
+                  style: const TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF1E3A8A),
@@ -1904,7 +1920,7 @@ class _SosViewContentState extends State<_SosViewContent> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Naviq Dev 1.0.4(Aug-14)',
+                          'Naviq Dev 1.0.4(Aug-26)',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.manrope(
                             fontSize: 10,
