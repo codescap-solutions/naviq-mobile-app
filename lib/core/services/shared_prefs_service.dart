@@ -380,16 +380,24 @@ class SharedPrefsService {
   }
 
   // Logout user
+  //
+  // Used to remove only 6 specific keys (auth/refresh token, user id/phone,
+  // child id, parent id). Every other cached key this service writes —
+  // parent_name/parent_avatar/parents_contacts, child_name/child_avatar/
+  // child_code, stored_children, stored_notifications, block_18plus,
+  // isPrimaryParent, and anything a future feature adds — survived a
+  // logout untouched. On a shared device (or the same person logging back
+  // in as a different role/child), the next session's screens could
+  // briefly — or permanently, for anything never re-fetched — show the
+  // previous account's cached name, avatar, contacts, or settings toggles
+  // before/without a fresh load overwriting them. A full clear() is the
+  // only version of this that can't silently miss a key some other screen
+  // added later.
   Future<bool> logout() async {
     try {
-      await removeAuthToken();
-      await removeRefreshToken();
-      await removeUserId();
-      await removeUserPhone();
-      await removeChildId();
-      await removeParentId();
+      await prefs.clear();
 
-      AppLogger.info('User logged out successfully');
+      AppLogger.info('User logged out successfully — all local data cleared');
       return true;
     } catch (e) {
       AppLogger.error('Error during logout: $e');

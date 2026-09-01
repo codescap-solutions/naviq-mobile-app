@@ -11,7 +11,7 @@ import 'package:child_track/core/services/device_info_service.dart';
 import 'package:child_track/app/childapp/view_model/repository/device_info_service.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/utils/app_logger.dart';
-import 'package:child_track/app/childapp/view/sos_view.dart';
+import 'package:child_track/core/navigation/route_names.dart';
 import 'package:child_track/app/auth/view/onboarding/mapping_context_screen.dart';
 import 'package:child_track/app/auth/view/onboarding/app_catalog_screen.dart';
 import 'package:child_track/app/auth/view/onboarding/oem_battery_screen.dart';
@@ -315,9 +315,19 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
           // `mounted` would always be false and silently no-op. The caller
           // always passes a context that's valid at the moment it's used.
           void goToSos(BuildContext ctx) {
-            Navigator.of(ctx).pushReplacement(
-              MaterialPageRoute(builder: (_) => const SosView()),
-            );
+            // Named route (matches main.dart's own cold-start-into-SosView
+            // path via app_router.dart), not a bare unnamed
+            // MaterialPageRoute — GlobalUpgradeBanner excludes SosView by
+            // checking the *route name* against RouteNames.sos. An unnamed
+            // route reports a null name, which isn't in that exclusion set,
+            // so a child landing here for the very first time (right after
+            // finishing onboarding) briefly had the "Unlock more with a
+            // paid plan" banner render over their home screen — a
+            // subscription-upsell surface that has no business appearing
+            // on a child's device at all. Every later cold start already
+            // went through the named route and never showed it; only this
+            // first-run path didn't match.
+            Navigator.of(ctx).pushReplacementNamed(RouteNames.sos);
           }
 
           // Only relevant on Android — manufacturers with their own

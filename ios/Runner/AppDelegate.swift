@@ -174,7 +174,24 @@ import os.log
         locationManager.activityType                = .otherNavigation  // Opt-6: better bg allocation
         locationManager.allowsBackgroundLocationUpdates = true
         locationManager.pausesLocationUpdatesAutomatically = false
-        locationManager.requestAlwaysAuthorization()
+        // Deliberately NOT calling requestAlwaysAuthorization() here.
+        // applicationDidBecomeActive calls this once on every cold launch —
+        // including the very first launch, before the user has even chosen
+        // Parent or Child, let alone reached permission_sequence_screen.dart
+        // (the child-only onboarding step that's supposed to be the one
+        // place this gets asked, only after a child logs in). That made the
+        // system location prompt fire immediately at splash for every
+        // install, parent devices included — a parent should never be asked
+        // for location at all, and a child shouldn't be asked before
+        // logging in. Dart's own flow (LocationService
+        // .requestAlwaysAllowPermission(), via the geolocator plugin) is
+        // what actually drives the authorization prompt at the right
+        // moment; authorizationStatus is process-wide, not per
+        // CLLocationManager instance, so whatever that flow grants applies
+        // here too. The calls below (delegate/config/monitoring) stay —
+        // they're inert until authorization exists and pick up
+        // automatically once Dart's flow grants it, with no separate
+        // native trigger needed.
         locationManager.startMonitoringSignificantLocationChanges()
         locationManager.startMonitoringVisits()
         locationManager.startUpdatingLocation()
