@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/navigation/current_route_tracker.dart';
 import '../../../core/navigation/route_names.dart';
+import '../../../core/services/shared_prefs_service.dart';
 import '../../../core/services/subscription_feature_gate.dart';
 import '../../../core/services/subscription_manager.dart';
 import 'subscription_popup_sheet.dart';
@@ -42,6 +43,19 @@ class _GlobalUpgradeBannerState extends State<GlobalUpgradeBanner> {
     RouteNames.sos,
   };
 
+  // Route-name exclusion alone kept proving leaky: any screen reached via a
+  // plain unnamed MaterialPageRoute (which is most of this app's
+  // navigation) reports a null route name, so it's invisible to
+  // _excludedRoutes no matter what's added to that set. Confirmed live on a
+  // fresh install: the pre-login "Enter Child Code" screen — reachable by
+  // either role, before anyone is authenticated as anything — showed this
+  // banner too. Chasing every such route one at a time doesn't scale; the
+  // actual invariant this banner needs is "only an authenticated parent
+  // session", so check that directly instead. isParent mirrors the same
+  // check background_location_service.dart already uses to decide whether
+  // this device is even a parent's.
+  bool get _isAuthenticatedParent => SharedPrefsService().isParent;
+
   bool _dismissedThisSession = false;
 
   @override
@@ -58,6 +72,7 @@ class _GlobalUpgradeBannerState extends State<GlobalUpgradeBanner> {
                 final shouldShow =
                     !_dismissedThisSession &&
                     !isModalActive &&
+                    _isAuthenticatedParent &&
                     SubscriptionFeatureGate.showsFloatingUpgradeBanner() &&
                     !_excludedRoutes.contains(routeName);
                 if (!shouldShow) return const SizedBox.shrink();
