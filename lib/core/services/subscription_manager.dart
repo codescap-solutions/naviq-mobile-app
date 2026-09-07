@@ -85,6 +85,20 @@ class SubscriptionManager extends ChangeNotifier {
           );
         }
         resolvedTier = resolveTierFromProductIds(activeProductIds, plans);
+      } else {
+        // Entitlement active but no store product behind it — a
+        // RevenueCat-dashboard "Grant" (promotional entitlement) rather than
+        // a real purchase. Real purchases always populate
+        // activeSubscriptions with the store's product id; a promo grant
+        // doesn't, since nothing was actually bought. Confirmed live:
+        // granting premium_access this way left currentTier stuck at the
+        // 'starter' default above even though the entitlement itself was
+        // active — gated features (and the floating upgrade banner) never
+        // noticed the grant existed. The entitlement is literally named
+        // premium_access, so an active grant with nothing to match against
+        // is treated as premium outright rather than silently falling back
+        // to starter.
+        resolvedTier = SubscriptionTier.premium;
       }
     }
 
