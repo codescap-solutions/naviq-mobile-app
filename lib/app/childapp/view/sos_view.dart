@@ -94,8 +94,28 @@ class _SosViewState extends State<SosView> with WidgetsBindingObserver {
   /// Show the Accessibility Service prominent disclosure automatically
   /// on first load if the permission is not yet granted.
   Future<void> _showAccessibilityDisclosureIfNeeded() async {
-    final hasPermission = await injector<LockSyncService>()
+    if (Platform.isIOS) {
+      // iOS FamilyControls' AuthorizationCenter.shared.authorizationStatus
+      // can read back stale (.notDetermined/.denied) for a moment right
+      // after a cold launch, before the framework finishes syncing with the
+      // system Screen Time daemon — even when the child already granted
+      // access. Reported live: the disclosure re-appeared on every app
+      // open despite Screen Time being enabled. Give it a moment, then
+      // confirm with a second read before disturbing the user, instead of
+      // trusting a single check taken right on process start.
+      await Future.delayed(const Duration(milliseconds: 1000));
+      if (!mounted) return;
+    }
+
+    var hasPermission = await injector<LockSyncService>()
         .checkAccessibilityPermission();
+    if (!hasPermission && Platform.isIOS) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
+      hasPermission = await injector<LockSyncService>()
+          .checkAccessibilityPermission();
+    }
+
     if (!hasPermission && mounted) {
       // Small delay so the screen settles before the dialog appears
       await Future.delayed(const Duration(milliseconds: 800));
