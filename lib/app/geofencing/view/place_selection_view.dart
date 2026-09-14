@@ -214,11 +214,20 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              // Add Custom Place Container
+              // Add Custom Place Container — was a plain white box (no icon,
+              // no border) that read as a low-contrast search field next to
+              // the colorful preset grid above it, so it barely registered
+              // as its own option. Given a blue accent border/background and
+              // a leading icon badge (matching the preset cards' circular
+              // icon treatment) so it stands out as a real, distinct action.
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFF0066FF).withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF0066FF).withValues(alpha: 0.35),
+                    width: 1.5,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF0C1D37).withValues(alpha: 0.03),
@@ -227,23 +236,43 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: TextField(
-                  controller: _customPlaceController,
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0C1D37),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: "Add Custom Place",
-                    hintStyle: GoogleFonts.manrope(
-                      color: const Color(0xFF94A3B8),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF0066FF),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.add_location_alt_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
-                    border: InputBorder.none,
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _customPlaceController,
+                        style: GoogleFonts.manrope(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF0C1D37),
+                        ),
+                        decoration: InputDecoration(
+                          hintText: "Add Custom Place",
+                          hintStyle: GoogleFonts.manrope(
+                            color: const Color(0xFF0066FF),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),

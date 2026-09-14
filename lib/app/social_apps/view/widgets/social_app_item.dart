@@ -177,29 +177,20 @@ class _DailyLimitButton extends StatelessWidget {
               ? null
               : Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.hourglass_bottom_rounded,
-              size: 16,
-              color: hasLimit
-                  ? const Color(0xFF0066FF)
-                  : const Color(0xFF94A3B8),
-            ),
-            if (hasLimit) ...[
-              const SizedBox(width: 6),
-              Text(
+        child: hasLimit
+            ? Text(
                 _label,
                 style: GoogleFonts.manrope(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF0066FF),
                 ),
+              )
+            : const Icon(
+                Icons.add_rounded,
+                size: 18,
+                color: Color(0xFF94A3B8),
               ),
-            ],
-          ],
-        ),
       ),
     );
   }

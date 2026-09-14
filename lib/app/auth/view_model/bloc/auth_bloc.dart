@@ -55,12 +55,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final phoneNumber = data['phoneNumber'] as String?;
         final parentId = data['user']?['id'] as String?;
         final token = data['token'] as String?;
+        // Backend already tells us this — user.is_owner is `role !== 3`
+        // (secondary "guardian" accounts are role 3). Nothing here was ever
+        // reading it, so isPrimaryParent's SharedPreferences key was never
+        // written and defaulted to true for everyone — a secondary guardian
+        // logging into Family Management saw full primary-parent controls
+        // (edit/delete guardians, including a "delete self" affordance),
+        // and the same default silently over-granted every other screen
+        // gated on isPrimaryParent (settings, geofencing, contacts).
+        final isOwner = data['user']?['is_owner'] as bool? ?? true;
 
-        // Save parent ID and token
+        // Save parent ID, token, and role
         if (parentId != null) {
           await _sharedPrefsService.setString('parent_id', parentId);
           await _sharedPrefsService.setUserId(parentId);
         }
+        await _sharedPrefsService.setBool('is_primary_parent', isOwner);
         if (token != null) {
           await _sharedPrefsService.setAuthToken(token);
         }

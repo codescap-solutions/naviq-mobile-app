@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/di/injector.dart';
@@ -534,13 +535,37 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          // Name text
-                          Text(
-                            '$name ($childCode)',
-                            style: GoogleFonts.manrope(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
+                          // Name text + tap-to-copy child code — parents
+                          // previously had to retype/screenshot the code by
+                          // hand to share it with a guardian or re-pair a
+                          // device; same Clipboard pattern already used in
+                          // child_code_screen.dart's onboarding flow.
+                          GestureDetector(
+                            onTap: () {
+                              Clipboard.setData(ClipboardData(text: childCode));
+                              AppSnackbar.showSuccess(
+                                context,
+                                'Child code copied: $childCode',
+                              );
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '$name ($childCode)',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(
+                                  Icons.copy_rounded,
+                                  size: 16,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 4),

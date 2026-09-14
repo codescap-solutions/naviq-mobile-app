@@ -202,6 +202,13 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
   void _showAddGuardianSheet() {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
+    // Declared here, outside the StatefulBuilder's builder callback, so
+    // they survive setSheetState rebuilds — previously `isSubmitting` was
+    // declared INSIDE the builder, so every setSheetState rebuild
+    // re-executed `bool isSubmitting = false;` and threw away the value
+    // just set, meaning the loading spinner never actually rendered.
+    bool isSubmitting = false;
+    String? errorText;
 
     showModalBottomSheet(
       context: context,
@@ -210,33 +217,45 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            bool isSubmitting = false;
-
             Future<void> submit() async {
               final name = nameController.text.trim();
               final phone = phoneController.text.trim();
               if (name.isEmpty || phone.isEmpty) {
-                AppSnackbar.showError(context, 'Please enter both name and phone number');
+                setSheetState(
+                  () => errorText = 'Please enter both name and phone number',
+                );
                 return;
               }
 
-              setSheetState(() => isSubmitting = true);
+              setSheetState(() {
+                isSubmitting = true;
+                errorText = null;
+              });
               // Real account: POST /parent/guardians creates a role-3 User
               // linked to this family — the phone number can then actually
               // log in (OTP, same as any parent) and see this child.
               final response = await _homeRepo.addGuardian(name: name, phoneNumber: phone);
               if (!mounted) return;
-              setSheetState(() => isSubmitting = false);
 
               if (response.isSuccess) {
                 Navigator.pop(context);
                 await _fetchGuardians();
                 if (mounted) AppSnackbar.showSuccess(context, '$name added as guardian');
               } else {
-                AppSnackbar.showError(
-                  context,
-                  response.message.isEmpty ? 'Failed to add guardian' : response.message,
-                );
+                // Was AppSnackbar.showError(context, ...) here — a bottom
+                // sheet doesn't create its own ScaffoldMessenger, so
+                // ScaffoldMessenger.of(context) resolved to the underlying
+                // page's messenger and the SnackBar rendered BEHIND the
+                // still-open sheet. Confirmed live: adding an
+                // already-registered phone number showed no visible error
+                // until the sheet was closed. Render inline in the sheet
+                // itself instead, same as the empty-field validation above.
+                setSheetState(() {
+                  isSubmitting = false;
+                  errorText = response.message.isEmpty
+                      ? 'Failed to add guardian'
+                      : response.message;
+                });
               }
             }
 
@@ -327,6 +346,42 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                         ),
                       ),
                     ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEE2E2),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFFCA5A5)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.error_outline_rounded,
+                              color: Color(0xFFDC2626),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                errorText!,
+                                style: GoogleFonts.manrope(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFFDC2626),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,

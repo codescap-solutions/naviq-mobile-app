@@ -288,10 +288,6 @@ class _GeoFencingViewState extends State<GeoFencingView> {
                         "${_getChildName()}'s School",
                         const LatLng(12.9698, 77.7500),
                       ),
-                      _buildSuggestedFenceTile(
-                        "Cubbon Park",
-                        const LatLng(12.9738, 77.5906),
-                      ),
 
                       const SizedBox(height: 80), // spacer for FAB
                     ],

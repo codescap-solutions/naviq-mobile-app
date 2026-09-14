@@ -44,6 +44,8 @@ import 'package:geocoding/geocoding.dart';
 import '../../social_apps/view_model/time_limit_repository.dart';
 import 'package:child_track/core/services/subscription_feature_gate.dart';
 import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
+import 'package:child_track/app/subscription/widgets/subscription_popup_sheet.dart';
+import 'package:child_track/app/subscription/models/subscription_plan.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -2181,6 +2183,56 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                     ),
 
+                    // Layer 1.4: "Updating location..." overlay while a
+                    // fresh fetch is in flight (e.g. right after switching
+                    // the selected child). homepage_bloc.dart already
+                    // clears currentLocation on a child switch so the OLD
+                    // child's marker doesn't flash before the new one loads
+                    // — but with nothing shown in its place, that gap read
+                    // as unexplained/confusing (reported live: briefly
+                    // shows the old child's spot, then jumps 1-2s later).
+                    // This makes the gap legible instead of silent.
+                    if (state.isLoading)
+                      Positioned(
+                        top: 16,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.75),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Updating location…',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
                     // Layer 1.5: Floating Overlay Avatar for Shared Kid
                     () {
                       final floatingChildren = state.sharedChildren.isNotEmpty
@@ -3208,7 +3260,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Today's Route Map",
+                        "Route History",
                         style: GoogleFonts.manrope(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -3373,14 +3425,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
+      // Was an unbounded, non-scrollable Row rendering every stop in the
+      // route unconditionally — with more than a handful of stops the
+      // Expanded connectors squeezed the whole thing illegibly instead of
+      // staying a compact stepper. Now horizontally scrollable so it stays
+      // a fixed-size, swipeable stepper no matter how many stops there are.
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: children,
+        ),
       ),
     );
   }
@@ -3391,74 +3452,100 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     required bool isActive,
     required bool isHighlighted,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF0066FF) : Colors.white,
-            shape: BoxShape.circle,
-            border: isActive
-                ? null
-                : Border.all(color: const Color(0xFFE2E8F0), width: 2),
-          ),
-          child: isActive
-              ? Center(
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
+    // Fixed width so ~3-4 stops stay visible in the scrollable stepper's
+    // viewport at once, with long labels ellipsizing instead of forcing
+    // every node wider (which used to squeeze the whole unscrollable row).
+    return SizedBox(
+      width: 76,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: isActive ? const Color(0xFF0066FF) : Colors.white,
+              shape: BoxShape.circle,
+              border: isActive
+                  ? null
+                  : Border.all(color: const Color(0xFFE2E8F0), width: 2),
+            ),
+            child: isActive
+                ? Center(
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-                )
-              : null,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.manrope(
-            fontSize: 12,
-            fontWeight: isHighlighted ? FontWeight.w800 : FontWeight.w600,
-            color: isHighlighted
-                ? const Color(0xFF0066FF)
-                : const Color(0xFF64748B),
+                  )
+                : null,
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          time.isNotEmpty ? time : ' ',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.manrope(
-            fontSize: 10,
-            fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.w500,
-            color: isHighlighted
-                ? const Color(0xFF94A3B8)
-                : const Color(0xFF94A3B8),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: isHighlighted ? FontWeight.w800 : FontWeight.w600,
+              color: isHighlighted
+                  ? const Color(0xFF0066FF)
+                  : const Color(0xFF64748B),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 2),
+          Text(
+            time.isNotEmpty ? time : ' ',
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.manrope(
+              fontSize: 10,
+              fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.w500,
+              color: isHighlighted
+                  ? const Color(0xFF94A3B8)
+                  : const Color(0xFF94A3B8),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildTimelineConnector(bool isActive) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 9.5),
-        child: Container(
-          height: 3,
-          color: isActive ? const Color(0xFF0066FF) : const Color(0xFFE2E8F0),
-        ),
+    // Fixed width, not Expanded — the row now lives inside a horizontal
+    // SingleChildScrollView (see _buildTimelineRow), which gives its
+    // children unbounded width; an Expanded/flex child there throws
+    // ("RenderFlex children have non-zero flex but incoming width
+    // constraints are unbounded").
+    return Padding(
+      padding: const EdgeInsets.only(top: 9.5),
+      child: Container(
+        width: 32,
+        height: 3,
+        color: isActive ? const Color(0xFF0066FF) : const Color(0xFFE2E8F0),
       ),
     );
   }
 
   Widget _buildUpgradeProBanner() {
-    return Container(
+    // Was a bare Container — no GestureDetector/InkWell/onTap anywhere, so
+    // the trailing arrow icon implied navigation that never actually
+    // happened. Wrapped in InkWell (via Material, for the ripple to render
+    // over the gradient) to open the same subscription sheet the global
+    // upgrade banner uses elsewhere in the app.
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () =>
+            SubscriptionPopup.show(context, SubscriptionTier.basic),
+        child: Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -3519,6 +3606,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             size: 14,
           ),
         ],
+      ),
+        ),
       ),
     );
   }
@@ -4479,8 +4568,12 @@ class _DynamicLocationTextState extends State<_DynamicLocationText> {
   @override
   Widget build(BuildContext context) {
     final displayText = _resolvedAddress ?? widget.initialPlaceName;
+    // Was "{name} is  \n{address}" — a stray double space and no "at" made
+    // it read like a dangling sentence ("Akhil is  \n123 Main St...")
+    // instead of a place-status line. "is at" reads naturally for both a
+    // short known place ("Akhil is at Home") and a resolved street address.
     return Text(
-      '${widget.childName} is  \n$displayText',
+      '${widget.childName} is at\n$displayText',
       style: GoogleFonts.manrope(
         // Was 24 — the full street/area/city/district/state/PIN address now
         // shown here (see _fetchAddress above) runs much longer than the

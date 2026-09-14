@@ -170,6 +170,18 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
       );
+      // Landing on the new step doesn't mean it needs asking. Only the
+      // very first step in _steps ever got the silent auto-check (from
+      // initState) — every step reached by advancing through here never
+      // re-ran it, so an already-granted step (e.g. notification, allowed
+      // in a previous install) stalled on its own screen waiting for a
+      // redundant tap instead of skipping itself. Confirmed live: a child
+      // with notification permission already granted still saw/tapped
+      // through the notification step on login. Chaining this call lets
+      // _checkCurrentPermission recurse through any number of
+      // already-granted steps in a row, stopping at the first one that
+      // actually needs the user.
+      _checkCurrentPermission(silent: true);
     }
   }
 
