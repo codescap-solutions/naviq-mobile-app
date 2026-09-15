@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:child_track/core/services/device_info_service.dart';
 import 'package:flutter/services.dart';
 import 'package:child_track/app/childapp/view_model/repository/child_repo.dart';
+import 'package:child_track/app/childapp/view_model/repository/logout_request_repository.dart';
 import 'package:child_track/app/home/model/device_model.dart';
 import 'package:child_track/app/childapp/view_model/bloc/child_bloc.dart';
 import 'package:child_track/core/di/injector.dart';
@@ -965,6 +968,9 @@ class _SosViewContentState extends State<_SosViewContent> {
   List<Map<String, dynamic>> _contacts = [];
   int _selectedContactIndex = 0;
   List<Map<String, dynamic>> _localMappedApps = [];
+  bool _logoutRequestPending = false;
+  StreamSubscription<RemoteMessage>? _logoutTapSubscription;
+  StreamSubscription<RemoteMessage>? _logoutForegroundSubscription;
 
   @override
   void initState() {
@@ -972,6 +978,44 @@ class _SosViewContentState extends State<_SosViewContent> {
     _loadCachedContacts();
     _fetchContactsFromBackend();
     _loadLocalMappedApps();
+
+    // The parent's decision on a logout request arrives as a push (type
+    // LOGOUT_RESULT) — listened for on both streams so it's caught whether
+    // the app was already foregrounded or the child tapped the
+    // notification, mirroring home_page.dart's TIME_EXTENSION_REQUEST
+    // listeners. Unlike a time-extension result (which only needs a local
+    // notification), an approval here has to actually drive the app to log
+    // out, so this needs its own handler rather than the generic
+    // heads-up-only path in firebase_notification_service.dart.
+    _logoutTapSubscription = FirebaseNotificationService()
+        .notificationTapStream
+        .listen(_handleLogoutResultMessage);
+    _logoutForegroundSubscription = FirebaseNotificationService()
+        .messageStream
+        .listen(_handleLogoutResultMessage);
+  }
+
+  @override
+  void dispose() {
+    _logoutTapSubscription?.cancel();
+    _logoutForegroundSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _handleLogoutResultMessage(RemoteMessage message) {
+    if (message.data['type'] != 'LOGOUT_RESULT') return;
+    final approved = message.data['approved'] == 'true';
+    if (!mounted) return;
+    setState(() => _logoutRequestPending = false);
+    if (approved) {
+      _performLogout(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Your parent denied the logout request.'),
+        ),
+      );
+    }
   }
 
   Future<void> _loadLocalMappedApps() async {
@@ -1177,6 +1221,12 @@ class _SosViewContentState extends State<_SosViewContent> {
     );
   }
 
+  // Was a direct-logout confirm dialog. A child leaving the app is exactly
+  // the kind of thing this app exists to prevent going unnoticed, so
+  // logging out now needs the parent's sign-off first: tapping "Logout"
+  // here sends a request instead of logging out immediately — the actual
+  // teardown only runs once the parent approves (see
+  // _handleLogoutResultMessage above).
   void _handleLogout(BuildContext context) {
     showDialog(
       context: context,
@@ -1189,7 +1239,7 @@ class _SosViewContentState extends State<_SosViewContent> {
           style: AppTextStyles.headline6.copyWith(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'Are you sure you want to logout?',
+          'Logging out needs your parent\'s approval. Send them a request now?',
           style: AppTextStyles.body2,
         ),
         actions: [
@@ -1205,10 +1255,10 @@ class _SosViewContentState extends State<_SosViewContent> {
           TextButton(
             onPressed: () async {
               Navigator.of(dialogContext).pop();
-              await _performLogout(context);
+              await _requestLogoutFromParent(context);
             },
             child: Text(
-              'Logout',
+              'Request Logout',
               style: AppTextStyles.body2.copyWith(
                 color: AppColors.error,
                 fontWeight: FontWeight.w600,
@@ -1216,6 +1266,27 @@ class _SosViewContentState extends State<_SosViewContent> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _requestLogoutFromParent(BuildContext context) async {
+    if (_logoutRequestPending) return;
+    setState(() => _logoutRequestPending = true);
+    final response = await injector<LogoutRequestRepository>().requestLogout();
+    if (!context.mounted) return;
+    if (!response.isSuccess) {
+      setState(() => _logoutRequestPending = false);
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          response.isSuccess
+              ? 'Logout request sent to your parent. Waiting for approval…'
+              : (response.message.isNotEmpty
+                    ? response.message
+                    : 'Could not send logout request. Try again.'),
+        ),
       ),
     );
   }
@@ -1292,6 +1363,47 @@ class _SosViewContentState extends State<_SosViewContent> {
           context,
         ).pushNamedAndRemoveUntil(RouteNames.onBoarding, (route) => false);
       }
+    }
+  }
+
+  // ChildRepo.sendSOS + the backend's POST /child/sos + notifySOS() were
+  // already fully implemented (real-time socket emit + a bypass-preferences
+  // push to every linked parent) but nothing in the app ever called
+  // sendSOS — the SOS button only opened the phone dialer. Fire this
+  // alongside the dial so the parent gets an immediate alert too, not just
+  // whatever the child manages to say on the call.
+  Future<void> _triggerSosAlert() async {
+    try {
+      final childId = injector<SharedPrefsService>().getString('child_id');
+      if (childId == null || childId.isEmpty) return;
+
+      double lat = 0;
+      double lng = 0;
+      try {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+          timeLimit: const Duration(seconds: 5),
+        );
+        lat = position.latitude;
+        lng = position.longitude;
+      } catch (e) {
+        // GPS fix too slow/unavailable — fall back to the last known fix
+        // rather than blocking the alert on a fresh one.
+        final last = await Geolocator.getLastKnownPosition();
+        if (last != null) {
+          lat = last.latitude;
+          lng = last.longitude;
+        }
+      }
+
+      final response = await injector<ChildRepo>().sendSOS(
+        childId: childId,
+        lat: lat,
+        lng: lng,
+      );
+      AppLogger.info('SOS alert sent to parent: ${response.isSuccess}');
+    } catch (e) {
+      AppLogger.error('Error sending SOS alert: $e');
     }
   }
 
@@ -1512,7 +1624,10 @@ class _SosViewContentState extends State<_SosViewContent> {
                         // Center Pulsing SOS Button
                         Center(
                           child: PulsingSosButton(
-                            onTap: () => _callNumber(contactPhone),
+                            onTap: () {
+                              _callNumber(contactPhone);
+                              _triggerSosAlert();
+                            },
                           ),
                         ),
 

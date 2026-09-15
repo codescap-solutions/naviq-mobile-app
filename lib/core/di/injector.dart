@@ -27,6 +27,7 @@ import 'package:child_track/core/services/lock_sync_service.dart';
 import '../../app/social_apps/view_model/app_lock_repository.dart';
 import '../../app/social_apps/view_model/bloc/app_lock_bloc.dart';
 import '../../app/social_apps/view_model/time_limit_repository.dart';
+import '../../app/childapp/view_model/repository/logout_request_repository.dart';
 import '../../app/social_apps/view_model/bloc/time_limit_bloc.dart';
 import '../services/device_info_service.dart';
 import 'package:child_track/core/services/chat_socket_service.dart';
@@ -195,6 +196,11 @@ Future<void> initializeDependencies() async {
       repository: injector<TimeLimitRepository>(),
       sharedPrefsService: injector<SharedPrefsService>(),
     ),
+  );
+
+  // Register LogoutRequestRepository (child-requests-logout flow)
+  injector.registerLazySingleton<LogoutRequestRepository>(
+    () => LogoutRequestRepository(dioClient: injector<DioClient>()),
   );
 
   // Register DeviceInfoService

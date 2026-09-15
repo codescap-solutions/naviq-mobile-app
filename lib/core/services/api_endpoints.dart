@@ -62,6 +62,11 @@ class ApiEndpoints {
   static String resolveTimeExtensionRequest(String id) =>
       'time-extension-requests/$id/resolve';
 
+  // Child-Requests-Logout Endpoints
+  static const String logoutRequests = 'logout-requests';
+  static String resolveLogoutRequest(String id) =>
+      'logout-requests/$id/resolve';
+
   // FCM Token endpoints
   static const String parentFcmToken = 'fcm-token/parent';
   static const String childFcmToken = 'fcm-token/child';

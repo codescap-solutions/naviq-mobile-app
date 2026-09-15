@@ -42,6 +42,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../social_apps/view_model/time_limit_repository.dart';
+import '../../childapp/view_model/repository/logout_request_repository.dart';
 import 'package:child_track/core/services/subscription_feature_gate.dart';
 import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
 import 'package:child_track/app/subscription/widgets/subscription_popup_sheet.dart';
@@ -71,6 +72,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool _viewingSharedChild = false;
   bool _isLocationShareSheetOpen = false;
   bool _isTimeExtensionSheetOpen = false;
+  bool _isLogoutRequestSheetOpen = false;
   Timer? _sharedChildTimer;
   DateTime? _lastResumeRefreshAt;
 
@@ -250,6 +252,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 _showTimeExtensionApprovalSheet(message.data);
               }
             });
+          } else if (message.data['type'] == 'LOGOUT_REQUEST') {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _showLogoutApprovalSheet(message.data);
+              }
+            });
           }
         });
 
@@ -277,6 +285,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 _showTimeExtensionApprovalSheet(message.data);
+              }
+            });
+          } else if (message.data['type'] == 'LOGOUT_REQUEST') {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _showLogoutApprovalSheet(message.data);
               }
             });
           }
@@ -883,6 +897,179 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       },
     ).whenComplete(() {
       _isTimeExtensionSheetOpen = false;
+    });
+  }
+
+  // Child-requests-logout approval sheet — cloned from
+  // _showTimeExtensionApprovalSheet above (same request/resolve shape,
+  // "wants to log out" instead of "wants more time"). No platform field
+  // needed here since resolving a logout request never touches the native
+  // app-lock layer.
+  void _showLogoutApprovalSheet(Map<String, dynamic> data) {
+    if (_isLogoutRequestSheetOpen) return;
+
+    final String requestId = data['request_id'] ?? '';
+    final String childName = data['child_name'] ?? 'Your child';
+    if (requestId.isEmpty) return;
+
+    _isLogoutRequestSheetOpen = true;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        bool isResponding = false;
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            Future<void> respond(bool approve) async {
+              setSheetState(() => isResponding = true);
+              final response = await injector<LogoutRequestRepository>()
+                  .resolveLogoutRequest(requestId: requestId, approve: approve);
+              if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      response.isSuccess
+                          ? (approve
+                                ? '$childName has been logged out'
+                                : 'Logout request denied')
+                          : (response.message.isNotEmpty
+                                ? response.message
+                                : 'Something went wrong'),
+                    ),
+                  ),
+                );
+              }
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 10,
+                bottom: 24 + MediaQuery.of(sheetContext).viewInsets.bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEFF6FF),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.logout_rounded,
+                          color: Color(0xFF0066FF),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Logout Request',
+                        style: GoogleFonts.manrope(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0C1D37),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF1EE),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFFFFE5DE),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Text(
+                      '$childName wants to log out of the app.',
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF0C1D37),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: isResponding ? null : () => respond(false),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFEF4444),
+                            side: const BorderSide(color: Color(0xFFEF4444)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'Reject',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isResponding ? null : () => respond(true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0066FF),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: isResponding
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Accept',
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      _isLogoutRequestSheetOpen = false;
     });
   }
 
