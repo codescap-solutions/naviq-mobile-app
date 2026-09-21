@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../utils/app_logger.dart';
+import 'subscription_manager.dart';
 
 /// Wraps all RevenueCat SDK interactions.
 /// Call [initialize] once in main(), then [logIn] after login and
@@ -46,10 +47,38 @@ class RevenueCatService {
   // ── User Identity ─────────────────────────────────────────────────────────
 
   /// Call after successful login with your backend's user ID.
-  Future<void> logIn(String userId) async {
+  /// [displayName] and [phoneNumber], when given, are tagged as subscriber
+  /// attributes so the RevenueCat dashboard shows who a customer is instead
+  /// of just their raw App User ID.
+  Future<void> logIn(
+    String userId, {
+    String? displayName,
+    String? phoneNumber,
+  }) async {
     try {
       await Purchases.logIn(userId);
       AppLogger.info('RevenueCat: Logged in as $userId');
+
+      if (displayName != null && displayName.isNotEmpty) {
+        await Purchases.setDisplayName(displayName);
+      }
+      if (phoneNumber != null && phoneNumber.isNotEmpty) {
+        await Purchases.setPhoneNumber(phoneNumber);
+      }
+
+      // SubscriptionManager.initialize() only ever checks status once, at
+      // cold start in main() — before this identity swap even runs (it's
+      // called later, once auth/session data is available). Purchases.logIn
+      // alone doesn't push a CustomerInfo update through the SDK's listener
+      // when there's no new *delta* to report (e.g. a promo entitlement
+      // granted via the RevenueCat dashboard between sessions), so without
+      // this, SubscriptionManager's cached tier can stay wrong — "starter"
+      // — for the rest of the app's lifetime even though the account is
+      // actually entitled. Confirmed live: a manually-granted premium
+      // account still hit the free-tier geofence cap after a full
+      // force-quit/reopen, because this identity swap never re-triggered
+      // the tier check on its own.
+      await SubscriptionManager.instance.checkAndUpdateStatus();
     } catch (e) {
       AppLogger.error('RevenueCat logIn error: $e');
     }

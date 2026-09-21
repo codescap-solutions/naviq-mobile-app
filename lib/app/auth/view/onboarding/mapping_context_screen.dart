@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class MappingContextScreen extends StatelessWidget {
   final VoidCallback onContinue;
@@ -101,9 +102,9 @@ class MappingContextScreen extends StatelessWidget {
                   elevation: 0,
                 ),
                 onPressed: onContinue,
-                child: const Text(
+                child: Text(
                   "Get Started",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 16.0.sp, fontWeight: FontWeight.w600),
                 ),
               ),
               const SizedBox(height: 10),
@@ -137,9 +138,9 @@ class MappingContextScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 15,
+                    fontSize: 15.0.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -148,7 +149,7 @@ class MappingContextScreen extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     color: Colors.grey[500],
-                    fontSize: 13,
+                    fontSize: 13.0.sp,
                     height: 1.4,
                   ),
                 ),

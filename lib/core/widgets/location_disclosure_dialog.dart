@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/app_colors.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class LocationDisclosureDialog extends StatelessWidget {
   final VoidCallback onAccept;
@@ -39,10 +40,10 @@ class LocationDisclosureDialog extends StatelessWidget {
             ),
             _buildBulletPoint('Create location history and safe zone alerts.'),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Your location data is securely transmitted and stored on our servers. '
               'It is shared only with linked parent accounts.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12.0.sp, color: Colors.grey),
             ),
           ],
         ),

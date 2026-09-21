@@ -12,6 +12,7 @@ import 'package:child_track/app/social_apps/view/social_apps_view.dart';
 import 'package:child_track/app/explore/view/emergency_contacts_view.dart';
 import 'package:child_track/app/explore/view/parents_contact_view.dart';
 import 'package:child_track/app/home/view_model/home_repo.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class ExploreView extends StatelessWidget {
   final VoidCallback onNavigateToHome;
@@ -63,9 +64,9 @@ class ExploreView extends StatelessWidget {
         ),
         title: Text(
           'Explore',
-          style: GoogleFonts.manrope(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
+          style: GoogleFonts.poppins(
+            fontSize: 24.0.sp,
+            fontWeight: FontWeight.w700,
             color: const Color(0xFF0C1D37),
           ),
         ),
@@ -295,8 +296,8 @@ class ExploreView extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.manrope(
-                      fontSize: 15,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15.0.sp,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF0C1D37),
                     ),
@@ -304,8 +305,8 @@ class ExploreView extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: GoogleFonts.manrope(
-                      fontSize: 12,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.0.sp,
                       fontWeight: FontWeight.w500,
                       color: const Color(0xFF64748B),
                     ),
@@ -417,8 +418,8 @@ class __ActiveOutgoingSharesSheetContentState
           ),
           Text(
             'Active Location Sharing',
-            style: GoogleFonts.manrope(
-              fontSize: 18,
+            style: GoogleFonts.poppins(
+              fontSize: 18.0.sp,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF0C1D37),
             ),
@@ -426,8 +427,8 @@ class __ActiveOutgoingSharesSheetContentState
           const SizedBox(height: 6),
           Text(
             'Manage active location permissions granted to other parents.',
-            style: GoogleFonts.manrope(
-              fontSize: 12,
+            style: GoogleFonts.poppins(
+              fontSize: 12.0.sp,
               fontWeight: FontWeight.w500,
               color: const Color(0xFF64748B),
             ),
@@ -446,9 +447,9 @@ class __ActiveOutgoingSharesSheetContentState
               child: Center(
                 child: Text(
                   'Error: $_errorMessage',
-                  style: GoogleFonts.manrope(
+                  style: GoogleFonts.poppins(
                     color: Colors.redAccent,
-                    fontSize: 14,
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -460,8 +461,8 @@ class __ActiveOutgoingSharesSheetContentState
               child: Center(
                 child: Text(
                   'No active location sharing sessions',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF94A3B8),
                   ),
@@ -526,8 +527,8 @@ class __ActiveOutgoingSharesSheetContentState
                                 childName
                                     .substring(0, min(2, childName.length))
                                     .toUpperCase(),
-                                style: GoogleFonts.manrope(
-                                  fontSize: 14,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14.0.sp,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFF0066FF),
                                 ),
@@ -539,24 +540,24 @@ class __ActiveOutgoingSharesSheetContentState
                               children: [
                                 Text(
                                   'Sharing $childName with',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 13,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13.0.sp,
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFF0C1D37),
                                   ),
                                 ),
                                 Text(
                                   phone,
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 12,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12.0.sp,
                                     color: const Color(0xFF475569),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 Text(
                                   'Expires in $minutesLeft mins',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 11,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11.0.sp,
                                     color: const Color(0xFF94A3B8),
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -615,8 +616,8 @@ class __ActiveOutgoingSharesSheetContentState
                           },
                           child: Text(
                             'Stop',
-                            style: GoogleFonts.manrope(
-                              fontSize: 12,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.0.sp,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

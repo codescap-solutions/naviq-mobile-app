@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:google_fonts/google_fonts.dart';
 import 'location_selections.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class PlaceSelectionScreen extends StatefulWidget {
   final String? childId;
@@ -107,8 +108,8 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
             const SizedBox(height: 12),
             Text(
               label,
-              style: GoogleFonts.manrope(
-                fontSize: 14,
+              style: GoogleFonts.poppins(
+                fontSize: 14.0.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF0C1D37),
               ),
@@ -154,8 +155,8 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
         ),
         title: Text(
           'Geofencing',
-          style: GoogleFonts.manrope(
-            fontSize: 22,
+          style: GoogleFonts.poppins(
+            fontSize: 22.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF0C1D37),
           ),
@@ -256,16 +257,16 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
                     Expanded(
                       child: TextField(
                         controller: _customPlaceController,
-                        style: GoogleFonts.manrope(
-                          fontSize: 14,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14.0.sp,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF0C1D37),
                         ),
                         decoration: InputDecoration(
                           hintText: "Add Custom Place",
-                          hintStyle: GoogleFonts.manrope(
+                          hintStyle: GoogleFonts.poppins(
                             color: const Color(0xFF0066FF),
-                            fontSize: 14,
+                            fontSize: 14.0.sp,
                             fontWeight: FontWeight.w600,
                           ),
                           border: InputBorder.none,
@@ -303,8 +304,8 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
                         : null,
                     child: Text(
                       "Create",
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.0.sp,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),

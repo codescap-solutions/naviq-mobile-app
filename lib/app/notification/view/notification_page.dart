@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:intl/intl.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 
@@ -36,16 +37,16 @@ class _NotificationPageState extends State<NotificationPage> {
         ),
         title: Text(
           'Clear Notifications',
-          style: GoogleFonts.manrope(
-            fontSize: 18,
+          style: GoogleFonts.poppins(
+            fontSize: 18.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF0C1D37),
           ),
         ),
         content: Text(
           'Are you sure you want to clear all notifications?',
-          style: GoogleFonts.manrope(
-            fontSize: 14,
+          style: GoogleFonts.poppins(
+            fontSize: 14.0.sp,
             fontWeight: FontWeight.w500,
             color: const Color(0xFF475569),
           ),
@@ -55,8 +56,8 @@ class _NotificationPageState extends State<NotificationPage> {
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'Cancel',
-              style: GoogleFonts.manrope(
-                fontSize: 14,
+              style: GoogleFonts.poppins(
+                fontSize: 14.0.sp,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF64748B),
               ),
@@ -66,8 +67,8 @@ class _NotificationPageState extends State<NotificationPage> {
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Clear All',
-              style: GoogleFonts.manrope(
-                fontSize: 14,
+              style: GoogleFonts.poppins(
+                fontSize: 14.0.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFFEF4444),
               ),
@@ -171,8 +172,8 @@ class _NotificationPageState extends State<NotificationPage> {
         ),
         title: Text(
           'Notifications',
-          style: GoogleFonts.manrope(
-            fontSize: 18,
+          style: GoogleFonts.poppins(
+            fontSize: 18.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF0C1D37),
           ),
@@ -255,8 +256,8 @@ class _NotificationPageState extends State<NotificationPage> {
                                   Expanded(
                                     child: Text(
                                       title,
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 15,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 15.0.sp,
                                         fontWeight: FontWeight.w700,
                                         color: const Color(0xFF0C1D37),
                                       ),
@@ -264,8 +265,8 @@ class _NotificationPageState extends State<NotificationPage> {
                                   ),
                                   Text(
                                     _formatTimestamp(timestamp),
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 11,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 11.0.sp,
                                       fontWeight: FontWeight.w500,
                                       color: const Color(0xFF94A3B8),
                                     ),
@@ -275,8 +276,8 @@ class _NotificationPageState extends State<NotificationPage> {
                               const SizedBox(height: 6),
                               Text(
                                 body,
-                                style: GoogleFonts.manrope(
-                                  fontSize: 13,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13.0.sp,
                                   fontWeight: FontWeight.w500,
                                   color: const Color(0xFF475569),
                                   height: 1.3,
@@ -319,8 +320,8 @@ class _NotificationPageState extends State<NotificationPage> {
             const SizedBox(height: 24),
             Text(
               'No Notifications Yet',
-              style: GoogleFonts.manrope(
-                fontSize: 18,
+              style: GoogleFonts.poppins(
+                fontSize: 18.0.sp,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF0C1D37),
               ),
@@ -329,8 +330,8 @@ class _NotificationPageState extends State<NotificationPage> {
             Text(
               'All caught up! You will see real-time updates and alerts about your child here.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.manrope(
-                fontSize: 14,
+              style: GoogleFonts.poppins(
+                fontSize: 14.0.sp,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF64748B),
                 height: 1.4,

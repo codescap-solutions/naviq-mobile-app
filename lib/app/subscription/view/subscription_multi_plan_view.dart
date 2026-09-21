@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/services/dio_client.dart';
 import 'package:child_track/core/services/base_service.dart';
@@ -46,7 +47,8 @@ class _SubscriptionMultiPlanViewState extends State<SubscriptionMultiPlanView> {
         title: Text(
           'Subscription',
           style: AppTextStyles.headline4.copyWith(
-            fontWeight: FontWeight.w800,
+            fontSize: 20.0.sp,
+            fontWeight: FontWeight.w700,
             color: Colors.black,
           ),
         ),
@@ -222,7 +224,7 @@ class _SubscriptionMultiPlanViewState extends State<SubscriptionMultiPlanView> {
                       style: AppTextStyles.overline.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
-                        fontSize: 9,
+                        fontSize: 9.0.sp,
                       ),
                     ),
                   ),
@@ -516,7 +518,7 @@ class _SubscriptionMultiPlanViewState extends State<SubscriptionMultiPlanView> {
                                     plan.ctaText,
                                     style: AppTextStyles.button.copyWith(
                                       color: Colors.white,
-                                      fontSize: 12,
+                                      fontSize: 12.0.sp,
                                     ),
                                   ),
                                   const SizedBox(width: 4),

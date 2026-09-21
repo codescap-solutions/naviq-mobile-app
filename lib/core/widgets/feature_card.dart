@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class FeatureCard extends StatelessWidget {
   final String title;
@@ -61,8 +62,8 @@ class FeatureCard extends StatelessWidget {
                 // Feature Title
                 Text(
                   title,
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF0C1D37),
                     height: 1.2,
@@ -72,8 +73,8 @@ class FeatureCard extends StatelessWidget {
                 // Feature Description
                 Text(
                   description,
-                  style: GoogleFonts.manrope(
-                    fontSize: 11,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11.0.sp,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF5F6368),
                     height: 1.35,

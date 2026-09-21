@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import '../../../core/services/revenue_cat_service.dart';
 import '../models/subscription_plan.dart';
 
@@ -161,7 +162,7 @@ class SubscriptionDetailView extends StatelessWidget {
                   : 'Choose Premium',
               style: AppTextStyles.button.copyWith(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 16.0.sp,
               ),
             ),
           ),

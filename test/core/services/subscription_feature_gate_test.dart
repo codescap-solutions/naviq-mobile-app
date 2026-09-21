@@ -118,28 +118,6 @@ void main() {
     });
   });
 
-  group('SubscriptionFeatureGate.showsFloatingUpgradeBanner', () {
-    test('only starter sees the floating banner', () {
-      expect(
-        SubscriptionFeatureGate.showsFloatingUpgradeBanner(
-          tier: SubscriptionTier.starter,
-        ),
-        isTrue,
-      );
-      for (final tier in [
-        SubscriptionTier.basic,
-        SubscriptionTier.smart,
-        SubscriptionTier.premium,
-      ]) {
-        expect(
-          SubscriptionFeatureGate.showsFloatingUpgradeBanner(tier: tier),
-          isFalse,
-          reason: '$tier should not see the banner',
-        );
-      }
-    });
-  });
-
   group('SubscriptionFeatureGate.helpChannels', () {
     test('starter: email only', () {
       final c = SubscriptionFeatureGate.helpChannels(tier: SubscriptionTier.starter);

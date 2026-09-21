@@ -18,6 +18,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:child_track/core/widgets/resolved_place_label.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 /// Trip Detail View - Shows detailed trip with map and timeline
 class TripDetailView extends StatefulWidget {
@@ -876,10 +877,10 @@ class _TripDetailViewState extends State<TripDetailView> {
                     context,
                     SubscriptionFeatureGate.nextTier(),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Upgrade Now',
                     style: TextStyle(
-                      fontSize: 14.5,
+                      fontSize: 14.5.sp,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -1120,7 +1121,7 @@ class _TripDetailViewState extends State<TripDetailView> {
             textAlign: TextAlign.center,
             style: AppTextStyles.caption.copyWith(
               color: AppColors.textSecondary,
-              fontSize: 10,
+              fontSize: 10.0.sp,
             ),
           ),
         ],
@@ -1169,7 +1170,7 @@ class _TripDetailViewState extends State<TripDetailView> {
                 children: [
                   Text(
                     data['emoji'] as String,
-                    style: const TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16.0.sp),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -1274,7 +1275,7 @@ class _TripDetailViewState extends State<TripDetailView> {
                     shape: BoxShape.circle,
                   ),
                   child: Center(
-                    child: Text(emoji, style: const TextStyle(fontSize: 15)),
+                    child: Text(emoji, style: TextStyle(fontSize: 15.0.sp)),
                   ),
                 ),
                 if (!isLast)

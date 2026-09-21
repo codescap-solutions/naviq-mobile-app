@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/app/home/view_model/home_repo.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 
 class FamilyManagementView extends StatefulWidget {
@@ -91,8 +92,8 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
           children: [
             Text(
               'Select Profile Photo',
-              style: GoogleFonts.manrope(
-                fontSize: 18,
+              style: GoogleFonts.poppins(
+                fontSize: 18.0.sp,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF0C1D37),
               ),
@@ -100,7 +101,7 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
             const SizedBox(height: 20),
             ListTile(
               leading: const Icon(Icons.photo_library, color: Color(0xFF0066FF)),
-              title: Text('Choose from Gallery', style: GoogleFonts.manrope()),
+              title: Text('Choose from Gallery', style: GoogleFonts.poppins()),
               onTap: () async {
                 Navigator.pop(context);
                 final XFile? file = await _imagePicker.pickImage(source: ImageSource.gallery, imageQuality: 85);
@@ -111,7 +112,7 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Color(0xFF0066FF)),
-              title: Text('Take a Photo', style: GoogleFonts.manrope()),
+              title: Text('Take a Photo', style: GoogleFonts.poppins()),
               onTap: () async {
                 Navigator.pop(context);
                 final XFile? file = await _imagePicker.pickImage(source: ImageSource.camera, imageQuality: 85);
@@ -281,8 +282,8 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                       children: [
                         Text(
                           'Add Guardian',
-                          style: GoogleFonts.manrope(
-                            fontSize: 20,
+                          style: GoogleFonts.poppins(
+                            fontSize: 20.0.sp,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF0C1D37),
                           ),
@@ -296,8 +297,8 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                     const SizedBox(height: 20),
                     Text(
                       'Name',
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.0.sp,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF0C1D37),
                       ),
@@ -307,7 +308,7 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                       controller: nameController,
                       decoration: InputDecoration(
                         hintText: 'Enter Name',
-                        hintStyle: GoogleFonts.manrope(color: const Color(0xFF94A3B8)),
+                        hintStyle: GoogleFonts.poppins(color: const Color(0xFF94A3B8)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -322,8 +323,8 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                     const SizedBox(height: 16),
                     Text(
                       'Phone Number',
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.0.sp,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF0C1D37),
                       ),
@@ -334,7 +335,7 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                       keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
                         hintText: 'Enter Phone Number',
-                        hintStyle: GoogleFonts.manrope(color: const Color(0xFF94A3B8)),
+                        hintStyle: GoogleFonts.poppins(color: const Color(0xFF94A3B8)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -371,8 +372,8 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                             Expanded(
                               child: Text(
                                 errorText!,
-                                style: GoogleFonts.manrope(
-                                  fontSize: 13,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13.0.sp,
                                   fontWeight: FontWeight.w600,
                                   color: const Color(0xFFDC2626),
                                 ),
@@ -403,8 +404,8 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                               )
                             : Text(
                                 'Continue',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 16,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16.0.sp,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
@@ -496,8 +497,8 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                     ),
                     Text(
                       'Edit Name',
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.0.sp,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF0C1D37),
                       ),
@@ -538,8 +539,8 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                               )
                             : Text(
                                 'Update',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 16,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16.0.sp,
                                   fontWeight: FontWeight.w800,
                                   color: Colors.black,
                                 ),
@@ -565,19 +566,19 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Delete Guardian',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         content: Text(
           'Are you sure you want to delete ${guardian['name']} as a guardian?',
-          style: GoogleFonts.manrope(),
+          style: GoogleFonts.poppins(),
         ),
         actions: [
           TextButton(
-            child: Text('Cancel', style: GoogleFonts.manrope(color: Colors.grey)),
+            child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
-            child: Text('Delete', style: GoogleFonts.manrope(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text('Delete', style: GoogleFonts.poppins(color: Colors.red, fontWeight: FontWeight.bold)),
             onPressed: () async {
               Navigator.pop(context);
               if (id == null) return;
@@ -647,9 +648,9 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
         ),
         title: Text(
           'Family',
-          style: GoogleFonts.manrope(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
+          style: GoogleFonts.poppins(
+            fontSize: 32.0.sp,
+            fontWeight: FontWeight.w700,
             color: const Color(0xFF0C1D37),
           ),
         ),
@@ -667,8 +668,8 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                           child: Center(
                             child: Text(
                               'No family members found.',
-                              style: GoogleFonts.manrope(
-                                fontSize: 16,
+                              style: GoogleFonts.poppins(
+                                fontSize: 16.0.sp,
                                 color: const Color(0xFF94A3B8),
                               ),
                             ),
@@ -720,8 +721,8 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                                   children: [
                                     Text(
                                       guardian['name'] ?? '',
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 16,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16.0.sp,
                                         fontWeight: FontWeight.bold,
                                         color: const Color(0xFF0C1D37),
                                       ),
@@ -737,8 +738,8 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                                         const SizedBox(width: 4),
                                         Text(
                                           guardian['phone_number'] ?? '',
-                                          style: GoogleFonts.manrope(
-                                            fontSize: 13,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13.0.sp,
                                             color: const Color(0xFF64748B),
                                             fontWeight: FontWeight.w500,
                                           ),

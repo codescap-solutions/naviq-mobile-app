@@ -47,6 +47,7 @@ import 'package:child_track/core/services/subscription_feature_gate.dart';
 import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
 import 'package:child_track/app/subscription/widgets/subscription_popup_sheet.dart';
 import 'package:child_track/app/subscription/models/subscription_plan.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -63,7 +64,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // ── Map-First UX ─────────────────────────────────────────────────────────
   late final ScrollController _homeScrollController;
   final GlobalKey<_HomeMapBackgroundState> _mapBackgroundKey = GlobalKey();
-  double _mapHeightFraction = 0.80; // 92% initial height (Expanded)
+  double _mapHeightFraction =
+      0.50; // Initial height (Expanded) — matches the Figma reference (~50% map on first load, with the location/Scroll/GeoGuard/Route-Map cards already visible underneath without scrolling)
+  // True for the duration of an active user-driven scroll (drag or the
+  // momentum fling after release). The map-height snap this drives
+  // (_onHomeScroll) used to always animate over 300ms via AnimatedContainer
+  // — including while the same scroll gesture was still moving the list
+  // underneath it, so the sliver's own height was changing on its own
+  // 300ms curve at the same time the user's finger was actively scrolling
+  // it. Two competing motions on the same surface is exactly what "not
+  // smooth" / stuttery scrolling looks like. Skipping the animation (jumping
+  // straight to the target height) while this is true removes that fight;
+  // the 300ms easing is still worth keeping for the FAB/recenter-triggered
+  // snap, which happens with no finger on the screen.
+  bool _isUserDraggingScroll = false;
   // ─────────────────────────────────────────────────────────────────────────
 
   StreamSubscription? _notificationSubscription;
@@ -89,22 +103,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final offset = _homeScrollController.offset;
     double targetFraction = _mapHeightFraction;
 
-    if (_mapHeightFraction == 0.92) {
-      // Collapse threshold
+    if (_mapHeightFraction == 0.50) {
+      // Collapse threshold — was checking against 0.92 here, which the
+      // initial value (set above) never equals, so this branch never
+      // matched and the map never collapsed on scroll at all. Confirmed
+      // live: scrolling the location card up did nothing until this was
+      // fixed to check the actual initial fraction.
       if (offset > 60) {
-        targetFraction = 0.60;
-      }
-    } else if (_mapHeightFraction == 0.60) {
-      // Collapse or Expand thresholds
-      if (offset > 240) {
         targetFraction = 0.35;
-      } else if (offset < 40) {
-        targetFraction = 0.92;
       }
     } else if (_mapHeightFraction == 0.35) {
+      // Collapse or Expand thresholds
+      if (offset > 240) {
+        targetFraction = 0.20;
+      } else if (offset < 40) {
+        targetFraction = 0.50;
+      }
+    } else if (_mapHeightFraction == 0.20) {
       // Expand threshold
       if (offset < 160) {
-        targetFraction = 0.60;
+        targetFraction = 0.35;
       }
     }
 
@@ -525,8 +543,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     const SizedBox(height: 8),
                     Text(
                       'Phone Number',
-                      style: GoogleFonts.manrope(
-                        fontSize: 16,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16.0.sp,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF0C1D37),
                       ),
@@ -535,8 +553,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     TextField(
                       controller: phoneController,
                       keyboardType: TextInputType.phone,
-                      style: GoogleFonts.manrope(
-                        fontSize: 15,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15.0.sp,
                         fontWeight: FontWeight.w500,
                         color: const Color(0xFF0C1D37),
                       ),
@@ -570,8 +588,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     const SizedBox(height: 20),
                     Text(
                       'Notes (Optional)',
-                      style: GoogleFonts.manrope(
-                        fontSize: 16,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16.0.sp,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF0C1D37),
                       ),
@@ -581,8 +599,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       controller: notesController,
                       maxLines: 3,
                       keyboardType: TextInputType.text,
-                      style: GoogleFonts.manrope(
-                        fontSize: 15,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15.0.sp,
                         fontWeight: FontWeight.w500,
                         color: const Color(0xFF0C1D37),
                       ),
@@ -697,8 +715,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               )
                             : Text(
                                 'Request',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 16,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16.0.sp,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -811,8 +829,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       const SizedBox(width: 8),
                       Text(
                         'More Time Request',
-                        style: GoogleFonts.manrope(
-                          fontSize: 18,
+                        style: GoogleFonts.poppins(
+                          fontSize: 18.0.sp,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF0C1D37),
                         ),
@@ -833,8 +851,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                     child: Text(
                       '$childName wants $requestedMinutes more minutes on $appName.',
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.0.sp,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF0C1D37),
                       ),
@@ -984,8 +1002,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       const SizedBox(width: 8),
                       Text(
                         'Logout Request',
-                        style: GoogleFonts.manrope(
-                          fontSize: 18,
+                        style: GoogleFonts.poppins(
+                          fontSize: 18.0.sp,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF0C1D37),
                         ),
@@ -1006,8 +1024,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                     child: Text(
                       '$childName wants to log out of the app.',
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.0.sp,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF0C1D37),
                       ),
@@ -1191,8 +1209,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           const SizedBox(width: 8),
                           Text(
                             'Location Share',
-                            style: GoogleFonts.manrope(
-                              fontSize: 18,
+                            style: GoogleFonts.poppins(
+                              fontSize: 18.0.sp,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF0C1D37),
                             ),
@@ -1234,8 +1252,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 children: [
                                   Text(
                                     '$requesterName is requesting for your kids location',
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 14,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14.0.sp,
                                       fontWeight: FontWeight.w800,
                                       color: const Color(0xFF0C1D37),
                                     ),
@@ -1243,8 +1261,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   const SizedBox(height: 4),
                                   Text(
                                     'Sent just now',
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 12,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.0.sp,
                                       color: const Color(0xFF64748B),
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1267,8 +1285,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                       ),
                                       child: Text(
                                         'Note: "$notes"',
-                                        style: GoogleFonts.manrope(
-                                          fontSize: 12,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12.0.sp,
                                           fontStyle: FontStyle.italic,
                                           fontWeight: FontWeight.w500,
                                           color: const Color(0xFF475569),
@@ -1301,8 +1319,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           const SizedBox(width: 8),
                           Text(
                             'Share location for',
-                            style: GoogleFonts.manrope(
-                              fontSize: 14,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14.0.sp,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0C1D37),
                             ),
@@ -1310,57 +1328,64 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: ['15 min', '30 min', '1 hour', '2 hours'].map(
-                          (duration) {
-                            final isSelected = selectedDuration == duration;
-                            return GestureDetector(
-                              onTap: isResponding
-                                  ? null
-                                  : () {
-                                      setSheetState(() {
-                                        selectedDuration = duration;
-                                      });
-                                    },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? const Color(0xFF0066FF)
-                                      : Colors.white,
-                                  border: Border.all(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children:
+                            [
+                              '15 min',
+                              '30 min',
+                              '1 hour',
+                              '2 hours',
+                              '6 hours',
+                              '24 hours',
+                            ].map((duration) {
+                              final isSelected = selectedDuration == duration;
+                              return GestureDetector(
+                                onTap: isResponding
+                                    ? null
+                                    : () {
+                                        setSheetState(() {
+                                          selectedDuration = duration;
+                                        });
+                                      },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
                                     color: isSelected
                                         ? const Color(0xFF0066FF)
-                                        : const Color(0xFFE2E8F0),
+                                        : Colors.white,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xFF0066FF)
+                                          : const Color(0xFFE2E8F0),
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  duration,
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: isSelected
-                                        ? Colors.white
-                                        : const Color(0xFF0C1D37),
+                                  child: Text(
+                                    duration,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13.0.sp,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : const Color(0xFF0C1D37),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ).toList(),
+                              );
+                            }).toList(),
                       ),
                       const SizedBox(height: 24),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Select kids to share location',
-                          style: GoogleFonts.manrope(
-                            fontSize: 14,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.0.sp,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF0C1D37),
                           ),
@@ -1437,8 +1462,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                               )
                                             : Text(
                                                 initials,
-                                                style: GoogleFonts.manrope(
-                                                  fontSize: 16,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 16.0.sp,
                                                   fontWeight: FontWeight.bold,
                                                   color: isSelected
                                                       ? const Color(0xFF0066FF)
@@ -1470,8 +1495,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   const SizedBox(height: 8),
                                   Text(
                                     name,
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 12,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.0.sp,
                                       fontWeight: FontWeight.bold,
                                       color: const Color(0xFF0C1D37),
                                     ),
@@ -1479,8 +1504,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   const SizedBox(height: 2),
                                   Text(
                                     displayAge,
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 10,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 10.0.sp,
                                       color: const Color(0xFF94A3B8),
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1525,6 +1550,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                     '2 hours',
                                   )) {
                                     durationMin = 120;
+                                  } else if (selectedDuration.contains(
+                                    '6 hours',
+                                  )) {
+                                    durationMin = 360;
+                                  } else if (selectedDuration.contains(
+                                    '24 hours',
+                                  )) {
+                                    durationMin = 1440;
                                   }
 
                                   final repo = injector<HomeRepository>();
@@ -1630,8 +1663,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 )
                               : Text(
                                   'Accept Request',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 16,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16.0.sp,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -1660,8 +1693,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 },
                           child: Text(
                             'Reject Request',
-                            style: GoogleFonts.manrope(
-                              fontSize: 16,
+                            style: GoogleFonts.poppins(
+                              fontSize: 16.0.sp,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1671,8 +1704,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       Text(
                         'Location will only be shared for the selected duration. You can revoke access anytime.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.manrope(
-                          fontSize: 11,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11.0.sp,
                           color: const Color(0xFF94A3B8),
                           fontWeight: FontWeight.w500,
                         ),
@@ -1710,7 +1743,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
               title: Text(
                 'Reject Request',
-                style: GoogleFonts.manrope(
+                style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF0C1D37),
                 ),
@@ -1721,8 +1754,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 children: [
                   Text(
                     'Please specify the reason for rejection (optional):',
-                    style: GoogleFonts.manrope(
-                      fontSize: 13,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13.0.sp,
                       color: const Color(0xFF475569),
                       fontWeight: FontWeight.w500,
                     ),
@@ -1750,7 +1783,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       : () => Navigator.pop(dialogContext),
                   child: Text(
                     'Cancel',
-                    style: GoogleFonts.manrope(
+                    style: GoogleFonts.poppins(
                       color: const Color(0xFF64748B),
                       fontWeight: FontWeight.bold,
                     ),
@@ -1828,7 +1861,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         )
                       : Text(
                           'Reject',
-                          style: GoogleFonts.manrope(
+                          style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1843,8 +1876,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<BitmapDescriptor?> _loadCustomMarker(
     int batteryPercentage,
-    String? avatar,
-  ) async {
+    String? avatar, {
+    bool isOnline = true,
+  }) async {
     try {
       Uint8List imageBytes;
 
@@ -1935,6 +1969,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         Paint(),
       );
       canvas.restore();
+
+      // Online/offline status dot — small badge at the top-right of the pin,
+      // green when the child's device last reported active, grey otherwise.
+      const double dotRadius = 12;
+      final dotCenter = Offset(size / 2 + radius * 0.62, radius * 0.28);
+      canvas.drawCircle(
+        dotCenter,
+        dotRadius + 3,
+        Paint()..color = Colors.white,
+      );
+      canvas.drawCircle(
+        dotCenter,
+        dotRadius,
+        Paint()
+          ..color = isOnline
+              ? const Color(0xFF22C55E)
+              : const Color(0xFF9CA3AF),
+      );
 
       final picture = recorder.endRecording();
       final img = await picture.toImage(size.toInt(), size.toInt());
@@ -2047,6 +2099,42 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return 'Since $sinceStr';
   }
 
+  // "Since <wall-clock time>" for the active-state status pill — how long
+  // the child has been at their CURRENT spot (when this dwell began), not
+  // how fresh the last GPS ping is. Sourced from the server's
+  // stationarySince (location.controller.js getStationarySince: walks
+  // location history backward from the latest fix, stopping at the first
+  // point more than 120m away — that boundary's timestamp is dwell start).
+  // Always a literal clock time regardless of how long ago that was —
+  // unlike _formatSinceTime's relative "X min ago" wording, which answers a
+  // different question (freshness of the last ping, not arrival time).
+  String _formatArrivalTime(DateTime? since) {
+    if (since == null) return 'Active';
+    final local = since.toLocal();
+    final hour = local.hour;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return 'Since $displayHour:$minute $period';
+  }
+
+  // Same dwell-time answer as _formatArrivalTime, but switches to a
+  // relative day-count once the child has been at this spot a full day or
+  // more — "Since 9:30 AM" reads fine for today, but the same wall-clock
+  // time reads as meaningless/stale once it's yesterday's or last week's
+  // clock time. Used for the status pill regardless of online/offline —
+  // "how long has the child been here" is the same question whether the
+  // device is currently reachable or not, so it shouldn't just say the bare
+  // word "Offline" with no sense of duration.
+  String _formatDwellTime(DateTime? since) {
+    if (since == null) return 'Active';
+    final diff = DateTime.now().toUtc().difference(since.toUtc());
+    if (!diff.isNegative && diff.inDays >= 1) {
+      return 'Since ${diff.inDays}d';
+    }
+    return _formatArrivalTime(since);
+  }
+
   // Sourced from trackingSnapshot.latestLocation.deviceTimestamp specifically
   // — the same authoritative timestamp uiDirective.displayState itself was
   // computed from server-side — rather than state.currentLocation.since
@@ -2090,9 +2178,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (anchor == null) return 'UNCHANGED';
     final plus =
         location?.stationarySince != null &&
-                location?.stationarySinceUncapped == false
-            ? '+'
-            : '';
+            location?.stationarySinceUncapped == false
+        ? '+'
+        : '';
     final diff = DateTime.now().toUtc().difference(anchor.toUtc());
     if (diff.isNegative || diff.inMinutes < 1) return '<1M AGO';
     if (diff.inMinutes < 60) return '${diff.inMinutes}M AGO';
@@ -2108,15 +2196,30 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (anchor == null) return 'Unchanged';
     final plus =
         location?.stationarySince != null &&
-                location?.stationarySinceUncapped == false
-            ? '+'
-            : '';
+            location?.stationarySinceUncapped == false
+        ? '+'
+        : '';
     final diff = DateTime.now().toUtc().difference(anchor.toUtc());
     if (diff.isNegative || diff.inMinutes < 1) return 'Unchanged <1m';
     if (diff.inMinutes < 60) return 'Unchanged ${diff.inMinutes}m';
     if (diff.inHours < 24) return 'Unchanged ${diff.inHours}h$plus';
     if (diff.inDays == 1) return 'Unchanged 1d$plus';
     return 'Unchanged ${diff.inDays}d$plus';
+  }
+
+  // "Last moved" companion to _formatLastUpdated — consolidates the two
+  // timestamps (last GPS ping vs. last time the child actually changed
+  // location) into one line under the status badge instead of the moved-time
+  // being buried inside the stale-only status pill further down the card.
+  String? _formatLastMoved(LatestLocation? location) {
+    final anchor = location?.stationarySince;
+    if (anchor == null) return null;
+    final diff = DateTime.now().toUtc().difference(anchor.toUtc());
+    if (diff.isNegative || diff.inMinutes < 1) return 'Last moved just now';
+    if (diff.inMinutes < 60) return 'Last moved ${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return 'Last moved ${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'Last moved yesterday';
+    return 'Last moved ${diff.inDays}d ago';
   }
 
   int _currentIndex = 0;
@@ -2130,46 +2233,44 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _profileRefreshToken = 0;
 
   Widget _buildBottomNavigationBar() {
-    return Container(
-      height: 76,
-      decoration: BoxDecoration(
+    // Wrapped in SafeArea(bottom) — without it this Container sits flush
+    // with the physical bottom edge on notch/gesture-nav devices, so the
+    // iOS home-indicator bar draws directly on top of the Explore/Profile
+    // labels instead of below them. SafeArea adds the missing bottom inset
+    // (~34pt) so the nav bar's own content clears it.
+    return SafeArea(
+      top: false,
+      child: Container(
+        height: 76,
+        // Flat, borderless — no shadow/elevation and no rounded top corners,
+        // matching the flush reference nav bar instead of reading as a
+        // separate floating card sitting on top of the page content.
         color: Colors.white,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildBottomNavItem(
+              0,
+              _currentIndex == 0 ? Icons.home_rounded : Icons.home_outlined,
+              'Home',
+            ),
+            _buildBottomNavItem(
+              1,
+              _currentIndex == 1
+                  ? Icons.settings_rounded
+                  : Icons.settings_outlined,
+              'Settings',
+            ),
+            _buildBottomNavItem(2, Icons.menu_rounded, 'Explore'),
+            _buildBottomNavItem(
+              3,
+              _currentIndex == 3
+                  ? Icons.person_rounded
+                  : Icons.person_outline_rounded,
+              'Profile',
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildBottomNavItem(
-            0,
-            _currentIndex == 0 ? Icons.home_rounded : Icons.home_outlined,
-            'Home',
-          ),
-          _buildBottomNavItem(
-            1,
-            _currentIndex == 1
-                ? Icons.settings_rounded
-                : Icons.settings_outlined,
-            'Settings',
-          ),
-          _buildBottomNavItem(2, Icons.menu_rounded, 'Explore'),
-          _buildBottomNavItem(
-            3,
-            _currentIndex == 3
-                ? Icons.person_rounded
-                : Icons.person_outline_rounded,
-            'Profile',
-          ),
-        ],
       ),
     );
   }
@@ -2206,8 +2307,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           const SizedBox(height: 4),
           Text(
             label,
-            style: GoogleFonts.manrope(
-              fontSize: 11,
+            style: GoogleFonts.poppins(
+              fontSize: 11.0.sp,
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
               color: isSelected
                   ? const Color(0xFF0C1D37)
@@ -2318,6 +2419,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           return _buildNoChildConnectedUI(context);
         }
 
+        // Same NEVER_SHARED check the location card above already uses —
+        // Scroll/Geo Guard/Route Map/Screentime all read data that simply
+        // doesn't exist yet for a child whose device has never checked in,
+        // so leaving them tappable and normal-looking invites a parent to
+        // read "0 Apps Locked" / "0 Fencing" as real state instead of
+        // "nothing reported yet". Greying + disabling them here matches the
+        // "device isn't paired yet" card above instead of contradicting it.
+        final isChildNotPaired =
+            !_viewingSharedChild &&
+            state.trackingSnapshot?.uiDirective.displayState == 'NEVER_SHARED';
         final childName =
             _sharedPrefsService.getString('child_name') ?? 'Ananya';
         final matchingPlace = _findMatchingPlace(
@@ -2332,424 +2443,515 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
         final double screenHeight = MediaQuery.of(context).size.height;
 
-        return CustomScrollView(
-          controller: _homeScrollController,
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          slivers: [
-            // Sliver 1: Map section — height driven by scroll position
-            SliverToBoxAdapter(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                height: screenHeight * _mapHeightFraction,
-                child: Stack(
-                  children: [
-                    // Layer 1: Map Background with rounded bottom corners
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(36),
-                          bottomRight: Radius.circular(36),
-                        ),
-                        child: RepaintBoundary(
-                          child: _HomeMapBackground(
-                            key: _mapBackgroundKey,
-                            loadCustomMarker: _loadCustomMarker,
-                            activeSharedChildData: _activeSharedChildData,
-                            viewingSharedChild: _viewingSharedChild,
-                            ownChildLocation: state.currentLocation != null
-                                ? LatLng(
-                                    state.currentLocation!.lat,
-                                    state.currentLocation!.lng,
-                                  )
-                                : null,
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            final draggingNow =
+                notification is ScrollStartNotification ||
+                notification is ScrollUpdateNotification;
+            if (draggingNow != _isUserDraggingScroll) {
+              // Avoid setState mid-build/scroll-callback re-entrancy issues
+              // by scheduling for the next frame.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() => _isUserDraggingScroll = draggingNow);
+                }
+              });
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            controller: _homeScrollController,
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            slivers: [
+              // Sliver 1: Map section — height driven by scroll position
+              SliverToBoxAdapter(
+                child: AnimatedContainer(
+                  duration: _isUserDraggingScroll
+                      ? Duration.zero
+                      : const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  height: screenHeight * _mapHeightFraction,
+                  child: Stack(
+                    children: [
+                      // Layer 1: Map Background with rounded bottom corners
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(36),
+                            bottomRight: Radius.circular(36),
+                          ),
+                          child: RepaintBoundary(
+                            child: _HomeMapBackground(
+                              key: _mapBackgroundKey,
+                              loadCustomMarker: _loadCustomMarker,
+                              activeSharedChildData: _activeSharedChildData,
+                              viewingSharedChild: _viewingSharedChild,
+                              ownChildLocation: state.currentLocation != null
+                                  ? LatLng(
+                                      state.currentLocation!.lat,
+                                      state.currentLocation!.lng,
+                                    )
+                                  : null,
+                            ),
                           ),
                         ),
                       ),
-                    ),
 
-                    // Layer 1.4: "Updating location..." overlay while a
-                    // fresh fetch is in flight (e.g. right after switching
-                    // the selected child). homepage_bloc.dart already
-                    // clears currentLocation on a child switch so the OLD
-                    // child's marker doesn't flash before the new one loads
-                    // — but with nothing shown in its place, that gap read
-                    // as unexplained/confusing (reported live: briefly
-                    // shows the old child's spot, then jumps 1-2s later).
-                    // This makes the gap legible instead of silent.
-                    if (state.isLoading)
-                      Positioned(
-                        top: 16,
-                        left: 0,
-                        right: 0,
-                        child: Center(
+                      // Layer 1.4: "Updating location..." overlay while a
+                      // fresh fetch is in flight (e.g. right after switching
+                      // the selected child). homepage_bloc.dart already
+                      // clears currentLocation on a child switch so the OLD
+                      // child's marker doesn't flash before the new one loads
+                      // — but with nothing shown in its place, that gap read
+                      // as unexplained/confusing (reported live: briefly
+                      // shows the old child's spot, then jumps 1-2s later).
+                      // This makes the gap legible instead of silent.
+                      if (state.isLoading)
+                        Positioned(
+                          top: 16,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.75),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Updating location…',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.5.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      // Layer 1.5: Floating Overlay Avatar for Shared Kid
+                      () {
+                        final floatingChildren = state.sharedChildren.isNotEmpty
+                            ? state.sharedChildren
+                            : (_activeSharedChildData != null
+                                  ? [
+                                      SharedChild(
+                                        shareId:
+                                            _activeSharedChildData!['child_id'],
+                                        childId:
+                                            _activeSharedChildData!['child_id'],
+                                        childName:
+                                            _activeSharedChildData!['child_name'],
+                                        latitude:
+                                            _activeSharedChildData!['lat'],
+                                        longitude:
+                                            _activeSharedChildData!['lng'],
+                                        batteryPercentage:
+                                            _activeSharedChildData!['battery_percentage'] ??
+                                            50,
+                                        avatar:
+                                            _activeSharedChildData!['avatar'],
+                                        expiresAt:
+                                            _activeSharedChildData!['expires_at'],
+                                        lastSyncAt:
+                                            _activeSharedChildData!['last_sync_at'],
+                                      ),
+                                    ]
+                                  : <SharedChild>[]);
+
+                        if (floatingChildren.isEmpty)
+                          return const SizedBox.shrink();
+
+                        return Positioned(
+                          top: 80,
+                          right: 16,
+                          child: Column(
+                            children: floatingChildren.map((child) {
+                              final isSelected =
+                                  _viewingSharedChild &&
+                                  _activeSharedChildData != null &&
+                                  _activeSharedChildData!['child_id'] ==
+                                      child.childId;
+                              final hasAvatar =
+                                  child.avatar != null &&
+                                  child.avatar!.isNotEmpty;
+                              final String initials = child.childName
+                                  .substring(0, min(2, child.childName.length))
+                                  .toUpperCase();
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12.0),
+                                child: Column(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _activeSharedChildData = {
+                                            'child_id': child.childId,
+                                            'child_name': child.childName,
+                                            'avatar':
+                                                child.avatar ?? 'Boy 03.png',
+                                            'lat': child.latitude,
+                                            'lng': child.longitude,
+                                            'expires_at': child.expiresAt,
+                                            'battery_percentage':
+                                                child.batteryPercentage,
+                                            'last_sync_at': child.lastSyncAt,
+                                          };
+                                          _viewingSharedChild = true;
+                                        });
+                                      },
+                                      child: Container(
+                                        width: 56,
+                                        height: 56,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white,
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? const Color(0xFF0066FF)
+                                                : const Color(0xFFCBD5E1),
+                                            width: 2.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.15,
+                                              ),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            if (hasAvatar)
+                                              ClipOval(
+                                                child: Image(
+                                                  image:
+                                                      (child.avatar!.startsWith(
+                                                            'http://',
+                                                          ) ||
+                                                          child.avatar!
+                                                              .startsWith(
+                                                                'https://',
+                                                              ))
+                                                      ? NetworkImage(
+                                                          child.avatar!,
+                                                        )
+                                                      : AssetImage(
+                                                              child.avatar!
+                                                                      .startsWith(
+                                                                        'assets/',
+                                                                      )
+                                                                  ? child
+                                                                        .avatar!
+                                                                  : 'assets/images/childavatar/${child.avatar!}',
+                                                            )
+                                                            as ImageProvider,
+                                                  width: 50,
+                                                  height: 50,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) {
+                                                        return Text(
+                                                          initials,
+                                                          style:
+                                                              GoogleFonts.poppins(
+                                                                fontSize:
+                                                                    14.0.sp,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                color:
+                                                                    const Color(
+                                                                      0xFF0066FF,
+                                                                    ),
+                                                              ),
+                                                        );
+                                                      },
+                                                ),
+                                              )
+                                            else
+                                              Text(
+                                                initials,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 14.0.sp,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: const Color(
+                                                    0xFF0066FF,
+                                                  ),
+                                                ),
+                                              ),
+                                            Positioned(
+                                              top: 0,
+                                              right: 0,
+                                              child: Container(
+                                                width: 12,
+                                                height: 12,
+                                                decoration: BoxDecoration(
+                                                  color: const Color(
+                                                    0xFF10B981,
+                                                  ),
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color: Colors.white,
+                                                    width: 1.5,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.9,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.05,
+                                            ),
+                                            blurRadius: 4,
+                                          ),
+                                        ],
+                                      ),
+                                      child: Text(
+                                        child.childName,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 10.0.sp,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF0C1D37),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        );
+                      }(),
+
+                      // Layer 1.6: Overlay banner if viewing shared child
+                      if (_viewingSharedChild && _activeSharedChildData != null)
+                        Positioned(
+                          top: 16,
+                          left: 16,
+                          right: 16,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
+                              horizontal: 16,
+                              vertical: 12,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.75),
-                              borderRadius: BorderRadius.circular(20),
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.share_location,
+                                      color: Color(0xFF0066FF),
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Viewing: ${_activeSharedChildData!['child_name']} (Shared)',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13.0.sp,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF0C1D37),
+                                          ),
+                                        ),
+                                        Text(
+                                          _getRemainingTimeText(
+                                            _activeSharedChildData!['expires_at'],
+                                          ),
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 11.0.sp,
+                                            color: const Color(0xFF64748B),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Updating location…',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    backgroundColor: const Color(0xFFF1F5F9),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _viewingSharedChild = false;
+                                    });
+                                  },
+                                  child: Text(
+                                    'Switch to Home',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.0.sp,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF475569),
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                      ),
 
-                    // Layer 1.5: Floating Overlay Avatar for Shared Kid
-                    () {
-                      final floatingChildren = state.sharedChildren.isNotEmpty
-                          ? state.sharedChildren
-                          : (_activeSharedChildData != null
-                                ? [
-                                    SharedChild(
-                                      shareId:
-                                          _activeSharedChildData!['child_id'],
-                                      childId:
-                                          _activeSharedChildData!['child_id'],
-                                      childName:
-                                          _activeSharedChildData!['child_name'],
-                                      latitude: _activeSharedChildData!['lat'],
-                                      longitude: _activeSharedChildData!['lng'],
-                                      batteryPercentage:
-                                          _activeSharedChildData!['battery_percentage'] ??
-                                          50,
-                                      avatar: _activeSharedChildData!['avatar'],
-                                      expiresAt:
-                                          _activeSharedChildData!['expires_at'],
-                                      lastSyncAt:
-                                          _activeSharedChildData!['last_sync_at'],
-                                    ),
-                                  ]
-                                : <SharedChild>[]);
-
-                      if (floatingChildren.isEmpty)
-                        return const SizedBox.shrink();
-
-                      return Positioned(
-                        top: 80,
+                      // Layer FAB: floating "Map" FAB visible only when collapsed (20% height)
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        bottom: (_mapHeightFraction == 0.20) ? 96 : -60,
                         right: 16,
-                        child: Column(
-                          children: floatingChildren.map((child) {
-                            final isSelected =
-                                _viewingSharedChild &&
-                                _activeSharedChildData != null &&
-                                _activeSharedChildData!['child_id'] ==
-                                    child.childId;
-                            final hasAvatar =
-                                child.avatar != null &&
-                                child.avatar!.isNotEmpty;
-                            final String initials = child.childName
-                                .substring(0, min(2, child.childName.length))
-                                .toUpperCase();
-
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: Column(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _activeSharedChildData = {
-                                          'child_id': child.childId,
-                                          'child_name': child.childName,
-                                          'avatar':
-                                              child.avatar ?? 'Boy 03.png',
-                                          'lat': child.latitude,
-                                          'lng': child.longitude,
-                                          'expires_at': child.expiresAt,
-                                          'battery_percentage':
-                                              child.batteryPercentage,
-                                          'last_sync_at': child.lastSyncAt,
-                                        };
-                                        _viewingSharedChild = true;
-                                      });
-                                    },
-                                    child: Container(
-                                      width: 56,
-                                      height: 56,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white,
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? const Color(0xFF0066FF)
-                                              : const Color(0xFFCBD5E1),
-                                          width: 2.5,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.15,
-                                            ),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          if (hasAvatar)
-                                            ClipOval(
-                                              child: Image(
-                                                image:
-                                                    (child.avatar!.startsWith(
-                                                          'http://',
-                                                        ) ||
-                                                        child.avatar!
-                                                            .startsWith(
-                                                              'https://',
-                                                            ))
-                                                    ? NetworkImage(
-                                                        child.avatar!,
-                                                      )
-                                                    : AssetImage(
-                                                            child.avatar!
-                                                                    .startsWith(
-                                                                      'assets/',
-                                                                    )
-                                                                ? child.avatar!
-                                                                : 'assets/images/childavatar/${child.avatar!}',
-                                                          )
-                                                          as ImageProvider,
-                                                width: 50,
-                                                height: 50,
-                                                fit: BoxFit.cover,
-                                                errorBuilder:
-                                                    (
-                                                      context,
-                                                      error,
-                                                      stackTrace,
-                                                    ) {
-                                                      return Text(
-                                                        initials,
-                                                        style:
-                                                            GoogleFonts.manrope(
-                                                              fontSize: 14,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              color:
-                                                                  const Color(
-                                                                    0xFF0066FF,
-                                                                  ),
-                                                            ),
-                                                      );
-                                                    },
-                                              ),
-                                            )
-                                          else
-                                            Text(
-                                              initials,
-                                              style: GoogleFonts.manrope(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                                color: const Color(0xFF0066FF),
-                                              ),
-                                            ),
-                                          Positioned(
-                                            top: 0,
-                                            right: 0,
-                                            child: Container(
-                                              width: 12,
-                                              height: 12,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF10B981),
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: Colors.white,
-                                                  width: 1.5,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.9,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.05,
-                                          ),
-                                          blurRadius: 4,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Text(
-                                      child.childName,
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF0C1D37),
-                                      ),
-                                    ),
+                        child: AnimatedOpacity(
+                          opacity: (_mapHeightFraction == 0.20) ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _mapHeightFraction = 0.50;
+                              });
+                              if (_homeScrollController.hasClients) {
+                                _homeScrollController.animateTo(
+                                  0,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOutCubic,
+                                );
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0066FF),
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.15),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
-                            );
-                          }).toList(),
-                        ),
-                      );
-                    }(),
-
-                    // Layer 1.6: Overlay banner if viewing shared child
-                    if (_viewingSharedChild && _activeSharedChildData != null)
-                      Positioned(
-                        top: 16,
-                        left: 16,
-                        right: 16,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(
-                                    Icons.share_location,
-                                    color: Color(0xFF0066FF),
-                                    size: 20,
+                                    Icons.map_rounded,
+                                    color: Colors.white,
+                                    size: 18,
                                   ),
-                                  const SizedBox(width: 10),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Viewing: ${_activeSharedChildData!['child_name']} (Shared)',
-                                        style: GoogleFonts.manrope(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF0C1D37),
-                                        ),
-                                      ),
-                                      Text(
-                                        _getRemainingTimeText(
-                                          _activeSharedChildData!['expires_at'],
-                                        ),
-                                        style: GoogleFonts.manrope(
-                                          fontSize: 11,
-                                          color: const Color(0xFF64748B),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Map',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14.0.sp,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ],
                               ),
-                              TextButton(
-                                style: TextButton.styleFrom(
-                                  backgroundColor: const Color(0xFFF1F5F9),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _viewingSharedChild = false;
-                                  });
-                                },
-                                child: Text(
-                                  'Switch to Home',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF475569),
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
 
-                    // Layer FAB: floating "Map" FAB visible only when collapsed (35% height)
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutCubic,
-                      bottom: (_mapHeightFraction == 0.35) ? 96 : -60,
-                      right: 16,
-                      child: AnimatedOpacity(
-                        opacity: (_mapHeightFraction == 0.35) ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
+                      // Layer FAB: Locate Me button
+                      Positioned(
+                        bottom: 36,
+                        right: 16,
                         child: GestureDetector(
                           onTap: () {
-                            setState(() {
-                              _mapHeightFraction = 0.92;
-                            });
-                            if (_homeScrollController.hasClients) {
-                              _homeScrollController.animateTo(
-                                0,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOutCubic,
+                            final target =
+                                _viewingSharedChild &&
+                                    _activeSharedChildData != null
+                                ? LatLng(
+                                    _activeSharedChildData!['lat'],
+                                    _activeSharedChildData!['lng'],
+                                  )
+                                : (state.currentLocation != null
+                                      ? LatLng(
+                                          state.currentLocation!.lat,
+                                          state.currentLocation!.lng,
+                                        )
+                                      : null);
+                            if (target != null) {
+                              _mapBackgroundKey.currentState?._animateTo(
+                                target,
+                                zoom: 15.0,
                               );
                             }
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0066FF),
-                              borderRadius: BorderRadius.circular(24),
+                              color: Colors.white,
+                              shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.15),
@@ -2758,204 +2960,162 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 ),
                               ],
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.map_rounded,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Map',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
+                            child: const Icon(
+                              Icons.my_location_rounded,
+                              color: Color(0xFF0C1D37),
+                              size: 22,
                             ),
                           ),
                         ),
                       ),
-                    ),
 
-                    // Layer FAB: Locate Me button
-                    Positioned(
-                      bottom: 36,
-                      right: 16,
-                      child: GestureDetector(
-                        onTap: () {
-                          final target =
-                              _viewingSharedChild &&
-                                  _activeSharedChildData != null
-                              ? LatLng(
-                                  _activeSharedChildData!['lat'],
-                                  _activeSharedChildData!['lng'],
-                                )
-                              : (state.currentLocation != null
-                                    ? LatLng(
-                                        state.currentLocation!.lat,
-                                        state.currentLocation!.lng,
-                                      )
-                                    : null);
-                          if (target != null) {
-                            _mapBackgroundKey.currentState?._animateTo(
-                              target,
-                              zoom: 15.0,
-                            );
-                          }
-                        },
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
+                      // Layer 2: Overlay Location Card at the bottom of the map
+                      Positioned(
+                        left: 16,
+                        right: 16,
+                        bottom: (_mapHeightFraction == 0.20)
+                            ? 90
+                            : 20, // Responsive to prevent overlap
+                        child: _buildLocationCardOnly(
+                          context,
+                          _viewingSharedChild && _activeSharedChildData != null
+                              ? _activeSharedChildData!['child_name']
+                              : childName,
+                          _viewingSharedChild && _activeSharedChildData != null
+                              ? 'Shared Location'
+                              : placeName,
+                          state,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Sliver 2: Scrollable content cards below the map
+              if (!_viewingSharedChild)
+                SliverPadding(
+                  padding: const EdgeInsets.all(16.0),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      // Live Trip Status Card — shown only when actively
+                      // travelling. Hidden per request (kept here, not
+                      // deleted, so it's a one-line flip back to `true`).
+                      if (false)
+                        _LiveTripCard(
+                          activeTrip: state.activeTrip,
+                          isDeviceOffline: _isDeviceOffline(state),
+                        ),
+
+                      // 2. Scroll & Geo Guard Feature Cards — greyed out and
+                      // disabled until the child's device is actually paired
+                      // (see isChildNotPaired above).
+                      IgnorePointer(
+                        ignoring: isChildNotPaired,
+                        child: Opacity(
+                          opacity: isChildNotPaired ? 0.45 : 1.0,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: _buildFeatureCard(
+                                  title: 'Scroll',
+                                  subtitle: 'Social Media & Apps',
+                                  statusText:
+                                      state.features?.scrollStatusText ??
+                                      '0 Apps Locked',
+                                  icon: Icons.smartphone_rounded,
+                                  cardBg: const Color(0xFFEFF6FF),
+                                  borderCol: const Color(0xFFDBEAFE),
+                                  iconCol: const Color(0xFF3B82F6),
+                                  statusBg: const Color(0xFFDBEAFE),
+                                  statusTextCol: const Color(0xFF1D4ED8),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const SocialAppsView(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildFeatureCard(
+                                  title: 'Geo Guard',
+                                  subtitle: 'Places & Geofencing',
+                                  statusText:
+                                      state.features?.geoGuardStatusText ??
+                                      '0 Fencing',
+                                  icon: Icons.location_on_outlined,
+                                  cardBg: const Color(0xFFFFF7ED),
+                                  borderCol: const Color(0xFFFFEDD5),
+                                  iconCol: const Color(0xFFF97316),
+                                  statusBg: const Color(0xFFFFEDD5),
+                                  statusTextCol: const Color(0xFFC2410C),
+                                  onTap: () {
+                                    final childId = _sharedPrefsService
+                                        .getString('child_id');
+                                    final parentId = _sharedPrefsService
+                                        .getString('parent_id');
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => GeoFencingView(
+                                          childId: childId,
+                                          parentId: parentId,
+                                        ),
+                                      ),
+                                    ).then((_) {
+                                      injector<HomepageBloc>().add(
+                                        const GetHomepageData(),
+                                      );
+                                      _loadSavedPlaces();
+                                    });
+                                  },
+                                ),
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.my_location_rounded,
-                            color: Color(0xFF0C1D37),
-                            size: 22,
-                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 16),
 
-                    // Layer 2: Overlay Location Card at the bottom of the map
-                    Positioned(
-                      left: 16,
-                      right: 16,
-                      bottom: (_mapHeightFraction == 0.35)
-                          ? 90
-                          : 20, // Responsive to prevent overlap
-                      child: _buildLocationCardOnly(
-                        context,
-                        _viewingSharedChild && _activeSharedChildData != null
-                            ? _activeSharedChildData!['child_name']
-                            : childName,
-                        _viewingSharedChild && _activeSharedChildData != null
-                            ? 'Shared Location'
-                            : placeName,
-                        state,
+                      // 3. Today's Route Map Card — same disabled treatment.
+                      IgnorePointer(
+                        ignoring: isChildNotPaired,
+                        child: Opacity(
+                          opacity: isChildNotPaired ? 0.45 : 1.0,
+                          child: _buildRouteMapCard(context),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                      const SizedBox(height: 16),
 
-            // Sliver 2: Scrollable content cards below the map
-            if (!_viewingSharedChild)
-              SliverPadding(
-                padding: const EdgeInsets.all(16.0),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    // Live Trip Status Card — shown only when actively travelling
-                    _LiveTripCard(
-                      activeTrip: state.activeTrip,
-                      isDeviceOffline: _isDeviceOffline(state),
-                    ),
+                      // 4. Upgrade to Pro Banner
+                      _buildUpgradeProBanner(),
+                      const SizedBox(height: 24),
 
-                    // 2. Scroll & Geo Guard Feature Cards
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildFeatureCard(
-                            title: 'Scroll',
-                            subtitle: 'Social Media & Apps',
-                            statusText:
-                                state.features?.scrollStatusText ??
-                                '0 Apps Locked',
-                            icon: Icons.smartphone_rounded,
-                            cardBg: const Color(0xFFEFF6FF),
-                            borderCol: const Color(0xFFDBEAFE),
-                            iconCol: const Color(0xFF3B82F6),
-                            statusBg: const Color(0xFFDBEAFE),
-                            statusTextCol: const Color(0xFF1D4ED8),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SocialAppsView(),
-                                ),
-                              );
-                            },
-                          ),
+                      // 5. Screentime Today Section — same disabled treatment.
+                      IgnorePointer(
+                        ignoring: isChildNotPaired,
+                        child: Opacity(
+                          opacity: isChildNotPaired ? 0.45 : 1.0,
+                          child: _buildScreentimeSection(context),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildFeatureCard(
-                            title: 'Geo Guard',
-                            subtitle: 'Places & Geofencing',
-                            statusText:
-                                state.features?.geoGuardStatusText ??
-                                '0 Fencing',
-                            icon: Icons.location_on_outlined,
-                            cardBg: const Color(0xFFFFF7ED),
-                            borderCol: const Color(0xFFFFEDD5),
-                            iconCol: const Color(0xFFF97316),
-                            statusBg: const Color(0xFFFFEDD5),
-                            statusTextCol: const Color(0xFFC2410C),
-                            onTap: () {
-                              final childId = _sharedPrefsService.getString(
-                                'child_id',
-                              );
-                              final parentId = _sharedPrefsService.getString(
-                                'parent_id',
-                              );
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => GeoFencingView(
-                                    childId: childId,
-                                    parentId: parentId,
-                                  ),
-                                ),
-                              ).then((_) {
-                                injector<HomepageBloc>().add(
-                                  const GetHomepageData(),
-                                );
-                                _loadSavedPlaces();
-                              });
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                      ),
+                      const SizedBox(height: 24),
 
-                    // 3. Today's Route Map Card
-                    _buildRouteMapCard(context),
-                    const SizedBox(height: 16),
+                      // 6. Shortcuts Section
+                      _buildShortcutsSection(context),
+                      const SizedBox(height: 24),
 
-                    // 4. Upgrade to Pro Banner
-                    _buildUpgradeProBanner(),
-                    const SizedBox(height: 24),
-
-                    // 5. Screentime Today Section
-                    _buildScreentimeSection(context),
-                    const SizedBox(height: 24),
-
-                    // 6. Shortcuts Section
-                    _buildShortcutsSection(context),
-                    const SizedBox(height: 24),
-
-                    // 7. Help Centre Section
-                    _buildHelpCentreSection(context),
-                  ]),
+                      // 7. Help Centre Section
+                      _buildHelpCentreSection(context),
+                    ]),
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -2981,6 +3141,168 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     String placeName,
     HomepageSuccess state,
   ) {
+    // A genuine child switch resets HomepageSuccess to .initial() while the
+    // new child's fetch is in flight (homepage_bloc.dart _onGetHomepageData)
+    // — currentLocation only comes back null for that reset, never for an
+    // ordinary same-child silent refresh. The map already shows an
+    // "Updating location..." pill for this window, but that pill sits
+    // inside the map layer and scrolls out of view once the map is
+    // collapsed — this card was still rendering the outgoing child's
+    // name/place/pills underneath with nothing to say they were stale,
+    // which is exactly what parents reported reading as "showing the wrong
+    // child's data" after switching from Profile/Settings. Show a plain
+    // loading state here too so it stays visible regardless of scroll
+    // position.
+    if (!_viewingSharedChild &&
+        state.isLoading &&
+        state.currentLocation == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0C1D37).withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF0066FF),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "Loading $childName's location…",
+              style: GoogleFonts.poppins(
+                fontSize: 13.0.sp,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // A freshly-added/logged-in child that has never once posted a location
+    // fix (or device status) yet — the backend flags this explicitly as
+    // NEVER_SHARED (location.controller.js getChildTrackingSnapshot) rather
+    // than leaving latest_location null and letting displayState default to
+    // LIVE. Before this check, that fell through to the normal card below
+    // with an empty/"Unknown Place" address and a pill that lied "Active" —
+    // there's nothing active about a device that has never checked in once.
+    // The moment the child's device actually posts its first location, this
+    // snapshot naturally flips to LIVE on the next poll/refresh and the
+    // normal card renders itself — no extra wiring needed here beyond not
+    // showing a false "connected" state in the meantime.
+    if (!_viewingSharedChild &&
+        state.trackingSnapshot?.uiDirective.displayState == 'NEVER_SHARED') {
+      final childCode = _sharedPrefsService.getString('child_code');
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0C1D37).withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFEF3C7),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Color(0xFFB45309),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "$childName's device isn't paired yet",
+                        style: GoogleFonts.poppins(
+                          fontSize: 15.0.sp,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0C1D37),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'GPS tracking, screen time rules, and safe geofencing '
+                        'will activate automatically once the companion app is paired.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12.0.sp,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: childCode == null
+                    ? null
+                    : () => Share.share(
+                        "Set up $childName on NaviQ: install the NaviQ app on "
+                        "${childName}'s phone and enter this code to connect — $childCode",
+                      ),
+                icon: const Icon(Icons.share_rounded, size: 18),
+                label: Text(
+                  'Share Invite Link',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0066FF),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     // Location is "off" only when GPS/location-services is actually disabled
     // or permission was revoked — NOT merely whenever showLiveMarker is false
     // (that also goes false for STALE/UNREACHABLE, which is normal for an
@@ -3006,6 +3328,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final isLocationOff =
         !_viewingSharedChild &&
         (displayState == 'PERMISSION_DENIED' || displayState == 'GPS_DISABLED');
+    // The device itself is unreachable (no internet / powered off / hasn't
+    // phoned home in a while) — distinct from isLocationOff, which is a
+    // permission/GPS toggle problem. OFFLINE/UNREACHABLE are the backend's
+    // own, already-discounted verdicts (getChildTrackingSnapshot only sets
+    // these after ruling out a merely-stale isOnline flag or transient
+    // network blip via hasFreshLocationEvidence — see location.controller.js),
+    // so trusting displayState here directly is safe. Before this check, a
+    // genuinely-unreachable device with no stationarySince to compute (no
+    // recent history to derive "how long here" from) fell through to
+    // _formatDwellTime's null-case default of "Active" — exactly backwards,
+    // since there's nothing active about a device we can't reach.
+    final isDeviceUnreachable =
+        !_viewingSharedChild &&
+        (displayState == 'OFFLINE' || displayState == 'UNREACHABLE');
     // Distinct from isLocationOff: the device/GPS toggle is fine, but the
     // backend itself says this isn't live data right now (OFFLINE,
     // UNREACHABLE, STALE, ...). Reusing showLiveMarker rather than listing
@@ -3013,25 +3349,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // freshness judgement call (e.g. BACKGROUND_RESTRICTED only counts as
     // non-live once it's actually stale) instead of a second, possibly
     // out-of-sync copy of that logic living here too.
-    final isDeviceOffline = _isDeviceOffline(state);
-    // isDeviceOffline above only means "not live right now" (server
+    // _isDeviceOffline(state) only means "not live right now" (server
     // show_live_marker: false) — true for both a genuinely unreachable
     // device AND a device that's ONLINE but whose last location fix went
     // stale. Both cases share the same amber pill/color, but the *word*
     // shown must not say "OFFLINE" for the latter — that contradicts the
     // server's own device_status: ONLINE (and the sibling live-trip badge,
     // which already says "STALE" for the identical condition).
-    // Compare against displayState, not the raw device_status field — the
-    // server sends device_status as ONLINE/OFFLINE/UNREACHABLE/... (multiple
-    // distinct strings for "not actually connected"), so matching only the
-    // literal 'OFFLINE' string missed UNREACHABLE and any other future
-    // variant, silently falling through to "Stale" for a genuinely offline
-    // device. displayState is already the single curated field this screen
-    // treats as authoritative elsewhere (isLocationOff above) — within the
-    // non-live bucket, STALE is the only "still probably fine" reason;
-    // everything else (OFFLINE, UNREACHABLE, BACKGROUND_RESTRICTED, ...)
-    // means the device really isn't reporting.
-    final isReallyOffline = displayState != 'STALE';
     // NOTE: this pill used to suppress to "ACTIVE NOW" whenever the last
     // known fix sat at a known place (placeName known/non-"unknown"),
     // matching the banner's calm-at-home behavior further down this file.
@@ -3043,7 +3367,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // pill that explicitly claims "ACTIVE NOW" must not do so when the
     // device isn't. Always reflect the real showLiveMarker signal here — a
     // known place only softens the map banner, not this pill's own honesty.
-    final showAsOffline = isDeviceOffline;
 
     return Container(
       width: double.infinity,
@@ -3063,42 +3386,25 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: isLocationOff
-                      ? const Color(0xFFEF4444)
-                      : (showAsOffline
-                            ? const Color(0xFFF59E0B)
-                            : const Color(0xFF10B981)),
-                  shape: BoxShape.circle,
+              // Kid's name — on the same line as the action icons, matching
+              // the Figma card header (name left, icons right). "is at
+              // <place>" now renders as its own line underneath instead of
+              // being joined into this same text block.
+              Expanded(
+                child: Text(
+                  childName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 18.0.sp,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0C1D37),
+                  ),
                 ),
               ),
-              const SizedBox(width: 6),
-              Text(
-                isLocationOff
-                    ? 'LOCATION OFF'
-                    : (showAsOffline
-                          ? (isReallyOffline
-                                ? 'OFFLINE'
-                                : _staleBadgeWord(
-                                    trackingSnapshot?.latestLocation,
-                                  ))
-                          : 'ACTIVE NOW'),
-                style: GoogleFonts.manrope(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: isLocationOff
-                      ? const Color(0xFFEF4444)
-                      : (showAsOffline
-                            ? const Color(0xFFF59E0B)
-                            : const Color(0xFF94A3B8)),
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Container(
                 width: 32,
                 height: 32,
@@ -3122,8 +3428,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           ),
                           Text(
                             '$_refreshProgress',
-                            style: GoogleFonts.manrope(
-                              fontSize: 10,
+                            style: GoogleFonts.poppins(
+                              fontSize: 10.0.sp,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF0C1D37),
                             ),
@@ -3151,34 +3457,60 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 child: IconButton(
                   padding: EdgeInsets.zero,
                   icon: const Icon(
+                    Icons.notifications_none_rounded,
+                    size: 16,
+                    color: Color(0xFF0C1D37),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationPage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(
                     Icons.share_outlined,
                     size: 16,
                     color: Color(0xFF0C1D37),
                   ),
                   onPressed: () {
-                    Share.share('$childName is at $placeName');
+                    final lat =
+                        _viewingSharedChild && _activeSharedChildData != null
+                        ? _activeSharedChildData!['lat'] as double?
+                        : state.currentLocation?.lat;
+                    final lng =
+                        _viewingSharedChild && _activeSharedChildData != null
+                        ? _activeSharedChildData!['lng'] as double?
+                        : state.currentLocation?.lng;
+                    if (lat != null && lng != null) {
+                      // Google's universal maps link — opens the native
+                      // Google Maps app when installed, otherwise falls
+                      // back to Google Maps in the browser. Works the same
+                      // on iOS and Android, unlike a bare geo: URI.
+                      final mapsLink =
+                          'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+                      Share.share('$childName is at $placeName\n$mapsLink');
+                    } else {
+                      Share.share('$childName is at $placeName');
+                    }
                   },
                 ),
               ),
             ],
           ),
-          if (!_viewingSharedChild &&
-              _formatLastUpdated(
-                    trackingSnapshot?.latestLocation?.deviceTimestamp,
-                  ) !=
-                  null) ...[
-            const SizedBox(height: 4),
-            Text(
-              _formatLastUpdated(
-                trackingSnapshot?.latestLocation?.deviceTimestamp,
-              )!,
-              style: GoogleFonts.manrope(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF94A3B8),
-              ),
-            ),
-          ],
           const SizedBox(height: 8),
           _DynamicLocationText(
             key: ValueKey(childName),
@@ -3194,6 +3526,30 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     state.currentLocation?.lng ?? 0.0,
                   ),
           ),
+          // "Last updated"/"Last moved" — moved below the name+address block
+          // per request, instead of sitting above it next to the icon row.
+          if (!_viewingSharedChild &&
+              (_formatLastUpdated(
+                        trackingSnapshot?.latestLocation?.deviceTimestamp,
+                      ) !=
+                      null ||
+                  _formatLastMoved(trackingSnapshot?.latestLocation) !=
+                      null)) ...[
+            const SizedBox(height: 4),
+            Text(
+              [
+                _formatLastUpdated(
+                  trackingSnapshot?.latestLocation?.deviceTimestamp,
+                ),
+                _formatLastMoved(trackingSnapshot?.latestLocation),
+              ].whereType<String>().join('  •  '),
+              style: GoogleFonts.poppins(
+                fontSize: 11.0.sp,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF94A3B8),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -3201,32 +3557,30 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               _buildLocationStatusPill(
                 isLocationOff
                     ? Icons.location_off_rounded
-                    : (showAsOffline
-                          ? Icons.cloud_off_rounded
+                    : (isDeviceUnreachable
+                          ? Icons.wifi_off_rounded
                           : Icons.access_time_rounded),
                 isLocationOff
                     ? 'Location off'
-                    : (showAsOffline
-                          ? (isReallyOffline
-                                ? 'Offline'
-                                : _staleDurationPill(
-                                    trackingSnapshot?.latestLocation,
-                                  ))
+                    : (isDeviceUnreachable
+                          ? 'Location unavailable'
                           : (_viewingSharedChild &&
                                     _activeSharedChildData != null
                                 ? _formatSinceTime(
                                     _activeSharedChildData!['last_sync_at']
                                         ?.toString(),
                                   )
-                                : _formatSinceTime(
-                                    state.currentLocation?.since,
+                                : _formatDwellTime(
+                                    trackingSnapshot
+                                        ?.latestLocation
+                                        ?.stationarySince,
                                   ))),
-                backgroundColor: isLocationOff
+                backgroundColor: isLocationOff || isDeviceUnreachable
                     ? const Color(0xFFFEE2E2)
-                    : (showAsOffline ? const Color(0xFFFEF3C7) : null),
-                contentColor: isLocationOff
+                    : const Color(0xFFEEF0F5),
+                contentColor: isLocationOff || isDeviceUnreachable
                     ? const Color(0xFFDC2626)
-                    : (showAsOffline ? const Color(0xFFB45309) : null),
+                    : const Color(0xFF323C56),
               ),
               const SizedBox(width: 8),
               _buildLocationStatusPill(
@@ -3280,8 +3634,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           Text(
             text,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.manrope(
-              fontSize: 12,
+            style: GoogleFonts.poppins(
+              fontSize: 12.0.sp,
               fontWeight: FontWeight.bold,
               color: content,
             ),
@@ -3354,8 +3708,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     const SizedBox(height: 16),
                     Text(
                       title,
-                      style: GoogleFonts.manrope(
-                        fontSize: 18,
+                      style: GoogleFonts.poppins(
+                        fontSize: 18.0.sp,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF0C1D37),
                       ),
@@ -3363,8 +3717,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.0.sp,
                         fontWeight: FontWeight.w500,
                         color: const Color(0xFF64748B),
                       ),
@@ -3381,8 +3735,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                       child: Text(
                         statusText,
-                        style: GoogleFonts.manrope(
-                          fontSize: 11,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11.0.sp,
                           fontWeight: FontWeight.w800,
                           color: statusTextCol,
                         ),
@@ -3429,72 +3783,25 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEE2E2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.alt_route_rounded,
-                      color: Color(0xFFEF4444),
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Route History",
-                        style: GoogleFonts.manrope(
-                          fontSize: 15,
+                        "Today's Route Map",
+                        style: GoogleFonts.poppins(
+                          fontSize: 15.0.sp,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF0C1D37),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              distance,
-                              style: GoogleFonts.manrope(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF64748B),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              newLoc,
-                              style: GoogleFonts.manrope(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF2563EB),
-                              ),
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 4),
+                      Text(
+                        '$distance  •  $newLoc',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11.0.sp,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF94A3B8),
+                        ),
                       ),
                     ],
                   ),
@@ -3538,8 +3845,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
             "No route activity recorded today",
-            style: GoogleFonts.manrope(
-              fontSize: 12.5,
+            style: GoogleFonts.poppins(
+              fontSize: 12.5.sp,
               fontWeight: FontWeight.w500,
               color: const Color(0xFF94A3B8),
             ),
@@ -3560,18 +3867,32 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final List<Widget> children = [];
 
     // Left Tail (matches color of first node)
+    // Extended _kNodeDeadSpace into the first node's box on the right side
+    // only — see _buildTimelineConnector for why this is needed: each node
+    // is a 76-wide box with its 22-wide circle centered in it, so the 27px
+    // either side of the circle renders nothing at all. Without this, the
+    // tail visibly stopped short of the first circle instead of touching it.
     final bool firstActive = listNodes.isNotEmpty && listNodes[0].isActive;
     children.add(
       Padding(
         padding: const EdgeInsets.only(
           top: 9.5,
         ), // (22 circle height / 2) - (3 line height / 2) = 11 - 1.5 = 9.5
-        child: Container(
+        child: SizedBox(
           width: 12,
           height: 3,
-          color: firstActive
-              ? const Color(0xFF0066FF)
-              : const Color(0xFFE2E8F0),
+          child: OverflowBox(
+            alignment: Alignment.centerLeft,
+            maxWidth: 12 + _kNodeDeadSpace,
+            minWidth: 0,
+            child: Container(
+              width: 12 + _kNodeDeadSpace,
+              height: 3,
+              color: firstActive
+                  ? const Color(0xFF0066FF)
+                  : const Color(0xFFE2E8F0),
+            ),
+          ),
         ),
       ),
     );
@@ -3597,15 +3918,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
     }
 
-    // Right Tail (matches color of last node)
+    // Right Tail (matches color of last node) — extended into the last
+    // node's box on the left side, matching the left tail above.
     final bool lastActive = listNodes.isNotEmpty && listNodes.last.isActive;
     children.add(
       Padding(
         padding: const EdgeInsets.only(top: 9.5),
-        child: Container(
+        child: SizedBox(
           width: 12,
           height: 3,
-          color: lastActive ? const Color(0xFF0066FF) : const Color(0xFFE2E8F0),
+          child: OverflowBox(
+            alignment: Alignment.centerRight,
+            maxWidth: 12 + _kNodeDeadSpace,
+            minWidth: 0,
+            child: Container(
+              width: 12 + _kNodeDeadSpace,
+              height: 3,
+              color: lastActive
+                  ? const Color(0xFF0066FF)
+                  : const Color(0xFFE2E8F0),
+            ),
+          ),
         ),
       ),
     );
@@ -3676,8 +4009,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.manrope(
-              fontSize: 12,
+            style: GoogleFonts.poppins(
+              fontSize: 12.0.sp,
               fontWeight: isHighlighted ? FontWeight.w800 : FontWeight.w600,
               color: isHighlighted
                   ? const Color(0xFF0066FF)
@@ -3690,8 +4023,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.manrope(
-              fontSize: 10,
+            style: GoogleFonts.poppins(
+              fontSize: 10.0.sp,
               fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.w500,
               color: isHighlighted
                   ? const Color(0xFF94A3B8)
@@ -3703,6 +4036,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
+  // Each timeline node is a 76-wide box (see _buildTimelineNode) so its
+  // 22-wide circle can stay centered under a wider text label — which
+  // leaves (76-22)/2 = 27px of empty space on either side of the circle
+  // that nothing was drawing into. The connector/tail lines only spanned
+  // their own slot, so they visibly stopped short of the circles instead
+  // of touching them (confirmed live: a clear gap on both sides of every
+  // stop). Every tail/connector now renders _kNodeDeadSpace wider than its
+  // layout slot, via matching negative padding, so it visually reaches the
+  // circle's edge without changing the Row's actual layout width/scroll
+  // extent (the negative padding cancels the extra width back out for
+  // layout purposes — only the paint/hit-test area grows).
+  static const double _kNodeDeadSpace = 27.0;
+
   Widget _buildTimelineConnector(bool isActive) {
     // Fixed width, not Expanded — the row now lives inside a horizontal
     // SingleChildScrollView (see _buildTimelineRow), which gives its
@@ -3711,10 +4057,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // constraints are unbounded").
     return Padding(
       padding: const EdgeInsets.only(top: 9.5),
-      child: Container(
+      child: SizedBox(
         width: 32,
         height: 3,
-        color: isActive ? const Color(0xFF0066FF) : const Color(0xFFE2E8F0),
+        child: OverflowBox(
+          maxWidth: 32 + _kNodeDeadSpace * 2,
+          minWidth: 0,
+          child: Container(
+            width: 32 + _kNodeDeadSpace * 2,
+            height: 3,
+            color: isActive ? const Color(0xFF0066FF) : const Color(0xFFE2E8F0),
+          ),
+        ),
       ),
     );
   }
@@ -3730,70 +4084,69 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap: () =>
-            SubscriptionPopup.show(context, SubscriptionTier.basic),
+        onTap: () => SubscriptionPopup.show(context, SubscriptionTier.basic),
         child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1D4ED8).withValues(alpha: 0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            child: const Icon(
-              Icons.workspace_premium_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Upgrade to Pro",
-                style: GoogleFonts.manrope(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-              Text(
-                "Unlock all premium features",
-                style: GoogleFonts.manrope(
-                  fontSize: 11.5,
-                  color: Colors.white.withValues(alpha: 0.85),
-                ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF1D4ED8).withValues(alpha: 0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          const Spacer(),
-          const Icon(
-            Icons.arrow_forward_ios_rounded,
-            color: Colors.white,
-            size: 14,
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.workspace_premium_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Upgrade to Pro",
+                    style: GoogleFonts.poppins(
+                      fontSize: 15.0.sp,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    "Unlock all premium features",
+                    style: GoogleFonts.poppins(
+                      fontSize: 11.5.sp,
+                      color: Colors.white.withValues(alpha: 0.85),
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colors.white,
+                size: 14,
+              ),
+            ],
           ),
-        ],
-      ),
         ),
       ),
     );
@@ -3819,8 +4172,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           children: [
             Text(
               "Screentime Today",
-              style: GoogleFonts.manrope(
-                fontSize: 20,
+              style: GoogleFonts.poppins(
+                fontSize: 20.0.sp,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF0C1D37),
               ),
@@ -3857,8 +4210,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           children: [
                             Text(
                               totalText,
-                              style: GoogleFonts.manrope(
-                                fontSize: 13,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.0.sp,
                                 fontWeight: FontWeight.w800,
                                 color: const Color(0xFF1E40AF),
                               ),
@@ -3866,8 +4219,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             const SizedBox(height: 2),
                             Text(
                               limitText,
-                              style: GoogleFonts.manrope(
-                                fontSize: 10.5,
+                              style: GoogleFonts.poppins(
+                                fontSize: 10.5.sp,
                                 fontWeight: FontWeight.w500,
                                 color: const Color(
                                   0xFF1E40AF,
@@ -3927,8 +4280,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             const SizedBox(height: 12),
             Text(
               "No App Activity Today",
-              style: GoogleFonts.manrope(
-                fontSize: 14.5,
+              style: GoogleFonts.poppins(
+                fontSize: 14.5.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF475569),
               ),
@@ -3936,8 +4289,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             const SizedBox(height: 4),
             Text(
               "Screen time usage will be displayed here.",
-              style: GoogleFonts.manrope(
-                fontSize: 11.5,
+              style: GoogleFonts.poppins(
+                fontSize: 11.5.sp,
                 color: const Color(0xFF94A3B8),
               ),
             ),
@@ -4046,8 +4399,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 item.appName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.manrope(
-                  fontSize: 13.5,
+                style: GoogleFonts.poppins(
+                  fontSize: 13.5.sp,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF0C1D37),
                 ),
@@ -4056,8 +4409,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 item.usageDuration,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.manrope(
-                  fontSize: 10.5,
+                style: GoogleFonts.poppins(
+                  fontSize: 10.5.sp,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF94A3B8),
                 ),
@@ -4075,8 +4428,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       children: [
         Text(
           "Shortcuts",
-          style: GoogleFonts.manrope(
-            fontSize: 20,
+          style: GoogleFonts.poppins(
+            fontSize: 20.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF0C1D37),
           ),
@@ -4161,8 +4514,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               label,
               textAlign: TextAlign.center,
               maxLines: 2,
-              style: GoogleFonts.manrope(
-                fontSize: 10,
+              style: GoogleFonts.poppins(
+                fontSize: 10.0.sp,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF64748B),
                 height: 1.2,
@@ -4180,8 +4533,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       children: [
         Text(
           "Help Centre",
-          style: GoogleFonts.manrope(
-            fontSize: 20,
+          style: GoogleFonts.poppins(
+            fontSize: 20.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF0C1D37),
           ),
@@ -4283,16 +4636,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ),
       title: Text(
         title,
-        style: GoogleFonts.manrope(
-          fontSize: 13.5,
+        style: GoogleFonts.poppins(
+          fontSize: 13.5.sp,
           fontWeight: FontWeight.bold,
           color: const Color(0xFF0C1D37),
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: GoogleFonts.manrope(
-          fontSize: 11,
+        style: GoogleFonts.poppins(
+          fontSize: 11.0.sp,
           fontWeight: FontWeight.w500,
           color: const Color(0xFF94A3B8),
         ),
@@ -4324,7 +4677,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 }
 
 class _HomeMapBackground extends StatefulWidget {
-  final Future<BitmapDescriptor?> Function(int, String?) loadCustomMarker;
+  final Future<BitmapDescriptor?> Function(int, String?, {bool isOnline})
+  loadCustomMarker;
   final Map<String, dynamic>? activeSharedChildData;
   final bool viewingSharedChild;
   final LatLng? ownChildLocation;
@@ -4346,6 +4700,7 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
   BitmapDescriptor? _cachedMarkerIcon;
   int? _cachedBatteryPercentage;
   String? _cachedAvatar;
+  bool? _cachedIsOnline;
   GoogleMapController? _mapController;
   bool _isFirstLocationAfterLoad = true;
 
@@ -4380,18 +4735,28 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
     }
   }
 
-  Future<void> _loadMarkerIcon(int batteryPercentage, String? avatar) async {
+  Future<void> _loadMarkerIcon(
+    int batteryPercentage,
+    String? avatar, {
+    bool isOnline = true,
+  }) async {
     if (_cachedMarkerIcon != null &&
         _cachedBatteryPercentage == batteryPercentage &&
-        _cachedAvatar == avatar) {
+        _cachedAvatar == avatar &&
+        _cachedIsOnline == isOnline) {
       return;
     }
-    final icon = await widget.loadCustomMarker(batteryPercentage, avatar);
+    final icon = await widget.loadCustomMarker(
+      batteryPercentage,
+      avatar,
+      isOnline: isOnline,
+    );
     if (!mounted) return;
     setState(() {
       _cachedMarkerIcon = icon;
       _cachedBatteryPercentage = batteryPercentage;
       _cachedAvatar = avatar;
+      _cachedIsOnline = isOnline;
     });
   }
 
@@ -4442,7 +4807,9 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
           final batteryChanged =
               prev.deviceInfo?.batteryPercentage !=
               curr.deviceInfo?.batteryPercentage;
-          return locChanged || batteryChanged;
+          final onlineChanged =
+              prev.deviceInfo?.isOnline != curr.deviceInfo?.isOnline;
+          return locChanged || batteryChanged || onlineChanged;
         }
         return prev.runtimeType != curr.runtimeType;
       },
@@ -4458,7 +4825,8 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
           // Load marker icon first
           final battery = state.deviceInfo?.batteryPercentage ?? 0;
           final avatar = state.childAvatar;
-          _loadMarkerIcon(battery, avatar);
+          final isOnline = state.deviceInfo?.isOnline ?? true;
+          _loadMarkerIcon(battery, avatar, isOnline: isOnline);
 
           // Animate to location on updates
           if (_mapController != null && !widget.viewingSharedChild) {
@@ -4488,7 +4856,9 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
             final batteryChanged =
                 prev.deviceInfo?.batteryPercentage !=
                 curr.deviceInfo?.batteryPercentage;
-            return locChanged || batteryChanged;
+            final onlineChanged =
+                prev.deviceInfo?.isOnline != curr.deviceInfo?.isOnline;
+            return locChanged || batteryChanged || onlineChanged;
           }
 
           return false;
@@ -4503,7 +4873,10 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
               : null;
           // Fire-and-forget load; widget will update when ready
           final avatar = state is HomepageSuccess ? state.childAvatar : null;
-          _loadMarkerIcon(battery, avatar);
+          final isOnline = state is HomepageSuccess
+              ? (state.deviceInfo?.isOnline ?? true)
+              : true;
+          _loadMarkerIcon(battery, avatar, isOnline: isOnline);
 
           if (state is HomepageSuccess) {
             for (final child in state.sharedChildren) {
@@ -4580,7 +4953,13 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
                       )
                     : location,
                 markers: markers.toList(),
-                myLocationEnabled: true,
+                // Parent's own position has no use on this map — only the
+                // child's location matters here, and this flag is what
+                // triggers the native OS location-permission prompt (Google
+                // Maps SDK behavior, not something this app requests
+                // itself), so a parent got asked for location access right
+                // at login for a blue dot nothing on this screen reads.
+                myLocationEnabled: false,
                 minZoom: 0.0,
                 maxZoom: 20,
                 myLocationButtonEnabled:
@@ -4604,57 +4983,6 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
                   }
                 },
               ),
-              if (!widget.viewingSharedChild &&
-                  state is HomepageSuccess &&
-                  state.trackingSnapshot != null &&
-                  // Only show the banner when the device is genuinely not live
-                  // (showLiveMarker drives the OFFLINE/STALE state everywhere else
-                  // on this screen — tying the banner to the same signal prevents
-                  // a stale/cached banner_message from appearing while the backend
-                  // simultaneously reports display_state: LIVE / show_live_marker: true).
-                  !state.trackingSnapshot!.uiDirective.showLiveMarker &&
-                  state.trackingSnapshot!.uiDirective.bannerMessage.isNotEmpty &&
-                  // ...but not when the last known fix sits at a known place
-                  // (Home/School/...), regardless of whether the reason is
-                  // STALE or the device having gone fully OFFLINE/UNREACHABLE
-                  // since. Matched against FindMyKids' own behavior for the
-                  // identical case (device offline a full day, parked at a
-                  // saved place): it shows a calm "At home • 1 day" label,
-                  // no alarm banner — a device that's silent while sitting
-                  // exactly where it was last confirmed isn't read as
-                  // urgent by a parent either way, so training them to
-                  // dismiss the same black banner for it just teaches them
-                  // to ignore it when it matters. Location-service problems
-                  // (PERMISSION_DENIED, GPS_DISABLED) are a different kind
-                  // of signal — those need the child to act, not just "wait
-                  // it out" — so they keep the banner regardless of place.
-                  !((state.trackingSnapshot!.uiDirective.displayState !=
-                              'PERMISSION_DENIED' &&
-                          state.trackingSnapshot!.uiDirective.displayState !=
-                              'GPS_DISABLED') &&
-                      (state.currentLocation?.placeName ?? '').isNotEmpty &&
-                      (state.currentLocation?.placeName ?? '').toLowerCase() !=
-                          'unknown'))
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    color: Colors.black.withOpacity(0.9),
-                    child: Text(
-                      state.trackingSnapshot!.uiDirective.bannerMessage,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
             ],
           );
         },
@@ -4755,18 +5083,17 @@ class _DynamicLocationTextState extends State<_DynamicLocationText> {
   @override
   Widget build(BuildContext context) {
     final displayText = _resolvedAddress ?? widget.initialPlaceName;
-    // Was "{name} is  \n{address}" — a stray double space and no "at" made
-    // it read like a dangling sentence ("Akhil is  \n123 Main St...")
-    // instead of a place-status line. "is at" reads naturally for both a
-    // short known place ("Akhil is at Home") and a resolved street address.
+    // childName now renders separately, on the same row as the
+    // refresh/notification/share icons (see _buildLocationCardOnly) — this
+    // widget only owns the "is at <place>" line underneath it.
     return Text(
-      '${widget.childName} is at\n$displayText',
-      style: GoogleFonts.manrope(
+      'is at $displayText',
+      style: GoogleFonts.poppins(
         // Was 24 — the full street/area/city/district/state/PIN address now
         // shown here (see _fetchAddress above) runs much longer than the
         // short place names this size was originally tuned for; 14 keeps a
         // multi-line full address readable without dominating the card.
-        fontSize: 14,
+        fontSize: 14.0.sp,
         fontWeight: FontWeight.w800,
         color: const Color(0xFF0C1D37),
         height: 1.2,
@@ -4916,8 +5243,8 @@ class _LiveTripCard extends StatelessWidget {
                 children: [
                   Text(
                     'Currently Travelling',
-                    style: GoogleFonts.manrope(
-                      fontSize: 13,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13.0.sp,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF0C1D37),
                     ),
@@ -4925,8 +5252,8 @@ class _LiveTripCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     label,
-                    style: GoogleFonts.manrope(
-                      fontSize: 11,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11.0.sp,
                       fontWeight: FontWeight.w500,
                       color: const Color(0xFF64748B),
                     ),
@@ -4935,8 +5262,8 @@ class _LiveTripCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       agoLabel,
-                      style: GoogleFonts.manrope(
-                        fontSize: 11,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11.0.sp,
                         fontWeight: FontWeight.w400,
                         color: const Color(0xFF94A3B8),
                       ),
@@ -4952,8 +5279,8 @@ class _LiveTripCard extends StatelessWidget {
               children: [
                 Text(
                   distance,
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF0C1D37),
                   ),
@@ -4961,8 +5288,8 @@ class _LiveTripCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   duration,
-                  style: GoogleFonts.manrope(
-                    fontSize: 11,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11.0.sp,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF64748B),
                   ),
@@ -4982,8 +5309,8 @@ class _LiveTripCard extends StatelessWidget {
               ),
               child: Text(
                 isDeviceOffline ? 'STALE' : 'LIVE',
-                style: GoogleFonts.manrope(
-                  fontSize: 10,
+                style: GoogleFonts.poppins(
+                  fontSize: 10.0.sp,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   letterSpacing: 0.8,

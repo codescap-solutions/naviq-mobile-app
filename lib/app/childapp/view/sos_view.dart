@@ -13,6 +13,7 @@ import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/services/firebase_notification_service.dart';
 import 'package:child_track/core/services/lock_sync_service.dart';
 import 'package:child_track/core/utils/app_logger.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -330,8 +331,8 @@ class _OemBatteryBanner extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Finish setup for ${oem.displayName} so tracking keeps working in the background',
-                  style: const TextStyle(
-                    fontSize: 12.5,
+                  style: TextStyle(
+                    fontSize: 12.5.sp,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF7C2D12),
                   ),
@@ -349,12 +350,12 @@ class _OemBatteryBanner extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 6),
                   child: Text(
                     'Fix',
                     style: TextStyle(
-                      fontSize: 12.5,
+                      fontSize: 12.5.sp,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFFF97316),
                     ),
@@ -450,8 +451,8 @@ class _BackgroundLocationBanner extends StatelessWidget {
                   Platform.isIOS
                       ? 'Turn on "Always Allow" location for instant safe-place alerts'
                       : 'Turn on "Allow all the time" location for instant safe-place alerts',
-                  style: const TextStyle(
-                    fontSize: 12.5,
+                  style: TextStyle(
+                    fontSize: 12.5.sp,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF1E3A8A),
                   ),
@@ -459,12 +460,12 @@ class _BackgroundLocationBanner extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: _openSettings,
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 6),
                   child: Text(
                     'Fix',
                     style: TextStyle(
-                      fontSize: 12.5,
+                      fontSize: 12.5.sp,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF2563EB),
                     ),
@@ -537,11 +538,11 @@ class _BatteryOptimizationBanner extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Turn off battery optimization so tracking keeps working in the background',
                   style: TextStyle(
-                    fontSize: 12.5,
+                    fontSize: 12.5.sp,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF1E3A8A),
                   ),
@@ -549,12 +550,12 @@ class _BatteryOptimizationBanner extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: _requestExemption,
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 6),
                   child: Text(
                     'Fix',
                     style: TextStyle(
-                      fontSize: 12.5,
+                      fontSize: 12.5.sp,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF2563EB),
                     ),
@@ -917,8 +918,8 @@ class _PulsingSosButtonState extends State<PulsingSosButton>
                     const SizedBox(height: 8),
                     Text(
                       "SOS",
-                      style: GoogleFonts.manrope(
-                        fontSize: 38,
+                      style: GoogleFonts.poppins(
+                        fontSize: 38.0.sp,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         letterSpacing: 1.0,
@@ -927,8 +928,8 @@ class _PulsingSosButtonState extends State<PulsingSosButton>
                     const SizedBox(height: 2),
                     Text(
                       "TAP FOR HELP",
-                      style: GoogleFonts.manrope(
-                        fontSize: 10,
+                      style: GoogleFonts.poppins(
+                        fontSize: 10.0.sp,
                         fontWeight: FontWeight.w800,
                         color: Colors.white.withValues(alpha: 0.85),
                         letterSpacing: 0.8,
@@ -1450,8 +1451,8 @@ class _SosViewContentState extends State<_SosViewContent> {
             const SizedBox(width: 8),
             Text(
               label,
-              style: GoogleFonts.manrope(
-                fontSize: 14,
+              style: GoogleFonts.poppins(
+                fontSize: 14.0.sp,
                 fontWeight: FontWeight.bold,
                 color: isSelected ? Colors.white : const Color(0xFF64748B),
               ),
@@ -1548,8 +1549,8 @@ class _SosViewContentState extends State<_SosViewContent> {
                                     const SizedBox(width: 8),
                                     Text(
                                       "Back",
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 14,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14.0.sp,
                                         fontWeight: FontWeight.bold,
                                         color: const Color(0xFF0F172A),
                                       ),
@@ -1600,8 +1601,8 @@ class _SosViewContentState extends State<_SosViewContent> {
                         Text(
                           "Need Help?",
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.manrope(
-                            fontSize: 13,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13.0.sp,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF64748B),
                             letterSpacing: 0.5,
@@ -1611,8 +1612,8 @@ class _SosViewContentState extends State<_SosViewContent> {
                         Text(
                           "Press SOS to call\nfor help!",
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.manrope(
-                            fontSize: 30,
+                          style: GoogleFonts.poppins(
+                            fontSize: 30.0.sp,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF0F172A),
                             height: 1.25,
@@ -1658,8 +1659,8 @@ class _SosViewContentState extends State<_SosViewContent> {
                             children: [
                               Text(
                                 "Parents Contact Details",
-                                style: GoogleFonts.manrope(
-                                  fontSize: 13,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13.0.sp,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFF64748B),
                                 ),
@@ -1726,8 +1727,8 @@ class _SosViewContentState extends State<_SosViewContent> {
                                       children: [
                                         Text(
                                           contactPhone,
-                                          style: GoogleFonts.manrope(
-                                            fontSize: 18,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 18.0.sp,
                                             fontWeight: FontWeight.w800,
                                             color: const Color(0xFF0F172A),
                                           ),
@@ -1735,8 +1736,8 @@ class _SosViewContentState extends State<_SosViewContent> {
                                         const SizedBox(height: 2),
                                         Text(
                                           "$contactRelation's number",
-                                          style: GoogleFonts.manrope(
-                                            fontSize: 13,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13.0.sp,
                                             fontWeight: FontWeight.w500,
                                             color: const Color(0xFF64748B),
                                           ),
@@ -1769,8 +1770,8 @@ class _SosViewContentState extends State<_SosViewContent> {
                                   ),
                                   label: Text(
                                     "Call $contactRelation Now",
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 15,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 15.0.sp,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
@@ -1791,8 +1792,8 @@ class _SosViewContentState extends State<_SosViewContent> {
                           child: ExpansionTile(
                             title: Text(
                               "App Configuration & Diagnostic Logs",
-                              style: GoogleFonts.manrope(
-                                fontSize: 12,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12.0.sp,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF94A3B8),
                               ),
@@ -1823,7 +1824,7 @@ class _SosViewContentState extends State<_SosViewContent> {
                                         const SizedBox(width: 8),
                                         Text(
                                           'App Permissions Status',
-                                          style: GoogleFonts.manrope(
+                                          style: GoogleFonts.poppins(
                                             fontWeight: FontWeight.bold,
                                             color: const Color(0xFF0F172A),
                                           ),
@@ -1961,9 +1962,9 @@ class _SosViewContentState extends State<_SosViewContent> {
                                             ),
                                             label: Text(
                                               'Diagnostic Logs',
-                                              style: GoogleFonts.manrope(
+                                              style: GoogleFonts.poppins(
                                                 fontWeight: FontWeight.bold,
-                                                fontSize: 12,
+                                                fontSize: 12.0.sp,
                                                 color: const Color(0xFF0066FF),
                                               ),
                                             ),
@@ -1992,9 +1993,9 @@ class _SosViewContentState extends State<_SosViewContent> {
                                         children: [
                                           Text(
                                             'Monitored Apps',
-                                            style: GoogleFonts.manrope(
+                                            style: GoogleFonts.poppins(
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 14,
+                                              fontSize: 14.0.sp,
                                               color: Colors.white,
                                             ),
                                           ),
@@ -2002,10 +2003,10 @@ class _SosViewContentState extends State<_SosViewContent> {
                                             onPressed: _addMoreScreenTimeApps,
                                             child: Text(
                                               '+ Add More',
-                                              style: GoogleFonts.manrope(
+                                              style: GoogleFonts.poppins(
                                                 fontWeight: FontWeight.bold,
                                                 color: const Color(0xFF0066FF),
-                                                fontSize: 13,
+                                                fontSize: 13.0.sp,
                                               ),
                                             ),
                                           ),
@@ -2026,9 +2027,9 @@ class _SosViewContentState extends State<_SosViewContent> {
                                             label: Text(
                                               app['customName'] ??
                                                   'Unknown App',
-                                              style: GoogleFonts.manrope(
+                                              style: GoogleFonts.poppins(
                                                 color: Colors.white,
-                                                fontSize: 12,
+                                                fontSize: 12.0.sp,
                                               ),
                                             ),
                                           );
@@ -2047,18 +2048,18 @@ class _SosViewContentState extends State<_SosViewContent> {
                         Text(
                           'Child Code: $childCode',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.manrope(
-                            fontSize: 12,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.0.sp,
                             color: const Color(0xFF94A3B8),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Naviq Dev 1.0.4(Aug-26)',
+                          'Naviq Dev 1.0.4(Sep 17)',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.manrope(
-                            fontSize: 10,
+                          style: GoogleFonts.poppins(
+                            fontSize: 10.0.sp,
                             color: const Color(0xFF94A3B8),
                           ),
                         ),
@@ -2260,7 +2261,7 @@ class _DiagnosticLogsSheetState extends State<_DiagnosticLogsSheet> {
                         tag,
                         style: TextStyle(
                           color: tagColor,
-                          fontSize: 9,
+                          fontSize: 9.0.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -2277,9 +2278,9 @@ class _DiagnosticLogsSheetState extends State<_DiagnosticLogsSheet> {
                       ),
                       child: Text(
                         level,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.grey,
-                          fontSize: 9,
+                          fontSize: 9.0.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -2299,7 +2300,7 @@ class _DiagnosticLogsSheetState extends State<_DiagnosticLogsSheet> {
               message,
               style: AppTextStyles.body2.copyWith(
                 fontFamily: Platform.isIOS ? 'Courier' : 'monospace',
-                fontSize: 12,
+                fontSize: 12.0.sp,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -2377,7 +2378,7 @@ class _DiagnosticLogsSheetState extends State<_DiagnosticLogsSheet> {
                         : "ScreenTimeExtension",
                     style: TextStyle(
                       color: sourceColor,
-                      fontSize: 9,
+                      fontSize: 9.0.sp,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -2396,7 +2397,7 @@ class _DiagnosticLogsSheetState extends State<_DiagnosticLogsSheet> {
               displayBody,
               style: AppTextStyles.body2.copyWith(
                 fontFamily: Platform.isIOS ? 'Courier' : 'monospace',
-                fontSize: 12,
+                fontSize: 12.0.sp,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -2429,7 +2430,7 @@ class _DiagnosticLogsSheetState extends State<_DiagnosticLogsSheet> {
           rawLog,
           style: AppTextStyles.body2.copyWith(
             fontFamily: Platform.isIOS ? 'Courier' : 'monospace',
-            fontSize: 12,
+            fontSize: 12.0.sp,
             color: AppColors.textPrimary,
           ),
         ),

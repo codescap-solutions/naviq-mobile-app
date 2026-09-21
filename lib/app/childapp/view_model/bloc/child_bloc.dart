@@ -385,14 +385,16 @@ class ChildBloc extends Bloc<ChildEvent, ChildState> with WidgetsBindingObserver
         return;
       }
 
-      // Get dynamic address and place name from coordinates
-      final locationInfo = await _childLocationRepo.getAddressAndPlaceName(
-        event.childLocation.latitude,
-        event.childLocation.longitude,
-      );
+      // Address/place_name used to be resolved here via a live reverse-
+      // geocoding API call on EVERY location post (every ~5m of movement,
+      // per tracking_profile_manager.dart's distanceFilter) — confirmed as
+      // the direct cause of a $2500 surprise Google Cloud bill in one month
+      // (22,840 Geocoding API calls, mostly from a single actively-moving
+      // child, with zero caching). The backend now resolves this itself
+      // (child.controller.js saveLocation), cached and distance-gated so it
+      // only re-queries once the child has actually moved to a
+      // meaningfully different spot — see geocoding.util.js.
       final requestBody = {
-        "address": locationInfo?['address'] ?? locationInfo?.values.first,
-        "place_name": locationInfo?['place_name'] ?? locationInfo?.values.last,
         "child_id": childId,
         "lat": event.childLocation.latitude,
         "lng": event.childLocation.longitude,
@@ -402,7 +404,7 @@ class ChildBloc extends Bloc<ChildEvent, ChildState> with WidgetsBindingObserver
         "timestamp": DateTime.now().toUtc().toIso8601String(),
       };
       AppLogger.info(
-        'new logic: child location posting to api: locationInfo: $locationInfo, reqest $requestBody',
+        'new logic: child location posting to api: reqest $requestBody',
       );
 
       await _childRepo.postChildLocation(requestBody);

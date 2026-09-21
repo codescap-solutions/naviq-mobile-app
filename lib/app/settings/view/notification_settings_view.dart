@@ -5,6 +5,7 @@ import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/app/home/view_model/home_repo.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class NotificationSettingsView extends StatefulWidget {
   const NotificationSettingsView({super.key});
@@ -133,9 +134,9 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
         ),
         title: Text(
           'Notification Settings',
-          style: GoogleFonts.manrope(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
+          style: GoogleFonts.poppins(
+            fontSize: 24.0.sp,
+            fontWeight: FontWeight.w700,
             color: const Color(0xFF0C1D37),
           ),
         ),
@@ -251,8 +252,8 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
         padding: const EdgeInsets.only(left: 0, bottom: 8, top: 18),
         child: Text(
           title,
-          style: GoogleFonts.manrope(
-            fontSize: 11,
+          style: GoogleFonts.poppins(
+            fontSize: 11.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF94A3B8),
             letterSpacing: 1.0,
@@ -308,8 +309,8 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
             Expanded(
               child: Text(
                 title,
-                style: GoogleFonts.manrope(
-                  fontSize: 15,
+                style: GoogleFonts.poppins(
+                  fontSize: 15.0.sp,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF0C1D37),
                 ),

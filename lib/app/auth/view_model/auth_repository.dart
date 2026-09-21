@@ -149,7 +149,11 @@ class AuthRepository extends BaseService {
         // Sync user identity with RevenueCat after successful login
         final loggedInParentId = _sharedPrefsService.getString('parent_id');
         if (loggedInParentId != null) {
-          await RevenueCatService.instance.logIn(loggedInParentId);
+          await RevenueCatService.instance.logIn(
+            loggedInParentId,
+            displayName: _sharedPrefsService.getString('parent_name'),
+            phoneNumber: _sharedPrefsService.getUserPhone(),
+          );
         }
       }
 
@@ -266,7 +270,11 @@ class AuthRepository extends BaseService {
         
         // Sync user identity with RevenueCat after successful registration
         if (parentId != null) {
-          await RevenueCatService.instance.logIn(parentId);
+          await RevenueCatService.instance.logIn(
+            parentId,
+            displayName: savedName,
+            phoneNumber: _sharedPrefsService.getUserPhone(),
+          );
         }
       }
 

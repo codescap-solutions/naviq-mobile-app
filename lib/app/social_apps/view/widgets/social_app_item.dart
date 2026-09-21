@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/core/widgets/common_button.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -65,8 +66,8 @@ class SocialAppItem extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      style: GoogleFonts.manrope(
-                        fontSize: 16,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16.0.sp,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF0C1D37),
                       ),
@@ -83,9 +84,9 @@ class SocialAppItem extends StatelessWidget {
                       ),
                       child: Text(
                         usage,
-                        style: GoogleFonts.manrope(
+                        style: GoogleFonts.poppins(
                           color: const Color(0xFF0066FF),
-                          fontSize: 12,
+                          fontSize: 12.0.sp,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -180,8 +181,8 @@ class _DailyLimitButton extends StatelessWidget {
         child: hasLimit
             ? Text(
                 _label,
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.0.sp,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF0066FF),
                 ),

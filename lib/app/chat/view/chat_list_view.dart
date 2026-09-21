@@ -6,6 +6,7 @@ import 'package:child_track/app/chat/view_model/bloc/chat_state.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/core/models/chat_models.dart';
 import 'package:child_track/app/chat/view/chat_screen.dart';
 import 'package:intl/intl.dart';
@@ -116,7 +117,7 @@ class _ChatListViewState extends State<ChatListView> {
         children: [
           Text(
             DateFormat('HH:mm').format(conversation.updatedAt),
-            style: AppTextStyles.caption.copyWith(fontSize: 10),
+            style: AppTextStyles.caption.copyWith(fontSize: 10.0.sp),
           ),
           if (conversation.unreadCount > 0)
             Container(
@@ -128,7 +129,7 @@ class _ChatListViewState extends State<ChatListView> {
               ),
               child: Text(
                 '${conversation.unreadCount}',
-                style: const TextStyle(color: Colors.white, fontSize: 10),
+                style: TextStyle(color: Colors.white, fontSize: 10.0.sp),
               ),
             ),
         ],

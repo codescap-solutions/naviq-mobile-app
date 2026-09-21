@@ -13,6 +13,7 @@ import 'package:child_track/core/widgets/common_textfield.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:child_track/core/models/child_profile.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class AddKidView extends StatefulWidget {
   final ChildProfile? childToEdit;
@@ -165,7 +166,7 @@ class _AddKidViewState extends State<AddKidView> {
         Text(
           widget.childToEdit != null ? 'Edit Kid' : 'Add Kid',
           style: GoogleFonts.poppins(
-            fontSize: 18,
+            fontSize: 18.0.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -185,7 +186,7 @@ class _AddKidViewState extends State<AddKidView> {
         Text(
           widget.childToEdit != null ? 'EDIT CHILD DETAILS' : 'CHILD DETAILS',
           style: GoogleFonts.poppins(
-            fontSize: 12,
+            fontSize: 12.0.sp,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF0066FF),
           ),
@@ -196,7 +197,7 @@ class _AddKidViewState extends State<AddKidView> {
               ? 'Update child information'
               : 'Tell us about your child',
           style: GoogleFonts.oswald(
-            fontSize: 22,
+            fontSize: 22.0.sp,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF1D293C),
           ),
@@ -206,8 +207,8 @@ class _AddKidViewState extends State<AddKidView> {
           widget.childToEdit != null
               ? 'Update the profile name or choose a new avatar.'
               : 'This personalises tracking alerts for their age & routine.',
-          style: GoogleFonts.manrope(
-            fontSize: 13,
+          style: GoogleFonts.poppins(
+            fontSize: 13.0.sp,
             fontWeight: FontWeight.w500,
             color: const Color(0xFF62748E),
           ),
@@ -247,7 +248,7 @@ class _AddKidViewState extends State<AddKidView> {
         Text(
           'Choose Avatar',
           style: GoogleFonts.poppins(
-            fontSize: 12,
+            fontSize: 12.0.sp,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF7C8BA0),
           ),
@@ -354,7 +355,7 @@ class _AddKidViewState extends State<AddKidView> {
         Text(
           'Enter Details',
           style: GoogleFonts.poppins(
-            fontSize: 12,
+            fontSize: 12.0.sp,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF7C8BA0),
           ),
@@ -364,7 +365,7 @@ class _AddKidViewState extends State<AddKidView> {
         Text(
           'Name of the Kid',
           style: GoogleFonts.poppins(
-            fontSize: 10,
+            fontSize: 10.0.sp,
             fontWeight: FontWeight.w400,
             color: const Color(0xFF7C8BA0),
           ),
@@ -390,7 +391,7 @@ class _AddKidViewState extends State<AddKidView> {
           Text(
             'Age',
             style: GoogleFonts.poppins(
-              fontSize: 10,
+              fontSize: 10.0.sp,
               fontWeight: FontWeight.w400,
               color: const Color(0xFF7C8BA0),
             ),
@@ -426,7 +427,7 @@ class _AddKidViewState extends State<AddKidView> {
                     Text(
                       'Birth Year',
                       style: GoogleFonts.poppins(
-                        fontSize: 10,
+                        fontSize: 10.0.sp,
                         fontWeight: FontWeight.w400,
                         color: const Color(0xFF7C8BA0),
                       ),
@@ -436,8 +437,8 @@ class _AddKidViewState extends State<AddKidView> {
                       initialValue: _selectedYear,
                       hint: Text(
                         'Year',
-                        style: GoogleFonts.manrope(
-                          fontSize: 14,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14.0.sp,
                           fontWeight: FontWeight.w500,
                           color: const Color(0xFF7C8BA0),
                         ),
@@ -474,7 +475,7 @@ class _AddKidViewState extends State<AddKidView> {
                         ),
                       ),
                       style: GoogleFonts.poppins(
-                        fontSize: 14,
+                        fontSize: 14.0.sp,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textPrimary,
                       ),
@@ -502,7 +503,7 @@ class _AddKidViewState extends State<AddKidView> {
                     Text(
                       'Birth Month',
                       style: GoogleFonts.poppins(
-                        fontSize: 10,
+                        fontSize: 10.0.sp,
                         fontWeight: FontWeight.w400,
                         color: const Color(0xFF7C8BA0),
                       ),
@@ -512,8 +513,8 @@ class _AddKidViewState extends State<AddKidView> {
                       initialValue: _selectedMonth,
                       hint: Text(
                         'Month',
-                        style: GoogleFonts.manrope(
-                          fontSize: 14,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14.0.sp,
                           fontWeight: FontWeight.w500,
                           color: const Color(0xFF7C8BA0),
                         ),
@@ -550,7 +551,7 @@ class _AddKidViewState extends State<AddKidView> {
                         ),
                       ),
                       style: GoogleFonts.poppins(
-                        fontSize: 14,
+                        fontSize: 14.0.sp,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textPrimary,
                       ),
@@ -591,7 +592,7 @@ class _AddKidViewState extends State<AddKidView> {
         Text(
           'How does your child travel to school?',
           style: GoogleFonts.poppins(
-            fontSize: 12,
+            fontSize: 12.0.sp,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF7C8BA0),
           ),
@@ -628,12 +629,12 @@ class _AddKidViewState extends State<AddKidView> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(emoji, style: const TextStyle(fontSize: 22)),
+                    Text(emoji, style: TextStyle(fontSize: 22.0.sp)),
                     const SizedBox(height: 6),
                     Text(
                       label,
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.0.sp,
                         fontWeight: isSelected
                             ? FontWeight.w700
                             : FontWeight.w500,
@@ -677,7 +678,7 @@ class _AddKidViewState extends State<AddKidView> {
             : Text(
                 widget.childToEdit != null ? 'Update' : 'Continue',
                 style: GoogleFonts.poppins(
-                  fontSize: 16,
+                  fontSize: 16.0.sp,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),

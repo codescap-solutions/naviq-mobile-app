@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/services/oem_battery_helper.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 /// Shown once after the standard battery-optimization prompt, only on
 /// devices from manufacturers known to run their own background-kill
@@ -90,14 +91,14 @@ class _OemBatteryScreenState extends State<OemBatteryScreen> {
                 const SizedBox(height: 20),
                 Text(
                   'One more step for ${widget.oem.displayName}',
-                  style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.w800, color: const Color(0xFF0C1D37)),
+                  style: GoogleFonts.poppins(fontSize: 22.0.sp, fontWeight: FontWeight.w800, color: const Color(0xFF0C1D37)),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   '${widget.oem.displayName} devices have their own battery manager that can stop location '
                   'tracking in the background even after the previous permission — this whitelists NaviQ so '
                   'it keeps working when the app isn\'t open.',
-                  style: GoogleFonts.manrope(fontSize: 14, color: const Color(0xFF64748B), height: 1.5),
+                  style: GoogleFonts.poppins(fontSize: 14.0.sp, color: const Color(0xFF64748B), height: 1.5),
                 ),
                 const SizedBox(height: 24),
                 Expanded(
@@ -121,12 +122,12 @@ class _OemBatteryScreenState extends State<OemBatteryScreen> {
                                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                   )
                                 : Text('Open ${widget.oem.settingLabel} Settings',
-                                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                                    style: TextStyle(fontSize: 15.0.sp, fontWeight: FontWeight.w700)),
                           ),
                         if (_showManualSteps) ...[
                           Text(
                             "Couldn't open settings directly — do this manually instead:",
-                            style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF0C1D37)),
+                            style: GoogleFonts.poppins(fontSize: 13.0.sp, fontWeight: FontWeight.w700, color: const Color(0xFF0C1D37)),
                           ),
                           const SizedBox(height: 12),
                           ...widget.oem.manualSteps.asMap().entries.map(
@@ -145,13 +146,13 @@ class _OemBatteryScreenState extends State<OemBatteryScreen> {
                                         ),
                                         child: Center(
                                           child: Text('${entry.key + 1}',
-                                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primaryColor)),
+                                              style: TextStyle(fontSize: 11.0.sp, fontWeight: FontWeight.w700, color: AppColors.primaryColor)),
                                         ),
                                       ),
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(entry.value,
-                                            style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF334155), height: 1.4)),
+                                            style: GoogleFonts.poppins(fontSize: 13.0.sp, color: const Color(0xFF334155), height: 1.4)),
                                       ),
                                     ],
                                   ),
@@ -163,7 +164,7 @@ class _OemBatteryScreenState extends State<OemBatteryScreen> {
                             onPressed: () => setState(() => _showManualSteps = true),
                             child: Text(
                               "I'll do it manually instead",
-                              style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF64748B), fontWeight: FontWeight.w600),
+                              style: GoogleFonts.poppins(fontSize: 13.0.sp, color: const Color(0xFF64748B), fontWeight: FontWeight.w600),
                             ),
                           ),
                       ],
@@ -180,14 +181,14 @@ class _OemBatteryScreenState extends State<OemBatteryScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     child: Text("I've done this — Continue",
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.primaryColor)),
+                        style: TextStyle(fontSize: 15.0.sp, fontWeight: FontWeight.w700, color: AppColors.primaryColor)),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Center(
                   child: TextButton(
                     onPressed: _skip,
-                    child: Text('Skip for now', style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF94A3B8))),
+                    child: Text('Skip for now', style: GoogleFonts.poppins(fontSize: 13.0.sp, color: const Color(0xFF94A3B8))),
                   ),
                 ),
                 const SizedBox(height: 12),

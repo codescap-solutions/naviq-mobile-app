@@ -19,6 +19,7 @@ import 'package:child_track/core/services/subscription_feature_gate.dart';
 import 'package:child_track/core/services/subscription_manager.dart';
 import 'package:child_track/app/subscription/models/subscription_plan.dart';
 import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 /// Trips List View - Shows all trips
 class TripsView extends StatefulWidget {
@@ -489,7 +490,7 @@ class _SimpleTripCard extends StatelessWidget {
                       padding: EdgeInsets.zero,
                       width: 80,
                       text: 'View',
-                      fontSize: 12,
+                      fontSize: 12.0.sp,
                       textColor: AppColors.surfaceColor,
                       onPressed: () async {
                         if (trip.points.isEmpty) {

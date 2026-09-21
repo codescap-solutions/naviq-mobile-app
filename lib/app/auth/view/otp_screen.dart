@@ -12,6 +12,7 @@ import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_strings.dart';
 import 'package:child_track/core/widgets/common_textfield.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class OtpScreen extends StatefulWidget {
   final String phoneNumber;
@@ -141,7 +142,7 @@ class _OtpScreenState extends State<OtpScreen> {
         Text(
           'Sign Up',
           style: GoogleFonts.poppins(
-            fontSize: 18,
+            fontSize: 18.0.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -161,7 +162,7 @@ class _OtpScreenState extends State<OtpScreen> {
         Text(
           'Personalisation',
           style: GoogleFonts.poppins(
-            fontSize: 10,
+            fontSize: 10.0.sp,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF0069F8),
           ),
@@ -170,7 +171,7 @@ class _OtpScreenState extends State<OtpScreen> {
         Text(
           'Verify and Proceed',
           style: GoogleFonts.poppins(
-            fontSize: 24,
+            fontSize: 24.0.sp,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF1D293C),
           ),
@@ -179,7 +180,7 @@ class _OtpScreenState extends State<OtpScreen> {
         Text(
           'No Spams, Just Personalized Notification',
           style: GoogleFonts.poppins(
-            fontSize: 14,
+            fontSize: 14.0.sp,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF62748E),
           ),
@@ -195,7 +196,7 @@ class _OtpScreenState extends State<OtpScreen> {
         Text(
           'Phone Number',
           style: GoogleFonts.poppins(
-            fontSize: 10,
+            fontSize: 10.0.sp,
             fontWeight: FontWeight.w400,
             color: const Color(0xFF7C8BA0),
           ),
@@ -233,7 +234,7 @@ class _OtpScreenState extends State<OtpScreen> {
         Text(
           'OTP',
           style: GoogleFonts.poppins(
-            fontSize: 10,
+            fontSize: 10.0.sp,
             fontWeight: FontWeight.w400,
             color: const Color(0xFF7C8BA0),
           ),
@@ -294,7 +295,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 : Text(
                     'Verify and Proceed',
                     style: GoogleFonts.poppins(
-                      fontSize: 16,
+                      fontSize: 16.0.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
@@ -315,7 +316,7 @@ class _OtpScreenState extends State<OtpScreen> {
             Text(
               "Didn't receive the OTP? ",
               style: GoogleFonts.poppins(
-                fontSize: 14,
+                fontSize: 14.0.sp,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF62748E),
               ),
@@ -325,7 +326,7 @@ class _OtpScreenState extends State<OtpScreen> {
               child: Text(
                 'Resend OTP',
                 style: GoogleFonts.poppins(
-                  fontSize: 14,
+                  fontSize: 14.0.sp,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF0066FF),
                   decoration: TextDecoration.underline,

@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:child_track/core/services/csv_file_logger.dart';
@@ -21,6 +22,7 @@ import 'account_view.dart';
 import 'devices_view.dart';
 import 'notification_settings_view.dart';
 import '../../subscription/view/subscription_multi_plan_view.dart';
+import '../../subscription/view/current_plan_view.dart';
 import 'family_management_view.dart';
 import '../../chat/view/chat_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -127,9 +129,9 @@ class _SettingsViewState extends State<SettingsView> {
         ),
         title: Text(
           'Settings',
-          style: GoogleFonts.manrope(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
+          style: GoogleFonts.poppins(
+            fontSize: 32.0.sp,
+            fontWeight: FontWeight.w700,
             color: const Color(0xFF0C1D37),
           ),
         ),
@@ -432,7 +434,7 @@ class _SettingsViewState extends State<SettingsView> {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const SubscriptionMultiPlanView(),
+                        builder: (_) => const CurrentPlanView(),
                       ),
                     ),
                   ),
@@ -541,8 +543,8 @@ class _SettingsViewState extends State<SettingsView> {
               children: [
                 Text(
                   "Ensure Better Protection",
-                  style: GoogleFonts.manrope(
-                    fontSize: 16,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.0.sp,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF0C1D37),
                   ),
@@ -550,8 +552,8 @@ class _SettingsViewState extends State<SettingsView> {
                 const SizedBox(height: 4),
                 Text(
                   "at half price of a family meal\n60% of users prefer Premium",
-                  style: GoogleFonts.manrope(
-                    fontSize: 12,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.0.sp,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF64748B),
                     height: 1.3,
@@ -578,8 +580,8 @@ class _SettingsViewState extends State<SettingsView> {
                     ),
                     child: Text(
                       "Know More",
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.0.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -601,8 +603,8 @@ class _SettingsViewState extends State<SettingsView> {
         padding: const EdgeInsets.only(left: 0, bottom: 8, top: 18),
         child: Text(
           title,
-          style: GoogleFonts.manrope(
-            fontSize: 11,
+          style: GoogleFonts.poppins(
+            fontSize: 11.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF94A3B8),
             letterSpacing: 1.0,
@@ -647,8 +649,8 @@ class _SettingsViewState extends State<SettingsView> {
             Expanded(
               child: Text(
                 title,
-                style: GoogleFonts.manrope(
-                  fontSize: 15,
+                style: GoogleFonts.poppins(
+                  fontSize: 15.0.sp,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF0C1D37),
                 ),
@@ -937,8 +939,8 @@ class _SettingsViewState extends State<SettingsView> {
                 const SizedBox(height: 18),
                 Text(
                   'Unlock Premium Protection',
-                  style: GoogleFonts.manrope(
-                    fontSize: 20,
+                  style: GoogleFonts.poppins(
+                    fontSize: 20.0.sp,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF0C1D37),
                   ),
@@ -947,8 +949,8 @@ class _SettingsViewState extends State<SettingsView> {
                 const SizedBox(height: 8),
                 Text(
                   'Logging out will disable real-time alerts and location updates. Upgrade to Premium to keep your child fully protected.',
-                  style: GoogleFonts.manrope(
-                    fontSize: 13.5,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.5.sp,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF64748B),
                     height: 1.4,
@@ -994,8 +996,8 @@ class _SettingsViewState extends State<SettingsView> {
                     },
                     child: Text(
                       'Upgrade to Premium',
-                      style: GoogleFonts.manrope(
-                        fontSize: 14.5,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.5.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -1045,8 +1047,8 @@ class _SettingsViewState extends State<SettingsView> {
                     },
                     child: Text(
                       'Logout Anyway',
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.0.sp,
                         fontWeight: FontWeight.w600,
                         color: Colors.redAccent,
                       ),
@@ -1076,8 +1078,8 @@ class _SettingsViewState extends State<SettingsView> {
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.manrope(
-              fontSize: 13,
+            style: GoogleFonts.poppins(
+              fontSize: 13.0.sp,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF0C1D37),
             ),
@@ -1091,7 +1093,7 @@ class _SettingsViewState extends State<SettingsView> {
     showAboutDialog(
       context: context,
       applicationName: 'NaviQ',
-      applicationVersion: 'Naviq Dev 1.0.4(Aug-20)',
+      applicationVersion: 'Naviq Dev 1.0.4(Sep 17)',
       applicationIcon: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
@@ -1102,14 +1104,14 @@ class _SettingsViewState extends State<SettingsView> {
       ),
       children: [
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Keeping children safe and parents connected.',
-          style: TextStyle(fontSize: 14, color: Colors.grey),
+          style: TextStyle(fontSize: 14.0.sp, color: Colors.grey),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           '© 2026 CodeScap Solutions',
-          style: TextStyle(fontSize: 12, color: Colors.grey),
+          style: TextStyle(fontSize: 12.0.sp, color: Colors.grey),
         ),
       ],
     );

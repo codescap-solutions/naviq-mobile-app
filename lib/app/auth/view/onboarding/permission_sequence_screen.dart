@@ -17,6 +17,7 @@ import 'package:child_track/app/auth/view/onboarding/app_catalog_screen.dart';
 import 'package:child_track/app/auth/view/onboarding/oem_battery_screen.dart';
 import 'package:child_track/core/services/oem_battery_helper.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 enum PermissionStep {
   location,
@@ -327,18 +328,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
           // `mounted` would always be false and silently no-op. The caller
           // always passes a context that's valid at the moment it's used.
           void goToSos(BuildContext ctx) {
-            // Named route (matches main.dart's own cold-start-into-SosView
-            // path via app_router.dart), not a bare unnamed
-            // MaterialPageRoute — GlobalUpgradeBanner excludes SosView by
-            // checking the *route name* against RouteNames.sos. An unnamed
-            // route reports a null name, which isn't in that exclusion set,
-            // so a child landing here for the very first time (right after
-            // finishing onboarding) briefly had the "Unlock more with a
-            // paid plan" banner render over their home screen — a
-            // subscription-upsell surface that has no business appearing
-            // on a child's device at all. Every later cold start already
-            // went through the named route and never showed it; only this
-            // first-run path didn't match.
+            // Named route, matching main.dart's own cold-start-into-SosView
+            // path via app_router.dart.
             Navigator.of(ctx).pushReplacementNamed(RouteNames.sos);
           }
 
@@ -559,8 +550,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                       // Title
                       Text(
                         title,
-                        style: GoogleFonts.manrope(
-                          fontSize: 22,
+                        style: GoogleFonts.poppins(
+                          fontSize: 22.0.sp,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF0F172A),
                         ),
@@ -569,8 +560,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                       // Subtitle
                       Text(
                         subtitle,
-                        style: GoogleFonts.manrope(
-                          fontSize: 13.5,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13.5.sp,
                           fontWeight: FontWeight.w500,
                           color: const Color(0xFF475569),
                           height: 1.45,
@@ -608,8 +599,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                               const SizedBox(width: 8),
                               Text(
                                 "How does it work",
-                                style: GoogleFonts.manrope(
-                                  fontSize: 13,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13.0.sp,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFF0F172A),
                                 ),
@@ -643,8 +634,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                                   : _advanceToNextStep,
                               child: Text(
                                 "Skip",
-                                style: GoogleFonts.manrope(
-                                  fontSize: 15,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 15.0.sp,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFF0F172A),
                                 ),
@@ -680,8 +671,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                                       )
                                     : Text(
                                         "Allow Access",
-                                        style: GoogleFonts.manrope(
-                                          fontSize: 15,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 15.0.sp,
                                           fontWeight: FontWeight.bold,
                                           color: Colors.white,
                                         ),
@@ -721,11 +712,11 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
               color: Color(0xFFEF4444),
               shape: BoxShape.circle,
             ),
-            child: const Text(
+            child: Text(
               "3",
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 8,
+                fontSize: 8.0.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -789,8 +780,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
           const SizedBox(width: 6),
           Text(
             text,
-            style: GoogleFonts.manrope(
-              fontSize: 12,
+            style: GoogleFonts.poppins(
+              fontSize: 12.0.sp,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF0066FF),
             ),
@@ -842,8 +833,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                     Text(
                       "All Set!",
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.manrope(
-                        fontSize: 32,
+                      style: GoogleFonts.poppins(
+                        fontSize: 32.0.sp,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF0F172A),
                       ),
@@ -854,8 +845,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                     Text(
                       "Your security and privacy settings\nare now configured.",
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.manrope(
-                        fontSize: 15,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15.0.sp,
                         fontWeight: FontWeight.w500,
                         color: const Color(0xFF64748B),
                         height: 1.4,
@@ -909,12 +900,12 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                       children: [
                         Text(
                           "🎉 ",
-                          style: GoogleFonts.manrope(fontSize: 14),
+                          style: GoogleFonts.poppins(fontSize: 14.0.sp),
                         ),
                         Text(
                           "You're ready to use the app securely!",
-                          style: GoogleFonts.manrope(
-                            fontSize: 14,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.0.sp,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF475569),
                           ),
@@ -938,8 +929,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                         icon: const Icon(Icons.home_outlined, color: Colors.white, size: 20),
                         label: Text(
                           "Go Home",
-                          style: GoogleFonts.manrope(
-                            fontSize: 15,
+                          style: GoogleFonts.poppins(
+                            fontSize: 15.0.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                         ),
@@ -970,8 +961,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                         icon: const Icon(Icons.play_arrow_outlined, color: Color(0xFF0F172A), size: 20),
                         label: Text(
                           "Watch Tutorial",
-                          style: GoogleFonts.manrope(
-                            fontSize: 15,
+                          style: GoogleFonts.poppins(
+                            fontSize: 15.0.sp,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF0F172A),
                           ),
@@ -1020,8 +1011,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.manrope(
-                    fontSize: 15,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15.0.sp,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF0F172A),
                   ),
@@ -1029,8 +1020,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: GoogleFonts.manrope(
-                    fontSize: 12.5,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.5.sp,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF64748B),
                   ),

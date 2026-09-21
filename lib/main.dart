@@ -15,7 +15,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'app/geofencing/view_model/bloc/geofence_bloc.dart';
-import 'app/subscription/widgets/global_upgrade_banner.dart';
 import 'core/di/injector.dart';
 import 'core/navigation/app_router.dart';
 import 'core/navigation/current_route_tracker.dart';
@@ -96,12 +95,7 @@ class ChildTrackApp extends StatelessWidget {
                 AppSnackbar.showError(context, AppStrings.networkError);
               }
             },
-            child: Stack(
-              children: [
-                widget ?? const SizedBox.shrink(),
-                const GlobalUpgradeBanner(),
-              ],
-            ),
+            child: widget ?? const SizedBox.shrink(),
           );
         },
         home: SplashScreen(),
@@ -157,6 +151,18 @@ class _SplashScreenState extends State<SplashScreen>
 
     final childId = injector<SharedPrefsService>().getString('child_id');
     final parentId = injector<SharedPrefsService>().getString('parent_id');
+    if (parentId != null && parentId.isNotEmpty) {
+      // Re-tag RevenueCat's display name/phone attributes on every cold
+      // start for an already-logged-in parent — this is what backfills
+      // sessions that authenticated before the tagging was added, since
+      // there's no other hook that re-runs for an existing session.
+      final sharedPrefs = injector<SharedPrefsService>();
+      await RevenueCatService.instance.logIn(
+        parentId,
+        displayName: sharedPrefs.getString('parent_name'),
+        phoneNumber: sharedPrefs.getUserPhone(),
+      );
+    }
     if (mounted) {
       if (parentId != null && parentId.isNotEmpty) {
         Navigator.pushReplacementNamed(context, RouteNames.home);

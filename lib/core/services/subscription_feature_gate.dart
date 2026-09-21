@@ -75,12 +75,6 @@ class SubscriptionFeatureGate {
     return (tier ?? _currentTier) == SubscriptionTier.starter;
   }
 
-  /// Persistent floating "upgrade" banner shown across every screen.
-  /// Free tier only, per the spec's "All Pages" row.
-  static bool showsFloatingUpgradeBanner({SubscriptionTier? tier}) {
-    return (tier ?? _currentTier) == SubscriptionTier.starter;
-  }
-
   /// Which support channels are directly usable for the tier.
   static HelpChannels helpChannels({SubscriptionTier? tier}) {
     switch (tier ?? _currentTier) {

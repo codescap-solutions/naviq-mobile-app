@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'toggle_switch.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class GeoPlaceCard extends StatelessWidget {
   final String title;
@@ -79,8 +80,8 @@ class GeoPlaceCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.manrope(
-                    fontSize: 16,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.0.sp,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF0C1D37),
                   ),
@@ -90,8 +91,8 @@ class GeoPlaceCard extends StatelessWidget {
                   children: [
                     Text(
                       "${radius}m radius • ",
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13.0.sp,
                         fontWeight: FontWeight.w500,
                         color: const Color(0xFF64748B),
                       ),
@@ -99,8 +100,8 @@ class GeoPlaceCard extends StatelessWidget {
                     if (toggleValue) ...[
                       Text(
                         "Active",
-                        style: GoogleFonts.manrope(
-                          fontSize: 13,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13.0.sp,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF22C55E),
                         ),
@@ -111,8 +112,8 @@ class GeoPlaceCard extends StatelessWidget {
                       onTap: onTap,
                       child: Text(
                         "Edit",
-                        style: GoogleFonts.manrope(
-                          fontSize: 13,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13.0.sp,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF0066FF),
                         ),

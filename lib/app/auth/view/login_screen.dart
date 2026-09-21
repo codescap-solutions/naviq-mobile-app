@@ -12,6 +12,7 @@ import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_strings.dart';
 import 'package:child_track/core/widgets/common_textfield.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.isFromSignIn = false});
@@ -180,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           widget.isFromSignIn ? 'Sign In' : 'Sign Up',
           style: GoogleFonts.poppins(
-            fontSize: 18,
+            fontSize: 18.0.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
@@ -200,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           'Personalisation',
           style: GoogleFonts.poppins(
-            fontSize: 10,
+            fontSize: 10.0.sp,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF0069F8),
           ),
@@ -209,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           'Verify and Proceed',
           style: GoogleFonts.poppins(
-            fontSize: 24,
+            fontSize: 24.0.sp,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF1D293C),
           ),
@@ -218,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           'No Spams, Just Personalized Notification',
           style: GoogleFonts.poppins(
-            fontSize: 14,
+            fontSize: 14.0.sp,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF62748E),
           ),
@@ -234,7 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           'Phone Number',
           style: GoogleFonts.poppins(
-            fontSize: 10,
+            fontSize: 10.0.sp,
             fontWeight: FontWeight.w400,
             color: const Color(0xFF7C8BA0),
           ),
@@ -287,7 +288,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Text(
       'we will generate otp automatically',
       style: GoogleFonts.poppins(
-        fontSize: 10,
+        fontSize: 10.0.sp,
         fontWeight: FontWeight.w600,
         color: const Color(0xFF838383),
       ),
@@ -324,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 'I agree to the ',
                 style: GoogleFonts.poppins(
-                  fontSize: 12,
+                  fontSize: 12.0.sp,
                   fontWeight: FontWeight.w500,
                   color: const Color(0xFF494949),
                 ),
@@ -334,7 +335,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Text(
                   'Terms of Service',
                   style: GoogleFonts.poppins(
-                    fontSize: 12,
+                    fontSize: 12.0.sp,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF0066FF),
                   ),
@@ -343,7 +344,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 ' & ',
                 style: GoogleFonts.poppins(
-                  fontSize: 12,
+                  fontSize: 12.0.sp,
                   fontWeight: FontWeight.w500,
                   color: const Color(0xFF494949),
                 ),
@@ -353,7 +354,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Text(
                   'Privacy Policy',
                   style: GoogleFonts.poppins(
-                    fontSize: 12,
+                    fontSize: 12.0.sp,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF0066FF),
                   ),
@@ -376,7 +377,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           'OTP',
           style: GoogleFonts.poppins(
-            fontSize: 10,
+            fontSize: 10.0.sp,
             fontWeight: FontWeight.w400,
             color: const Color(0xFF7C8BA0),
           ),
@@ -422,7 +423,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 "Didn't receive the OTP? ",
                 style: GoogleFonts.poppins(
-                  fontSize: 14,
+                  fontSize: 14.0.sp,
                   fontWeight: FontWeight.w500,
                   color: const Color(0xFF62748E),
                 ),
@@ -432,7 +433,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Text(
                   'Resend OTP',
                   style: GoogleFonts.poppins(
-                    fontSize: 14,
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF0066FF),
                     decoration: TextDecoration.underline,
@@ -479,7 +480,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 : Text(
                     buttonText,
                     style: GoogleFonts.poppins(
-                      fontSize: 16,
+                      fontSize: 16.0.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),

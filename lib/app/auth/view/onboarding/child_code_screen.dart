@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:child_track/core/widgets/common_button.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class ChildCodeScreen extends StatelessWidget {
   final String childCode;
@@ -37,8 +38,8 @@ class ChildCodeScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 Text(
                   'Add your first child by\npasting this code',
-                  style: GoogleFonts.manrope(
-                    fontSize: 24,
+                  style: GoogleFonts.poppins(
+                    fontSize: 24.0.sp,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF0C1D37),
                     height: 1.3,
@@ -50,8 +51,8 @@ class ChildCodeScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   'Enter this code on your child\'s device to link their account and start monitoring their activity.',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     color: const Color(0xFF62748E),
                     height: 1.4,
                   ),
@@ -96,8 +97,8 @@ class ChildCodeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 Text(
                   "🎉 You're ready to use the app securely!",
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF0C1D37),
                   ),
@@ -142,8 +143,8 @@ class ChildCodeScreen extends StatelessWidget {
                     ),
                     label: Text(
                       "Watch Tutorial",
-                      style: GoogleFonts.manrope(
-                        fontSize: 15,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15.0.sp,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF0C1D37),
                       ),
@@ -162,8 +163,8 @@ class ChildCodeScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 Text(
                   'Child Created Successfully!',
-                  style: GoogleFonts.manrope(
-                    fontSize: 24,
+                  style: GoogleFonts.poppins(
+                    fontSize: 24.0.sp,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF0C1D37),
                   ),
@@ -172,8 +173,8 @@ class ChildCodeScreen extends StatelessWidget {
                 const SizedBox(height: 32),
                 Text(
                   'Your Child Code:',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     color: const Color(0xFF62748E),
                   ),
                   textAlign: TextAlign.center,
@@ -183,8 +184,8 @@ class ChildCodeScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   'Enter this code on your child\'s device to link their account and start monitoring their activity.',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     color: const Color(0xFF62748E),
                     height: 1.4,
                   ),
@@ -225,8 +226,8 @@ class ChildCodeScreen extends StatelessWidget {
         children: [
           Text(
             childCode.split('').join(' '),
-            style: GoogleFonts.manrope(
-              fontSize: 26,
+            style: GoogleFonts.poppins(
+              fontSize: 26.0.sp,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF0066FF),
               letterSpacing: 2,
@@ -256,8 +257,8 @@ class ChildCodeScreen extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     'Copy',
-                    style: GoogleFonts.manrope(
-                      fontSize: 14,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14.0.sp,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF0066FF),
                     ),
@@ -300,8 +301,8 @@ class ChildCodeScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.manrope(
-                    fontSize: 15,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15.0.sp,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF0C1D37),
                   ),
@@ -309,8 +310,8 @@ class ChildCodeScreen extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: GoogleFonts.manrope(
-                    fontSize: 12,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.0.sp,
                     color: const Color(0xFF62748E),
                   ),
                 ),

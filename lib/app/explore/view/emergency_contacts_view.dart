@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/utils/app_logger.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class EmergencyContactsView extends StatefulWidget {
   const EmergencyContactsView({super.key});
@@ -136,8 +137,8 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
           ),
           Text(
             'Parents Details',
-            style: GoogleFonts.manrope(
-              fontSize: 20,
+            style: GoogleFonts.poppins(
+              fontSize: 20.0.sp,
               fontWeight: FontWeight.w800,
               color: Colors.white,
             ),
@@ -158,8 +159,8 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
       children: [
         Text(
           label,
-          style: GoogleFonts.manrope(
-            fontSize: 14,
+          style: GoogleFonts.poppins(
+            fontSize: 14.0.sp,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF0C1D37),
           ),
@@ -168,15 +169,15 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
-          style: GoogleFonts.manrope(
-            fontSize: 15,
+          style: GoogleFonts.poppins(
+            fontSize: 15.0.sp,
             fontWeight: FontWeight.w500,
             color: const Color(0xFF0C1D37),
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.manrope(
-              fontSize: 14,
+            hintStyle: GoogleFonts.poppins(
+              fontSize: 14.0.sp,
               color: const Color(0xFF94A3B8),
               fontWeight: FontWeight.w400,
             ),
@@ -226,9 +227,9 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
                 alignment: Alignment.center,
                 child: Text(
                   '$index',
-                  style: GoogleFonts.manrope(
+                  style: GoogleFonts.poppins(
                     color: Colors.white,
-                    fontSize: 14,
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -236,8 +237,8 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
               const SizedBox(width: 10),
               Text(
                 'Contact $index',
-                style: GoogleFonts.manrope(
-                  fontSize: 16,
+                style: GoogleFonts.poppins(
+                  fontSize: 16.0.sp,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF0C1D37),
                 ),
@@ -307,8 +308,8 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
                             )
                           : Text(
                               'Done',
-                              style: GoogleFonts.manrope(
-                                fontSize: 16,
+                              style: GoogleFonts.poppins(
+                                fontSize: 16.0.sp,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

@@ -13,6 +13,7 @@ import '../view_model/bloc/geofence_bloc.dart';
 import '../view_model/bloc/geofence_event.dart';
 import '../view_model/bloc/geofence_state.dart';
 import '../model/geofence_model.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class LocationSelectionScreen extends StatefulWidget {
   final String? childId;
@@ -328,15 +329,15 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                           Expanded(
                             child: TextField(
                               controller: _searchController,
-                              style: GoogleFonts.manrope(
-                                fontSize: 14,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14.0.sp,
                                 fontWeight: FontWeight.w600,
                                 color: const Color(0xFF0C1D37),
                               ),
                               decoration: InputDecoration(
                                 hintText: "search location",
-                                hintStyle: GoogleFonts.manrope(
-                                  fontSize: 14,
+                                hintStyle: GoogleFonts.poppins(
+                                  fontSize: 14.0.sp,
                                   fontWeight: FontWeight.w500,
                                   color: const Color(0xFF94A3B8),
                                 ),
@@ -410,8 +411,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                                   return ListTile(
                                     title: Text(
                                       suggestion.mainText ?? "Unknown",
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 14,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14.0.sp,
                                         fontWeight: FontWeight.w600,
                                         color: const Color(0xFF0C1D37),
                                       ),
@@ -419,8 +420,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                                     subtitle: Text(
                                       suggestion.description ??
                                           "Unknown location",
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 12,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12.0.sp,
                                         color: const Color(0xFF64748B),
                                       ),
                                     ),
@@ -470,8 +471,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
           child: Text(
             "zoom in and pick the location you want to fence",
             textAlign: TextAlign.center,
-            style: GoogleFonts.manrope(
-              fontSize: 13,
+            style: GoogleFonts.poppins(
+              fontSize: 13.0.sp,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF64748B),
             ),
@@ -627,8 +628,8 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
       children: [
         Text(
           title,
-          style: GoogleFonts.manrope(
-            fontSize: 14,
+          style: GoogleFonts.poppins(
+            fontSize: 14.0.sp,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF0C1D37),
           ),
@@ -726,14 +727,14 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                       children: [
                         TextField(
                           controller: _nameController,
-                          style: GoogleFonts.manrope(
-                            fontSize: 18,
+                          style: GoogleFonts.poppins(
+                            fontSize: 18.0.sp,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF0C1D37),
                           ),
                           decoration: InputDecoration(
                             hintText: "Place Name",
-                            hintStyle: GoogleFonts.manrope(
+                            hintStyle: GoogleFonts.poppins(
                               color: const Color(0xFF94A3B8),
                               fontWeight: FontWeight.w600,
                             ),
@@ -750,8 +751,8 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                         const SizedBox(height: 4),
                         Text(
                           widget.address ?? widget.geofence?.address ?? "Fenced Location",
-                          style: GoogleFonts.manrope(
-                            fontSize: 13,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13.0.sp,
                             fontWeight: FontWeight.w500,
                             color: const Color(0xFF64748B),
                           ),
@@ -770,8 +771,8 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
               // Radius Slider Section
               Text(
                 "Fence Radius",
-                style: GoogleFonts.manrope(
-                  fontSize: 14,
+                style: GoogleFonts.poppins(
+                  fontSize: 14.0.sp,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF0C1D37),
                 ),
@@ -812,8 +813,8 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                     final isSelected = index == _sliderIndex;
                     return Text(
                       label,
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.0.sp,
                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                         color: isSelected ? const Color(0xFF0066FF) : const Color(0xFF94A3B8),
                       ),
@@ -828,8 +829,8 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
               // Alerts Section
               Text(
                 "Alerts",
-                style: GoogleFonts.manrope(
-                  fontSize: 14,
+                style: GoogleFonts.poppins(
+                  fontSize: 14.0.sp,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF0C1D37),
                 ),
@@ -896,8 +897,8 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                             )
                           : Text(
                               "Save Fence",
-                              style: GoogleFonts.manrope(
-                                fontSize: 16,
+                              style: GoogleFonts.poppins(
+                                fontSize: 16.0.sp,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                               ),
@@ -925,8 +926,8 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                     },
                     child: Text(
                       "Delete Geofence",
-                      style: GoogleFonts.manrope(
-                        fontSize: 16,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16.0.sp,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFFEF4444),
                       ),
@@ -951,16 +952,16 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
         ),
         title: Text(
           'Delete Geofence',
-          style: GoogleFonts.manrope(
-            fontSize: 18,
+          style: GoogleFonts.poppins(
+            fontSize: 18.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF0C1D37),
           ),
         ),
         content: Text(
           'Are you sure you want to delete "${widget.geofence?.name}"?',
-          style: GoogleFonts.manrope(
-            fontSize: 14,
+          style: GoogleFonts.poppins(
+            fontSize: 14.0.sp,
             fontWeight: FontWeight.w500,
             color: const Color(0xFF475569),
           ),
@@ -970,8 +971,8 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
             onPressed: () => Navigator.pop(dlgContext),
             child: Text(
               'Cancel',
-              style: GoogleFonts.manrope(
-                fontSize: 14,
+              style: GoogleFonts.poppins(
+                fontSize: 14.0.sp,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF64748B),
               ),
@@ -988,8 +989,8 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
             },
             child: Text(
               'Delete',
-              style: GoogleFonts.manrope(
-                fontSize: 14,
+              style: GoogleFonts.poppins(
+                fontSize: 14.0.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFFEF4444),
               ),

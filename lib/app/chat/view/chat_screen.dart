@@ -6,6 +6,7 @@ import 'package:child_track/app/chat/view_model/bloc/chat_state.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/core/models/chat_models.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/di/injector.dart';
@@ -193,7 +194,7 @@ class _ChatScreenState extends State<ChatScreen> {
               message.text,
               style: TextStyle(
                 color: isMe ? Colors.white : AppColors.textPrimary,
-                fontSize: 15,
+                fontSize: 15.0.sp,
               ),
             ),
             const SizedBox(height: 4),
@@ -202,7 +203,7 @@ class _ChatScreenState extends State<ChatScreen> {
               style: TextStyle(
                 color: (isMe ? Colors.white : AppColors.textSecondary)
                     .withValues(alpha: 0.7),
-                fontSize: 10,
+                fontSize: 10.0.sp,
               ),
             ),
           ],

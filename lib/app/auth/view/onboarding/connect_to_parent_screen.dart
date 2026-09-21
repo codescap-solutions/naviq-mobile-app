@@ -8,6 +8,7 @@ import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class ConnectToParentScreen extends StatefulWidget {
   const ConnectToParentScreen({super.key});
@@ -84,15 +85,15 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Where is my code?',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         content: Text(
           '1. Open the Parents App.\n2. Go to the Child settings or Dashboard.\n3. Copy the 6-character code shown under your child\'s name.\n4. Enter that code on this screen.',
-          style: GoogleFonts.manrope(height: 1.4),
+          style: GoogleFonts.poppins(height: 1.4),
         ),
         actions: [
           TextButton(
-            child: Text('Close', style: GoogleFonts.manrope(color: const Color(0xFF0066FF), fontWeight: FontWeight.bold)),
+            child: Text('Close', style: GoogleFonts.poppins(color: const Color(0xFF0066FF), fontWeight: FontWeight.bold)),
             onPressed: () => Navigator.pop(context),
           ),
         ],
@@ -140,8 +141,8 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
         ),
         title: Text(
           'Add Child',
-          style: GoogleFonts.manrope(
-            fontSize: 20,
+          style: GoogleFonts.poppins(
+            fontSize: 20.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF0C1D37),
           ),
@@ -165,8 +166,8 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'Enter Child Code',
-                          style: GoogleFonts.manrope(
-                            fontSize: 26,
+                          style: GoogleFonts.poppins(
+                            fontSize: 26.0.sp,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF0C1D37),
                           ),
@@ -174,8 +175,8 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'The six didgit code that generated in Parents App',
-                          style: GoogleFonts.manrope(
-                            fontSize: 14,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.0.sp,
                             fontWeight: FontWeight.w500,
                             color: const Color(0xFF64748B),
                           ),
@@ -215,8 +216,8 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                                   children: [
                                     Text(
                                       'How to get the code?',
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 14,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14.0.sp,
                                         fontWeight: FontWeight.bold,
                                         color: const Color(0xFF0C1D37),
                                       ),
@@ -224,8 +225,8 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                                     const SizedBox(height: 4),
                                     RichText(
                                       text: TextSpan(
-                                        style: GoogleFonts.manrope(
-                                          fontSize: 12,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12.0.sp,
                                           color: const Color(0xFF64748B),
                                           height: 1.4,
                                           fontWeight: FontWeight.w500,
@@ -234,7 +235,7 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                                           const TextSpan(text: "Incase you installed kids app first go parents app and "),
                                           TextSpan(
                                             text: "Finish Sign Up",
-                                            style: GoogleFonts.manrope(
+                                            style: GoogleFonts.poppins(
                                               fontWeight: FontWeight.bold,
                                               color: const Color(0xFF0066FF),
                                             ),
@@ -252,8 +253,8 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                         const SizedBox(height: 32),
                         Text(
                           'Child Code',
-                          style: GoogleFonts.manrope(
-                            fontSize: 14,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.0.sp,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF0C1D37),
                           ),
@@ -266,17 +267,17 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                           onChanged: (value) {
                             setState(() {}); // Rebuild to update segment dashes
                           },
-                          style: GoogleFonts.manrope(
-                            fontSize: 28,
+                          style: GoogleFonts.poppins(
+                            fontSize: 28.0.sp,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF0C1D37),
                             letterSpacing: 4,
                           ),
                           decoration: InputDecoration(
                             hintText: 'e.g. KIDS01',
-                            hintStyle: GoogleFonts.manrope(
+                            hintStyle: GoogleFonts.poppins(
                               color: const Color(0xFF94A3B8),
-                              fontSize: 28,
+                              fontSize: 28.0.sp,
                               letterSpacing: 4,
                               fontWeight: FontWeight.bold,
                             ),
@@ -352,15 +353,15 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 '💡 ',
-                                style: TextStyle(fontSize: 14),
+                                style: TextStyle(fontSize: 14.0.sp),
                               ),
                               Expanded(
                                 child: RichText(
                                   text: TextSpan(
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 12,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.0.sp,
                                       color: const Color(0xFFB45309),
                                       height: 1.4,
                                     ),
@@ -406,8 +407,8 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                                   )
                                 : Text(
                                     'Verify Code',
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 16,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16.0.sp,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
@@ -421,8 +422,8 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                           children: [
                             Text(
                               "Can't find the code? ",
-                              style: GoogleFonts.manrope(
-                                fontSize: 13,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.0.sp,
                                 color: const Color(0xFF64748B),
                                 fontWeight: FontWeight.w500,
                               ),
@@ -431,8 +432,8 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                               onTap: _showHelpDialog,
                               child: Text(
                                 "Help",
-                                style: GoogleFonts.manrope(
-                                  fontSize: 13,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13.0.sp,
                                   color: const Color(0xFF5593F8),
                                   fontWeight: FontWeight.bold,
                                 ),

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/core/models/child_profile.dart';
 import 'package:child_track/app/home/view_model/bloc/homepage_bloc.dart';
 import 'package:child_track/app/home/view_model/home_repo.dart';
@@ -265,8 +266,8 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
         ),
         title: Text(
           'Profiles',
-          style: GoogleFonts.manrope(
-            fontSize: 22,
+          style: GoogleFonts.poppins(
+            fontSize: 22.0.sp,
             fontWeight: FontWeight.w800,
             color: Colors.white,
           ),
@@ -479,9 +480,9 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                           ),
                           child: Text(
                             'active',
-                            style: GoogleFonts.manrope(
+                            style: GoogleFonts.poppins(
                               color: const Color(0xFF15803D),
-                              fontSize: 12,
+                              fontSize: 12.0.sp,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -553,8 +554,8 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                               children: [
                                 Text(
                                   '$name ($childCode)',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 20,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 20.0.sp,
                                     fontWeight: FontWeight.w800,
                                     color: Colors.white,
                                   ),
@@ -572,8 +573,8 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                           // Status text
                           Text(
                             status,
-                            style: GoogleFonts.manrope(
-                              fontSize: 13,
+                            style: GoogleFonts.poppins(
+                              fontSize: 13.0.sp,
                               fontWeight: FontWeight.w500,
                               color: Colors.white.withValues(alpha: 0.8),
                             ),
@@ -650,8 +651,8 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
             const SizedBox(width: 6),
             Text(
               value,
-              style: GoogleFonts.manrope(
-                fontSize: 14,
+              style: GoogleFonts.poppins(
+                fontSize: 14.0.sp,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF0C1D37),
               ),
@@ -661,8 +662,8 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
         const SizedBox(height: 4),
         Text(
           label,
-          style: GoogleFonts.manrope(
-            fontSize: 11,
+          style: GoogleFonts.poppins(
+            fontSize: 11.0.sp,
             fontWeight: FontWeight.w500,
             color: const Color(0xFF64748B),
           ),
@@ -736,8 +737,8 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
             const SizedBox(height: 24),
             Text(
               "No Connected Kids",
-              style: GoogleFonts.manrope(
-                fontSize: 20,
+              style: GoogleFonts.poppins(
+                fontSize: 20.0.sp,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF0C1D37),
               ),
@@ -746,8 +747,8 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
             Text(
               "Add a child profile to start tracking and managing their screen time.",
               textAlign: TextAlign.center,
-              style: GoogleFonts.manrope(
-                fontSize: 14,
+              style: GoogleFonts.poppins(
+                fontSize: 14.0.sp,
                 color: const Color(0xFF64748B),
                 height: 1.5,
               ),
@@ -779,9 +780,9 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                     const SizedBox(width: 8),
                     Text(
                       "Add Kid",
-                      style: GoogleFonts.manrope(
+                      style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w700,
-                        fontSize: 15,
+                        fontSize: 15.0.sp,
                       ),
                     ),
                   ],

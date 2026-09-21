@@ -16,6 +16,7 @@ import 'package:child_track/core/utils/map_marker_utils.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:child_track/core/widgets/child_location_detail_shimmer.dart';
 import 'package:intl/intl.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class ChildLocationDetailView extends StatefulWidget {
   const ChildLocationDetailView({super.key});
@@ -450,7 +451,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
             padding: EdgeInsets.zero,
             width: 80,
             text: 'View all',
-            fontSize: 12,
+            fontSize: 12.0.sp,
             textColor: AppColors.surfaceColor,
             onPressed: () => Navigator.push(
               context,
@@ -600,7 +601,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
                           style: AppTextStyles.caption.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.primaryColor,
-                            fontSize: 11,
+                            fontSize: 11.0.sp,
                           ),
                         ),
                       ],
@@ -995,7 +996,7 @@ class _RouteRendererState extends State<_RouteRenderer> {
           style: AppTextStyles.subtitle1.copyWith(
             color: AppColors.primaryColor,
             fontWeight: FontWeight.bold,
-            fontSize: 12,
+            fontSize: 12.0.sp,
           ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,

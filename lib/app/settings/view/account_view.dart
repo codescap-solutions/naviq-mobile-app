@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'widgets/section_card.dart';
 import 'widgets/setting_tile.dart';
 
@@ -35,10 +36,10 @@ class AccountView extends StatelessWidget {
             onPressed: () => Navigator.of(context).maybePop(),
           ),
         ),
-        title: const Text(
+        title: Text(
           'Account',
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 24.0.sp,
             fontWeight: FontWeight.w800,
             color: Colors.black,
             letterSpacing: -0.5,
@@ -53,12 +54,12 @@ class AccountView extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSizes.paddingL),
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(left: 8, bottom: 8),
             child: Text(
               'PREFERENCES',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.0.sp,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF9FA5B4),
                 letterSpacing: 1.0,
@@ -101,12 +102,12 @@ class AccountView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(left: 8, bottom: 8),
             child: Text(
               'DANGER ZONE',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.0.sp,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF9FA5B4),
                 letterSpacing: 1.0,

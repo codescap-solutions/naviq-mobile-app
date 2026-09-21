@@ -7,6 +7,7 @@ import 'package:child_track/app/childapp/view_model/repository/child_repo.dart';
 import 'package:child_track/app/childapp/view_model/repository/device_info_service.dart';
 import 'package:child_track/core/utils/app_logger.dart';
 import 'package:child_track/app/auth/view/onboarding/app_catalog_screen.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class MappingProgressScreen extends StatefulWidget {
   final List<CatalogAppItem> selectedApps;
@@ -211,17 +212,17 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
                             children: [
                               Text(
                                 "$completedCount of $totalCount Completed",
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 15,
+                                  fontSize: 15.0.sp,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               Text(
                                 "${(progress * 100).toInt()}%",
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Color(0xFF0066FF),
-                                  fontSize: 15,
+                                  fontSize: 15.0.sp,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -254,7 +255,7 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
                         ),
                         child: Text(
                           _validationError!,
-                          style: const TextStyle(color: Colors.redAccent, fontSize: 13, height: 1.4),
+                          style: TextStyle(color: Colors.redAccent, fontSize: 13.0.sp, height: 1.4),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -293,7 +294,7 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
                           : Text(
                               allComplete ? "Finish Mapping" : "Map remaining apps to complete",
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 16.0.sp,
                                 fontWeight: FontWeight.w600,
                                 color: allComplete ? Colors.white : Colors.grey[550],
                               ),
@@ -344,7 +345,7 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
                       "$stepNum",
                       style: TextStyle(
                         color: isCurrent ? const Color(0xFF0066FF) : Colors.grey[500],
-                        fontSize: 14,
+                        fontSize: 14.0.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -361,7 +362,7 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
                   app.name,
                   style: TextStyle(
                     color: isMapped || isCurrent ? Colors.white : Colors.grey[500],
-                    fontSize: 15,
+                    fontSize: 15.0.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -374,7 +375,7 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
                     color: isMapped
                         ? Colors.green[400]
                         : (isCurrent ? const Color(0xFF0066FF) : Colors.grey[600]),
-                    fontSize: 12,
+                    fontSize: 12.0.sp,
                   ),
                 ),
               ],
@@ -392,9 +393,9 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
                 elevation: 0,
               ),
               onPressed: () => _mapApp(app),
-              child: const Text(
+              child: Text(
                 "Map",
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 13.0.sp, fontWeight: FontWeight.bold),
               ),
             )
           else if (!isMapped)
@@ -402,7 +403,7 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
           else
             TextButton(
               onPressed: () => _mapApp(app),
-              child: const Text("Redo", style: TextStyle(color: Colors.grey, fontSize: 13)),
+              child: Text("Redo", style: TextStyle(color: Colors.grey, fontSize: 13.0.sp)),
             ),
         ],
       ),

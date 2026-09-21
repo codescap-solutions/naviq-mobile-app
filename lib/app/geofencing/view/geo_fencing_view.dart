@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/utils/responsive_font.dart';
 import '../../../core/services/shared_prefs_service.dart';
 import '../../../core/services/subscription_feature_gate.dart';
 import '../../../core/di/injector.dart';
@@ -114,9 +115,9 @@ class _GeoFencingViewState extends State<GeoFencingView> {
         ),
         title: Text(
           'Geofencing',
-          style: GoogleFonts.manrope(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
+          style: GoogleFonts.poppins(
+            fontSize: 20.0.sp,
+            fontWeight: FontWeight.w700,
             color: const Color(0xFF0C1D37),
           ),
         ),
@@ -299,11 +300,22 @@ class _GeoFencingViewState extends State<GeoFencingView> {
         ],
       ),
       floatingActionButton: _isPrimaryParent
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               onPressed: _navigateToPlaceSelection,
               backgroundColor: const Color(0xFF0066FF),
-              shape: const CircleBorder(),
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
+              foregroundColor: Colors.white,
+              elevation: 4,
+              icon: const Icon(Icons.add_location_alt_rounded, size: 22),
+              label: Text(
+                'Add Fence',
+                style: GoogleFonts.poppins(
+                  fontSize: 14.0.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
             )
           : null,
     );
@@ -328,8 +340,8 @@ class _GeoFencingViewState extends State<GeoFencingView> {
               children: [
                 Text(
                   "${_getChildEmoji()} ${_getChildName()}",
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF0066FF),
                   ),
@@ -349,8 +361,8 @@ class _GeoFencingViewState extends State<GeoFencingView> {
             children: [
               Text(
                 "$activeCount active ${activeCount == 1 ? 'fence' : 'fences'}",
-                style: GoogleFonts.manrope(
-                  fontSize: 14,
+                style: GoogleFonts.poppins(
+                  fontSize: 14.0.sp,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF22C55E),
                 ),
@@ -373,8 +385,8 @@ class _GeoFencingViewState extends State<GeoFencingView> {
       padding: const EdgeInsets.only(left: 4, bottom: 8, top: 12),
       child: Text(
         "SUGGESTED FENCES",
-        style: GoogleFonts.manrope(
-          fontSize: 11,
+        style: GoogleFonts.poppins(
+          fontSize: 11.0.sp,
           fontWeight: FontWeight.w800,
           color: const Color(0xFF94A3B8),
           letterSpacing: 0.8,
@@ -458,8 +470,8 @@ class _GeoFencingViewState extends State<GeoFencingView> {
         ),
         title: Text(
           name,
-          style: GoogleFonts.manrope(
-            fontSize: 14,
+          style: GoogleFonts.poppins(
+            fontSize: 14.0.sp,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF0C1D37),
           ),
@@ -574,8 +586,8 @@ class _GeoFencingViewState extends State<GeoFencingView> {
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         "QUICK ADD GEOFENCE",
-        style: GoogleFonts.manrope(
-          fontSize: 11,
+        style: GoogleFonts.poppins(
+          fontSize: 11.0.sp,
           fontWeight: FontWeight.w800,
           color: const Color(0xFF94A3B8),
           letterSpacing: 0.8,
@@ -721,8 +733,8 @@ class _GeoFencingViewState extends State<GeoFencingView> {
             const SizedBox(height: 10),
             Text(
               label,
-              style: GoogleFonts.manrope(
-                fontSize: 13,
+              style: GoogleFonts.poppins(
+                fontSize: 13.0.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF0C1D37),
               ),

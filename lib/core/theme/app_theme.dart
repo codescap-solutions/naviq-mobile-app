@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
+import '../utils/responsive_font.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      // Set Manrope as the global default font for all text in the app
-      fontFamily: GoogleFonts.manrope().fontFamily,
+      // Poppins as the global default font for all text in the app —
+      // matches the Figma design system (was Manrope everywhere, a
+      // full mismatch against the design file's actual type spec).
+      fontFamily: GoogleFonts.poppins().fontFamily,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primaryColor,
         brightness: Brightness.light,
       ),
-      textTheme: GoogleFonts.manropeTextTheme().copyWith(
+      textTheme: GoogleFonts.poppinsTextTheme().copyWith(
         displayLarge: GoogleFonts.oswald(fontWeight: FontWeight.bold),
         displayMedium: GoogleFonts.oswald(fontWeight: FontWeight.bold),
         displaySmall: GoogleFonts.oswald(fontWeight: FontWeight.bold),
@@ -21,13 +24,13 @@ class AppTheme {
         headlineMedium: GoogleFonts.oswald(fontWeight: FontWeight.w600),
         headlineSmall: GoogleFonts.oswald(fontWeight: FontWeight.w600),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.primaryColor,
         foregroundColor: AppColors.surfaceColor,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
-          fontSize: 18,
+          fontSize: 18.0.sp,
           fontWeight: FontWeight.w600,
           color: AppColors.surfaceColor,
         ),
@@ -44,7 +47,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusM),
           ),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: TextStyle(fontSize: 16.0.sp, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -58,7 +61,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusM),
           ),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: TextStyle(fontSize: 16.0.sp, fontWeight: FontWeight.w600),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -68,7 +71,7 @@ class AppTheme {
             horizontal: AppSizes.paddingM,
             vertical: AppSizes.paddingS,
           ),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: TextStyle(fontSize: 14.0.sp, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -98,10 +101,10 @@ class AppTheme {
           horizontal: AppSizes.paddingM,
           vertical: AppSizes.paddingM,
         ),
-        hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 14),
-        labelStyle: const TextStyle(
+        hintStyle: TextStyle(color: AppColors.textHint, fontSize: 14.0.sp),
+        labelStyle: TextStyle(
           color: AppColors.textSecondary,
-          fontSize: 14,
+          fontSize: 14.0.sp,
         ),
       ),
       cardTheme: CardThemeData(

@@ -4,6 +4,7 @@ import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/app/childapp/view_model/repository/child_repo.dart';
 import 'package:child_track/core/utils/app_logger.dart';
 import 'package:child_track/app/auth/view/onboarding/mapping_progress_screen.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class CatalogAppItem {
   final int? appId;
@@ -214,9 +215,9 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
               _selectedApps.isEmpty
                   ? "Skip for now"
                   : "Next (${_selectedApps.length})",
-              style: const TextStyle(
+              style: TextStyle(
                 color: Color(0xFF0066FF),
-                fontSize: 16,
+                fontSize: 16.0.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -243,14 +244,14 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
                       "Couldn't load the app list",
                       style: TextStyle(
                           color: Colors.grey[300],
-                          fontSize: 16,
+                          fontSize: 16.0.sp,
                           fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       "Check your connection and try again — or skip this for now and add apps later from Settings.",
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                      style: TextStyle(color: Colors.grey[500], fontSize: 13.0.sp),
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
@@ -287,11 +288,11 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
                     // button above makes that possible, but a child staring
                     // at a full app grid with no explanation could still
                     // assume they *must* pick something to continue.
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 12.0),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
                       child: Text(
                         "Optional — pick apps to monitor now, or skip and add them later from Settings.",
-                        style: TextStyle(color: Color(0xFF8E8E93), fontSize: 12.5),
+                        style: TextStyle(color: Color(0xFF8E8E93), fontSize: 12.5.sp),
                       ),
                     ),
                     // Search bar
@@ -341,7 +342,7 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
                                     category.toUpperCase(),
                                     style: TextStyle(
                                       color: Colors.grey[500],
-                                      fontSize: 13,
+                                      fontSize: 13.0.sp,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.5,
                                     ),
@@ -375,7 +376,7 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
                                 "CUSTOM APPS",
                                 style: TextStyle(
                                   color: Colors.grey[500],
-                                  fontSize: 13,
+                                  fontSize: 13.0.sp,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0.5,
                                 ),
@@ -405,7 +406,7 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
                             Text(
                               "Can't find your app?",
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                              style: TextStyle(color: Colors.grey[500], fontSize: 14.0.sp),
                             ),
                             const SizedBox(height: 12),
                             Center(
@@ -488,9 +489,9 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
             Expanded(
               child: Text(
                 app.name,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 14,
+                  fontSize: 14.0.sp,
                   fontWeight: FontWeight.w600,
                 ),
                 maxLines: 1,

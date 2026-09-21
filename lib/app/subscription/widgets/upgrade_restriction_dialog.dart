@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 import '../models/subscription_plan.dart';
 import 'subscription_popup_sheet.dart';
@@ -104,8 +105,8 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
             const SizedBox(height: 18),
             Text(
               title,
-              style: GoogleFonts.manrope(
-                fontSize: 20,
+              style: GoogleFonts.poppins(
+                fontSize: 20.0.sp,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF0C1D37),
               ),
@@ -114,8 +115,8 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               message,
-              style: GoogleFonts.manrope(
-                fontSize: 13.5,
+              style: GoogleFonts.poppins(
+                fontSize: 13.5.sp,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF64748B),
                 height: 1.4,
@@ -140,8 +141,8 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
                 },
                 child: Text(
                   ctaText,
-                  style: GoogleFonts.manrope(
-                    fontSize: 14.5,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.5.sp,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -161,8 +162,8 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'Not Now',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF64748B),
                   ),

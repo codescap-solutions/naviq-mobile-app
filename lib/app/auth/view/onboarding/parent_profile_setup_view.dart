@@ -10,6 +10,7 @@ import 'package:child_track/app/auth/view_model/bloc/auth_event.dart';
 import 'package:child_track/app/auth/view_model/bloc/auth_state.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:child_track/app/auth/view/onboarding/add_kid_view.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class ParentProfileSetupView extends StatefulWidget {
   final String phoneNumber;
@@ -203,7 +204,7 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
           Text(
             'Parent profile',
             style: GoogleFonts.poppins(
-              fontSize: 18,
+              fontSize: 18.0.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
@@ -261,7 +262,7 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
           Text(
             'Your Family Structure',
             style: GoogleFonts.poppins(
-              fontSize: 12,
+              fontSize: 12.0.sp,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF0066FF),
             ),
@@ -270,7 +271,7 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
           Text(
             'How would you describe your parenting situation?',
             style: GoogleFonts.oswald(
-              fontSize: 22,
+              fontSize: 22.0.sp,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF1D293C),
             ),
@@ -278,8 +279,8 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
           const SizedBox(height: 8),
           Text(
             "We'll customise sharing settings and support features around your family.",
-            style: GoogleFonts.manrope(
-              fontSize: 13,
+            style: GoogleFonts.poppins(
+              fontSize: 13.0.sp,
               fontWeight: FontWeight.w500,
               color: const Color(0xFF62748E),
             ),
@@ -363,7 +364,7 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
             Text(
               'About Your Lifestyle',
               style: GoogleFonts.poppins(
-                fontSize: 12,
+                fontSize: 12.0.sp,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF0066FF),
               ),
@@ -372,7 +373,7 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
             Text(
               'What best describes your daily routine?',
               style: GoogleFonts.oswald(
-                fontSize: 22,
+                fontSize: 22.0.sp,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF1D293C),
               ),
@@ -380,8 +381,8 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
             const SizedBox(height: 8),
             Text(
               'This helps us personalise your notification schedule and safety alerts.',
-              style: GoogleFonts.manrope(
-                fontSize: 13,
+              style: GoogleFonts.poppins(
+                fontSize: 13.0.sp,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF62748E),
               ),
@@ -390,7 +391,7 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
             Text(
               'Parent Name',
               style: GoogleFonts.poppins(
-                fontSize: 12,
+                fontSize: 12.0.sp,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF1D293C),
               ),
@@ -493,7 +494,7 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
                 : Text(
                     _currentStep == 0 ? 'Continue' : 'Register',
                     style: GoogleFonts.poppins(
-                      fontSize: 16,
+                      fontSize: 16.0.sp,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
@@ -589,7 +590,7 @@ class ParentOptionCard extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     emoji,
-                    style: const TextStyle(fontSize: 22),
+                    style: TextStyle(fontSize: 22.0.sp),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -603,7 +604,7 @@ class ParentOptionCard extends StatelessWidget {
                             child: Text(
                               title,
                               style: GoogleFonts.poppins(
-                                fontSize: 14,
+                                fontSize: 14.0.sp,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF1D293C),
                               ),
@@ -622,8 +623,8 @@ class ParentOptionCard extends StatelessWidget {
                               ),
                               child: Text(
                                 badgeText!,
-                                style: GoogleFonts.manrope(
-                                  fontSize: 10,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10.0.sp,
                                   fontWeight: FontWeight.w700,
                                   color: badgeTextColor,
                                 ),
@@ -635,8 +636,8 @@ class ParentOptionCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: GoogleFonts.manrope(
-                          fontSize: 12,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12.0.sp,
                           fontWeight: FontWeight.w500,
                           color: const Color(0xFF62748E),
                           height: 1.3,
@@ -673,8 +674,8 @@ class ParentOptionCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 detailText,
-                                style: GoogleFonts.manrope(
-                                  fontSize: 12,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12.0.sp,
                                   fontWeight: FontWeight.w500,
                                   color: themeColor,
                                   height: 1.3,
@@ -704,7 +705,7 @@ class ParentOptionCard extends StatelessWidget {
                                       Text(
                                         stat1Value!,
                                         style: GoogleFonts.oswald(
-                                          fontSize: 22,
+                                          fontSize: 22.0.sp,
                                           fontWeight: FontWeight.bold,
                                           color: themeColor,
                                         ),
@@ -712,8 +713,8 @@ class ParentOptionCard extends StatelessWidget {
                                       const SizedBox(height: 4),
                                       Text(
                                         stat1Label!,
-                                        style: GoogleFonts.manrope(
-                                          fontSize: 10,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 10.0.sp,
                                           fontWeight: FontWeight.w500,
                                           color: const Color(0xFF62748E),
                                           height: 1.2,
@@ -740,7 +741,7 @@ class ParentOptionCard extends StatelessWidget {
                                       Text(
                                         stat2Value!,
                                         style: GoogleFonts.oswald(
-                                          fontSize: 22,
+                                          fontSize: 22.0.sp,
                                           fontWeight: FontWeight.bold,
                                           color: themeColor,
                                         ),
@@ -748,8 +749,8 @@ class ParentOptionCard extends StatelessWidget {
                                       const SizedBox(height: 4),
                                       Text(
                                         stat2Label!,
-                                        style: GoogleFonts.manrope(
-                                          fontSize: 10,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 10.0.sp,
                                           fontWeight: FontWeight.w500,
                                           color: const Color(0xFF62748E),
                                           height: 1.2,
@@ -816,8 +817,8 @@ class _WhyThisMattersSectionState extends State<_WhyThisMattersSection> {
               const SizedBox(width: 4),
               Text(
                 'Why this matters',
-                style: GoogleFonts.manrope(
-                  fontSize: 11,
+                style: GoogleFonts.poppins(
+                  fontSize: 11.0.sp,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF7C8BA0),
                 ),
@@ -825,8 +826,8 @@ class _WhyThisMattersSectionState extends State<_WhyThisMattersSection> {
               const Spacer(),
               Text(
                 'How is this used?',
-                style: GoogleFonts.manrope(
-                  fontSize: 11,
+                style: GoogleFonts.poppins(
+                  fontSize: 11.0.sp,
                   fontWeight: FontWeight.w500,
                   color: const Color(0xFF7C8BA0),
                 ),
@@ -848,8 +849,8 @@ class _WhyThisMattersSectionState extends State<_WhyThisMattersSection> {
                     ),
                     child: Text(
                       widget.tipText,
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.0.sp,
                         fontWeight: FontWeight.w500,
                         color: widget.themeColor,
                         height: 1.4,

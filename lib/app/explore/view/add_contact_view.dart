@@ -7,6 +7,7 @@ import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 
 import 'package:child_track/app/home/view_model/home_repo.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class AddContactView extends StatefulWidget {
   final int? contactIndex;
@@ -197,8 +198,8 @@ class _AddContactViewState extends State<AddContactView> {
         ),
         title: Text(
           isEditMode ? 'Edit Contact' : 'Add Contact',
-          style: GoogleFonts.manrope(
-            fontSize: 20,
+          style: GoogleFonts.poppins(
+            fontSize: 20.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF0C1D37),
           ),
@@ -215,8 +216,8 @@ class _AddContactViewState extends State<AddContactView> {
                 const SizedBox(height: 8),
                 Text(
                   'Name',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF0C1D37),
                   ),
@@ -224,14 +225,14 @@ class _AddContactViewState extends State<AddContactView> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _nameController,
-                  style: GoogleFonts.manrope(
-                    fontSize: 15,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15.0.sp,
                     color: const Color(0xFF0C1D37),
                     fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Enter Name',
-                    hintStyle: GoogleFonts.manrope(color: const Color(0xFF94A3B8)),
+                    hintStyle: GoogleFonts.poppins(color: const Color(0xFF94A3B8)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     filled: true,
                     fillColor: Colors.white,
@@ -271,8 +272,8 @@ class _AddContactViewState extends State<AddContactView> {
                 const SizedBox(height: 20),
                 Text(
                   'Relation with Child',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF0C1D37),
                   ),
@@ -280,14 +281,14 @@ class _AddContactViewState extends State<AddContactView> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _relationController,
-                  style: GoogleFonts.manrope(
-                    fontSize: 15,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15.0.sp,
                     color: const Color(0xFF0C1D37),
                     fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
                     hintText: 'e.g. Mother, Father',
-                    hintStyle: GoogleFonts.manrope(color: const Color(0xFF94A3B8)),
+                    hintStyle: GoogleFonts.poppins(color: const Color(0xFF94A3B8)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     filled: true,
                     fillColor: Colors.white,
@@ -327,8 +328,8 @@ class _AddContactViewState extends State<AddContactView> {
                 const SizedBox(height: 20),
                 Text(
                   'Phone Number',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF0C1D37),
                   ),
@@ -337,14 +338,14 @@ class _AddContactViewState extends State<AddContactView> {
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  style: GoogleFonts.manrope(
-                    fontSize: 15,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15.0.sp,
                     color: const Color(0xFF0C1D37),
                     fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Enter Phone Number',
-                    hintStyle: GoogleFonts.manrope(color: const Color(0xFF94A3B8)),
+                    hintStyle: GoogleFonts.poppins(color: const Color(0xFF94A3B8)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     filled: true,
                     fillColor: Colors.white,
@@ -405,8 +406,8 @@ class _AddContactViewState extends State<AddContactView> {
                           )
                         : Text(
                             isEditMode ? 'Update' : 'Save Contact',
-                            style: GoogleFonts.manrope(
-                              fontSize: 16,
+                            style: GoogleFonts.poppins(
+                              fontSize: 16.0.sp,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),

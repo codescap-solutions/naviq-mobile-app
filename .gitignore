@@ -47,6 +47,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+**/android/.gradle/
+**/android/build/
+
+# Claude Code local session/tooling config — machine-specific, not project source
+.claude/
 
 # Environment variables
 .env

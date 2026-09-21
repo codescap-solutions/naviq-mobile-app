@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:child_track/core/widgets/map_shimmer.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class MapViewWidget extends StatefulWidget {
   const MapViewWidget({
@@ -86,11 +87,11 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 'Map Type',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18.0.sp, fontWeight: FontWeight.bold),
               ),
             ),
             _buildMapTypeOption(context, 'Normal', MapType.normal, Icons.map),

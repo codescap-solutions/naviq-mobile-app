@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:child_track/core/constants/app_colors.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class TripRouteMap extends StatefulWidget {
   const TripRouteMap({super.key});
@@ -332,7 +333,7 @@ Widget build(BuildContext context) {
                     padding: EdgeInsets.zero,
                     width: 80,
                     text: 'View all',
-                    fontSize: 12,
+                    fontSize: 12.0.sp,
                     textColor: AppColors.surfaceColor,
                     onPressed: () => Navigator.push(
                       context,

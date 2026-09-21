@@ -8,6 +8,7 @@ import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/navigation/route_names.dart';
 import 'package:child_track/core/widgets/feature_card.dart';
 import 'widgets/role_selector.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -54,7 +55,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     textAlign: TextAlign.center,
                     text: TextSpan(
                       style: GoogleFonts.oswald(
-                        fontSize: 30,
+                        fontSize: 30.0.sp,
                         fontWeight: FontWeight.w800,
                         height: 1.15,
                       ),
@@ -143,8 +144,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   Text(
                     'Quick setup in less than a minute',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.manrope(
-                      fontSize: 12,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.0.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textMuted,
                     ),
@@ -191,8 +192,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         children: [
                           Text(
                             "Let's Get Started",
-                            style: GoogleFonts.manrope(
-                              fontSize: 16,
+                            style: GoogleFonts.poppins(
+                              fontSize: 16.0.sp,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
@@ -213,16 +214,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   Text.rich(
                     TextSpan(
                       text: 'Already have an account? ',
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.0.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
                       ),
                       children: [
                         TextSpan(
                           text: 'Sign In',
-                          style: GoogleFonts.manrope(
-                            fontSize: 14,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14.0.sp,
                             fontWeight: FontWeight.w800,
                             color: AppColors.primaryBlue,
                           ),

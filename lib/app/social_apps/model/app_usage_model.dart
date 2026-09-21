@@ -5,6 +5,10 @@ class AppUsageResponse {
   final int totalApps;
   final Map<String, List<AppUsageItem>> dailyUsage;
   final List<AppUsageItem> summaryApps; // Added for the summary endpoint
+  // Only populated by the summary endpoint (Week tab) — total usage for the
+  // period immediately preceding the requested startDate/endDate range, of
+  // the same length, so the UI can show a real "vs last week" comparison.
+  final int? previousPeriodUsageTime;
 
   AppUsageResponse({
     required this.userId,
@@ -13,6 +17,7 @@ class AppUsageResponse {
     required this.totalApps,
     required this.dailyUsage,
     this.summaryApps = const [],
+    this.previousPeriodUsageTime,
   });
 
   /// Helper to format seconds into "Xh Ym Zs"
@@ -60,6 +65,7 @@ class AppUsageResponse {
       totalApps: json['totalApps'] ?? 0,
       dailyUsage: dailyUsageMap,
       summaryApps: summaryList,
+      previousPeriodUsageTime: json['previousPeriodUsageTime'] as int?,
     );
   }
 }

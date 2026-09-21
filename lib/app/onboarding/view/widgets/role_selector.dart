@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 /// An animated capsule-shaped selector for choosing between Kid and Parent roles.
 class RoleSelector extends StatelessWidget {
@@ -60,15 +61,15 @@ class RoleSelector extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
+                            Text(
                               '👦',
-                              style: TextStyle(fontSize: 16),
+                              style: TextStyle(fontSize: 16.0.sp),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'Kid',
-                              style: GoogleFonts.manrope(
-                                fontSize: 15,
+                              style: GoogleFonts.poppins(
+                                fontSize: 15.0.sp,
                                 fontWeight: FontWeight.w700,
                                 color: isKidSelected
                                     ? Colors.white
@@ -88,15 +89,15 @@ class RoleSelector extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
+                            Text(
                               '👪',
-                              style: TextStyle(fontSize: 16),
+                              style: TextStyle(fontSize: 16.0.sp),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'Parent',
-                              style: GoogleFonts.manrope(
-                                fontSize: 15,
+                              style: GoogleFonts.poppins(
+                                fontSize: 15.0.sp,
                                 fontWeight: FontWeight.w700,
                                 color: !isKidSelected
                                     ? Colors.white

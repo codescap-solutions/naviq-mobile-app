@@ -9,6 +9,7 @@ import 'package:child_track/app/social_apps/view_model/bloc/time_limit_event.dar
 import 'package:child_track/core/di/injector.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
@@ -134,9 +135,9 @@ class _SocialAppsViewState extends State<SocialAppsView> {
           ),
           title: Text(
             'Scroll',
-            style: GoogleFonts.manrope(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
+            style: GoogleFonts.poppins(
+              fontSize: 20.0.sp,
+              fontWeight: FontWeight.w700,
               color: const Color(0xFF0C1D37),
             ),
           ),
@@ -151,8 +152,8 @@ class _SocialAppsViewState extends State<SocialAppsView> {
                 ),
                 child: Text(
                   "Social Media",
-                  style: GoogleFonts.manrope(
-                    fontSize: 13,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.0.sp,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF0066FF),
                   ),
@@ -199,6 +200,9 @@ class _SocialAppsViewState extends State<SocialAppsView> {
                           totalTimeFormatted: state is SocialAppsLoaded
                               ? state.data.totalUsageTimeFormatted
                               : '--',
+                          previousPeriodUsageSeconds: state is SocialAppsLoaded
+                              ? state.data.previousPeriodUsageTime
+                              : null,
                           allPackages: allPackages,
                           lockedPackages: lockedPackages,
                           appLockBloc: _appLockBloc,
@@ -406,9 +410,10 @@ class _SocialAppsViewState extends State<SocialAppsView> {
 }
 }
 
-class _ScreenTimeHeader extends StatelessWidget {
+class _ScreenTimeHeader extends StatefulWidget {
   final int totalUsageSeconds;
   final String totalTimeFormatted;
+  final int? previousPeriodUsageSeconds;
   final List<String> allPackages;
   final Set<String> lockedPackages;
   final AppLockBloc? appLockBloc;
@@ -417,20 +422,28 @@ class _ScreenTimeHeader extends StatelessWidget {
   const _ScreenTimeHeader({
     required this.totalUsageSeconds,
     required this.totalTimeFormatted,
+    this.previousPeriodUsageSeconds,
     this.allPackages = const [],
     this.lockedPackages = const {},
     this.appLockBloc,
     required this.selectedTabIndex,
   });
 
+  @override
+  State<_ScreenTimeHeader> createState() => _ScreenTimeHeaderState();
+}
+
+class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
+  bool _weekExpanded = false;
+
   /// True when every visible app is already locked
   bool get _allBlocked =>
-      allPackages.isNotEmpty &&
-      allPackages.every((p) => lockedPackages.contains(p));
+      widget.allPackages.isNotEmpty &&
+      widget.allPackages.every((p) => widget.lockedPackages.contains(p));
 
   Future<void> _onBlockAll(BuildContext context) async {
     if (!_guardScreenTimeAction(context)) return;
-    if (allPackages.isEmpty) {
+    if (widget.allPackages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No apps to block')),
       );
@@ -440,13 +453,13 @@ class _ScreenTimeHeader extends StatelessWidget {
     // Show duration picker dialog
     final Duration? duration = await showDialog<Duration>(
       context: context,
-      builder: (ctx) => _BlockAllDurationDialog(appCount: allPackages.length),
+      builder: (ctx) => _BlockAllDurationDialog(appCount: widget.allPackages.length),
     );
     if (duration == null) return; // user cancelled
 
-    appLockBloc?.add(
+    widget.appLockBloc?.add(
       BlockAllApps(
-        packageNames: allPackages,
+        packageNames: widget.allPackages,
         durationMinutes: duration.inMinutes,
       ),
     );
@@ -455,7 +468,7 @@ class _ScreenTimeHeader extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Blocking ${allPackages.length} apps'
+            'Blocking ${widget.allPackages.length} apps'
             '${duration.inMinutes > 0 ? ' for ${duration.inMinutes} min' : ''}...',
           ),
         ),
@@ -465,16 +478,16 @@ class _ScreenTimeHeader extends StatelessWidget {
 
   void _onUnblockAll(BuildContext context) {
     if (!_guardScreenTimeAction(context)) return;
-    for (final pkg in allPackages) {
-      if (lockedPackages.contains(pkg)) {
-        appLockBloc?.add(
+    for (final pkg in widget.allPackages) {
+      if (widget.lockedPackages.contains(pkg)) {
+        widget.appLockBloc?.add(
           ToggleAppLock(packageName: pkg, isLocked: false),
         );
       }
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Unblocking ${allPackages.length} apps...'),
+        content: Text('Unblocking ${widget.allPackages.length} apps...'),
       ),
     );
   }
@@ -484,10 +497,10 @@ class _ScreenTimeHeader extends StatelessWidget {
     final weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     final months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     
-    if (selectedTabIndex == 0) {
+    if (widget.selectedTabIndex == 0) {
       final yesterday = now.subtract(const Duration(days: 1));
       return "Yesterday · ${weekdays[yesterday.weekday % 7]}, ${months[yesterday.month - 1]} ${yesterday.day}";
-    } else if (selectedTabIndex == 1) {
+    } else if (widget.selectedTabIndex == 1) {
       return "Today · ${weekdays[now.weekday % 7]}, ${months[now.month - 1]} ${now.day}";
     } else {
       final weekStart = now.subtract(const Duration(days: 6));
@@ -584,8 +597,8 @@ class _ScreenTimeHeader extends StatelessWidget {
               children: [
                 Text(
                   "Social media Use high",
-                  style: GoogleFonts.manrope(
-                    fontSize: 15,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15.0.sp,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
@@ -593,8 +606,8 @@ class _ScreenTimeHeader extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   "Keep restriction on apps",
-                  style: GoogleFonts.manrope(
-                    fontSize: 12,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.0.sp,
                     fontWeight: FontWeight.w500,
                     color: Colors.white.withValues(alpha: 0.8),
                   ),
@@ -610,21 +623,29 @@ class _ScreenTimeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final allBlocked = _allBlocked;
-    final limitSeconds = selectedTabIndex == 2 ? 42 * 3600 : 6 * 3600;
-    final limitText = selectedTabIndex == 2 ? "42h limit" : "6h limit";
-    final double hours = totalUsageSeconds / 3600.0;
-    final double percentage = (totalUsageSeconds / limitSeconds).clamp(0.0, 1.0);
+    final limitSeconds = widget.selectedTabIndex == 2 ? 42 * 3600 : 6 * 3600;
+    final limitText = widget.selectedTabIndex == 2 ? "42h limit" : "6h limit";
+    final double hours = widget.totalUsageSeconds / 3600.0;
+    final double percentage = (widget.totalUsageSeconds / limitSeconds).clamp(0.0, 1.0);
     final String hoursStr = hours.toStringAsFixed(1);
     final String usedPctText = "${(percentage * 100).toInt()}% used";
 
     // Comparison text
+    final prevSeconds = widget.previousPeriodUsageSeconds;
+    final double? prevHours = prevSeconds != null ? prevSeconds / 3600.0 : null;
+    final double? diffHours = prevHours != null ? hours - prevHours : null;
+    final bool isWeekTab = widget.selectedTabIndex == 2;
+
     String comparisonText = "";
-    if (selectedTabIndex == 0) {
+    if (widget.selectedTabIndex == 0) {
       comparisonText = "-0.5h vs previous day";
-    } else if (selectedTabIndex == 1) {
+    } else if (widget.selectedTabIndex == 1) {
       comparisonText = "+1.6h vs yesterday";
+    } else if (diffHours != null) {
+      final sign = diffHours >= 0 ? "+" : "-";
+      comparisonText = "$sign${diffHours.abs().toStringAsFixed(1)}h vs last week";
     } else {
-      comparisonText = "-2.4h vs last week";
+      comparisonText = "No data for last week";
     }
 
     return Column(
@@ -669,8 +690,8 @@ class _ScreenTimeHeader extends StatelessWidget {
                       children: [
                         Text(
                           "Screen Time",
-                          style: GoogleFonts.manrope(
-                            fontSize: 16,
+                          style: GoogleFonts.poppins(
+                            fontSize: 16.0.sp,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF0C1D37),
                           ),
@@ -678,8 +699,8 @@ class _ScreenTimeHeader extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           _getFormattedDate(),
-                          style: GoogleFonts.manrope(
-                            fontSize: 12,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.0.sp,
                             fontWeight: FontWeight.w500,
                             color: const Color(0xFF94A3B8),
                           ),
@@ -689,7 +710,7 @@ class _ScreenTimeHeader extends StatelessWidget {
                   ),
                   // Set Limit button
                   OutlinedButton(
-                    onPressed: allPackages.isEmpty
+                    onPressed: widget.allPackages.isEmpty
                         ? null
                         : () => allBlocked ? _onUnblockAll(context) : _onBlockAll(context),
                     style: OutlinedButton.styleFrom(
@@ -708,8 +729,8 @@ class _ScreenTimeHeader extends StatelessWidget {
                       children: [
                         Text(
                           allBlocked ? "Unblock All" : "Set Limit",
-                          style: GoogleFonts.manrope(
-                            fontSize: 13,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13.0.sp,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -732,8 +753,8 @@ class _ScreenTimeHeader extends StatelessWidget {
                 children: [
                   Text(
                     hoursStr,
-                    style: GoogleFonts.manrope(
-                      fontSize: 32,
+                    style: GoogleFonts.poppins(
+                      fontSize: 32.0.sp,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF0C1D37),
                     ),
@@ -741,8 +762,8 @@ class _ScreenTimeHeader extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     "/ $limitText",
-                    style: GoogleFonts.manrope(
-                      fontSize: 14,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14.0.sp,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF94A3B8),
                     ),
@@ -750,8 +771,8 @@ class _ScreenTimeHeader extends StatelessWidget {
                   const Spacer(),
                   Text(
                     usedPctText,
-                    style: GoogleFonts.manrope(
-                      fontSize: 14,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14.0.sp,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF0066FF),
                     ),
@@ -766,58 +787,171 @@ class _ScreenTimeHeader extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // Footer Row
+              // Footer Row — "Know More" only makes sense (and only expands
+              // real data) on the Week tab, since that's the only period the
+              // backend gives us a previous-period comparison for.
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     comparisonText,
-                    style: GoogleFonts.manrope(
-                      fontSize: 13,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13.0.sp,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFFEF4444),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Detailed analytics comparison is active')),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            "Know More",
-                            style: GoogleFonts.manrope(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF0066FF),
+                  if (isWeekTab)
+                    GestureDetector(
+                      onTap: () => setState(() => _weekExpanded = !_weekExpanded),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "Know More",
+                              style: GoogleFonts.poppins(
+                                fontSize: 12.0.sp,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF0066FF),
+                              ),
                             ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              _weekExpanded
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              color: const Color(0xFF0066FF),
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              if (isWeekTab && _weekExpanded) ...[
+                const SizedBox(height: 20),
+                const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                const SizedBox(height: 20),
+                if (diffHours != null && prevHours != null) ...[
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          "${diffHours.abs().toStringAsFixed(1)} hr",
+                          style: GoogleFonts.poppins(
+                            fontSize: 24.0.sp,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0C1D37),
                           ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: Color(0xFF0066FF),
-                            size: 16,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          diffHours <= 0
+                              ? "reduced from last week"
+                              : "increased from last week",
+                          style: GoogleFonts.poppins(
+                            fontSize: 13.0.sp,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF64748B),
                           ),
-                        ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "$hoursStr hr this week  •  ${prevHours.toStringAsFixed(1)} hr last week",
+                          style: GoogleFonts.poppins(
+                            fontSize: 11.0.sp,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          diffHours <= 0
+                              ? "New Limit, New Achievement"
+                              : "Screen Time Trending Up",
+                          style: GoogleFonts.poppins(
+                            fontSize: 13.0.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0C1D37),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          diffHours <= 0
+                              ? "A new limit can help bring the screen time down even more."
+                              : "Consider setting a lower daily limit to bring this back down.",
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.0.sp,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ] else ...[
+                  Center(
+                    child: Text(
+                      "No usage data available for last week yet",
+                      style: GoogleFonts.poppins(
+                        fontSize: 13.0.sp,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF94A3B8),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 16),
                 ],
-              ),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => _onBlockAll(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0066FF),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      "Change Time Limit",
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.0.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
         const SizedBox(height: 16),
-        _buildWarningBanner(),
+        // "Social media Use high" warning banner hidden per request — kept
+        // in place (not deleted) in case it's revisited later.
+        // _buildWarningBanner(),
       ],
     );
   }
@@ -1128,7 +1262,7 @@ class FilterTabs extends StatelessWidget {
               child: Text(
                 tabs[index],
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 14.0.sp,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   color: isSelected ? AppColors.primaryColor : Colors.black87,
                 ),
@@ -1209,12 +1343,12 @@ class _AdvancedSegmentedTabState extends State<AdvancedSegmentedTab>
             overlayColor: WidgetStateProperty.all(Colors.transparent),
             labelColor: Colors.black,
             unselectedLabelColor: Colors.black87,
-            labelStyle: const TextStyle(
-              fontSize: 16,
+            labelStyle: TextStyle(
+              fontSize: 16.0.sp,
               fontWeight: FontWeight.w600,
             ),
-            unselectedLabelStyle: const TextStyle(
-              fontSize: 15,
+            unselectedLabelStyle: TextStyle(
+              fontSize: 15.0.sp,
               fontWeight: FontWeight.w500,
             ),
             tabs: tabs.map((e) => Tab(text: e)).toList(),

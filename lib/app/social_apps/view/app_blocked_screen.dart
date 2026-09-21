@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:child_track/app/social_apps/view_model/time_limit_repository.dart';
 import 'package:child_track/core/di/injector.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class AppBlockedScreen extends StatefulWidget {
   final String? appName;
@@ -128,10 +129,10 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
                       const SizedBox(height: 40),
 
                       // ── Title ──
-                      const Text(
+                      Text(
                         'Access Restricted',
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: 28.0.sp,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                           letterSpacing: 0.5,
@@ -145,7 +146,7 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
                         '$displayName has been locked by your parent.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16.0.sp,
                           fontWeight: FontWeight.w400,
                           color: Colors.white.withValues(alpha: 0.7),
                           height: 1.5,
@@ -282,8 +283,8 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: 14.0.sp,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -292,7 +293,7 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
               Text(
                 subtitle,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.0.sp,
                   color: Colors.white.withValues(alpha: 0.5),
                 ),
               ),
@@ -335,7 +336,7 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
                   const SizedBox(width: 10),
                   Text(
                     _extensionRequestSent ? 'Request Sent' : 'Ask for More Time',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.3),
+                    style: TextStyle(fontSize: 16.0.sp, fontWeight: FontWeight.w600, letterSpacing: 0.3),
                   ),
                 ],
               ),
@@ -372,15 +373,15 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
             side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.home_rounded, size: 22),
-            SizedBox(width: 10),
+            const Icon(Icons.home_rounded, size: 22),
+            const SizedBox(width: 10),
             Text(
               'Go Home',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 16.0.sp,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.3,
               ),

@@ -7,6 +7,7 @@ import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:child_track/app/home/view_model/home_repo.dart';
 import 'add_contact_view.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class ParentsContactView extends StatefulWidget {
   const ParentsContactView({super.key});
@@ -110,19 +111,19 @@ class _ParentsContactViewState extends State<ParentsContactView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Delete Contact',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         content: Text(
           'Are you sure you want to delete ${contact['name']} from parents contacts?',
-          style: GoogleFonts.manrope(),
+          style: GoogleFonts.poppins(),
         ),
         actions: [
           TextButton(
-            child: Text('Cancel', style: GoogleFonts.manrope(color: Colors.grey)),
+            child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
-            child: Text('Delete', style: GoogleFonts.manrope(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text('Delete', style: GoogleFonts.poppins(color: Colors.red, fontWeight: FontWeight.bold)),
             onPressed: () async {
               final contactId = contact['id'];
               Navigator.pop(context);
@@ -189,8 +190,8 @@ class _ParentsContactViewState extends State<ParentsContactView> {
         ),
         title: Text(
           'Parents Contact',
-          style: GoogleFonts.manrope(
-            fontSize: 20,
+          style: GoogleFonts.poppins(
+            fontSize: 20.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF0C1D37),
           ),
@@ -203,8 +204,8 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                     ? const CircularProgressIndicator()
                     : Text(
                         'No contacts found.',
-                        style: GoogleFonts.manrope(
-                          fontSize: 16,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16.0.sp,
                           color: const Color(0xFF94A3B8),
                         ),
                       ),
@@ -250,8 +251,8 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                           alignment: Alignment.center,
                           child: Text(
                             initials,
-                            style: GoogleFonts.manrope(
-                              fontSize: 16,
+                            style: GoogleFonts.poppins(
+                              fontSize: 16.0.sp,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0066FF),
                             ),
@@ -267,8 +268,8 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                                 children: [
                                   Text(
                                     contact['name'] ?? '',
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 16,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16.0.sp,
                                       fontWeight: FontWeight.bold,
                                       color: const Color(0xFF0C1D37),
                                     ),
@@ -283,8 +284,8 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                                     ),
                                     child: Text(
                                       contact['relation'] ?? 'Parent',
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 10,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10.0.sp,
                                         fontWeight: FontWeight.bold,
                                         color: const Color(0xFF059669),
                                       ),
@@ -303,8 +304,8 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                                   const SizedBox(width: 4),
                                   Text(
                                     contact['phone'] ?? '',
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 13,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13.0.sp,
                                       color: const Color(0xFF64748B),
                                       fontWeight: FontWeight.w500,
                                     ),

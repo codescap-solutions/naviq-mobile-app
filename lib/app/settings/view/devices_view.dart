@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/core/services/revenue_cat_service.dart';
 import 'package:child_track/core/services/subscription_manager.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
@@ -74,9 +75,9 @@ class _DevicesViewState extends State<DevicesView> {
         ),
         title: Text(
           _simulatedPurchased ? 'My Device' : 'Device',
-          style: GoogleFonts.manrope(
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700,
+            fontSize: 24.0.sp,
             color: AppColors.textPrimary,
           ),
         ),
@@ -133,8 +134,8 @@ class _DevicesViewState extends State<DevicesView> {
           children: [
             Text(
               "Review Simulator Tool:",
-              style: GoogleFonts.manrope(
-                fontSize: 12,
+              style: GoogleFonts.poppins(
+                fontSize: 12.0.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textSecondary,
               ),
@@ -143,8 +144,8 @@ class _DevicesViewState extends State<DevicesView> {
               children: [
                 Text(
                   "Not Purchased",
-                  style: GoogleFonts.manrope(
-                    fontSize: 11,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11.0.sp,
                     fontWeight: _simulatedPurchased ? FontWeight.w500 : FontWeight.w800,
                     color: _simulatedPurchased ? AppColors.textSecondary : AppColors.primaryColor,
                   ),
@@ -160,8 +161,8 @@ class _DevicesViewState extends State<DevicesView> {
                 ),
                 Text(
                   "Purchased",
-                  style: GoogleFonts.manrope(
-                    fontSize: 11,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11.0.sp,
                     fontWeight: _simulatedPurchased ? FontWeight.w800 : FontWeight.w500,
                     color: _simulatedPurchased ? AppColors.primaryColor : AppColors.textSecondary,
                   ),
@@ -205,8 +206,8 @@ class _DevicesViewState extends State<DevicesView> {
             children: [
               Text(
                 "Debug tier:",
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.0.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textSecondary,
                 ),
@@ -238,8 +239,8 @@ class _DevicesViewState extends State<DevicesView> {
                         ),
                         child: Text(
                           tier.id,
-                          style: GoogleFonts.manrope(
-                            fontSize: 11,
+                          style: GoogleFonts.poppins(
+                            fontSize: 11.0.sp,
                             fontWeight: FontWeight.w800,
                             color: isSelected ? Colors.white : AppColors.textSecondary,
                           ),
@@ -289,8 +290,8 @@ class _DevicesViewState extends State<DevicesView> {
                       children: [
                         Text(
                           "GPS TRACKER",
-                          style: GoogleFonts.manrope(
-                            fontSize: 11,
+                          style: GoogleFonts.poppins(
+                            fontSize: 11.0.sp,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF2563EB),
                             letterSpacing: 0.5,
@@ -299,8 +300,8 @@ class _DevicesViewState extends State<DevicesView> {
                         const SizedBox(height: 2),
                         Text(
                           "TrackPod Pro",
-                          style: GoogleFonts.manrope(
-                            fontSize: 22,
+                          style: GoogleFonts.poppins(
+                            fontSize: 22.0.sp,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF0C1D37),
                           ),
@@ -327,8 +328,8 @@ class _DevicesViewState extends State<DevicesView> {
                           const SizedBox(width: 6),
                           Text(
                             "Live",
-                            style: GoogleFonts.manrope(
-                              fontSize: 11,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11.0.sp,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF10B981),
                             ),
@@ -378,8 +379,8 @@ class _DevicesViewState extends State<DevicesView> {
           
           Text(
             "Features",
-            style: GoogleFonts.manrope(
-              fontSize: 16,
+            style: GoogleFonts.poppins(
+              fontSize: 16.0.sp,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF0C1D37),
             ),
@@ -458,8 +459,8 @@ class _DevicesViewState extends State<DevicesView> {
                       children: [
                         Text(
                           "TrackPod Pro",
-                          style: GoogleFonts.manrope(
-                            fontSize: 13,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13.0.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.white70,
                           ),
@@ -467,8 +468,8 @@ class _DevicesViewState extends State<DevicesView> {
                         const SizedBox(height: 4),
                         Text(
                           "rs 2499",
-                          style: GoogleFonts.manrope(
-                            fontSize: 24,
+                          style: GoogleFonts.poppins(
+                            fontSize: 24.0.sp,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                           ),
@@ -483,8 +484,8 @@ class _DevicesViewState extends State<DevicesView> {
                       ),
                       child: Text(
                         "SAVE 20%",
-                        style: GoogleFonts.manrope(
-                          fontSize: 11,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11.0.sp,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                         ),
@@ -532,8 +533,8 @@ class _DevicesViewState extends State<DevicesView> {
                         const SizedBox(width: 8),
                         Text(
                           "Buy Now",
-                          style: GoogleFonts.manrope(
-                            fontSize: 15,
+                          style: GoogleFonts.poppins(
+                            fontSize: 15.0.sp,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF1D4ED8),
                           ),
@@ -552,8 +553,8 @@ class _DevicesViewState extends State<DevicesView> {
               onPressed: () => _showLinkDeviceSheet(context),
               child: Text(
                 "Already have a tracker? Link Existing Tracker",
-                style: GoogleFonts.manrope(
-                  fontSize: 13,
+                style: GoogleFonts.poppins(
+                  fontSize: 13.0.sp,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primaryColor,
                   decoration: TextDecoration.underline,
@@ -572,8 +573,8 @@ class _DevicesViewState extends State<DevicesView> {
       children: [
         Text(
           value,
-          style: GoogleFonts.manrope(
-            fontSize: 16,
+          style: GoogleFonts.poppins(
+            fontSize: 16.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF0C1D37),
           ),
@@ -581,8 +582,8 @@ class _DevicesViewState extends State<DevicesView> {
         const SizedBox(height: 2),
         Text(
           label,
-          style: GoogleFonts.manrope(
-            fontSize: 11,
+          style: GoogleFonts.poppins(
+            fontSize: 11.0.sp,
             fontWeight: FontWeight.w500,
             color: const Color(0xFF64748B),
           ),
@@ -636,8 +637,8 @@ class _DevicesViewState extends State<DevicesView> {
             const SizedBox(height: 12),
             Text(
               title,
-              style: GoogleFonts.manrope(
-                fontSize: 14,
+              style: GoogleFonts.poppins(
+                fontSize: 14.0.sp,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF0C1D37),
               ),
@@ -645,8 +646,8 @@ class _DevicesViewState extends State<DevicesView> {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: GoogleFonts.manrope(
-                fontSize: 11,
+              style: GoogleFonts.poppins(
+                fontSize: 11.0.sp,
                 fontWeight: FontWeight.w500,
                 color: const Color(0xFF94A3B8),
               ),
@@ -665,8 +666,8 @@ class _DevicesViewState extends State<DevicesView> {
         const SizedBox(width: 4),
         Text(
           text,
-          style: GoogleFonts.manrope(
-            fontSize: 10,
+          style: GoogleFonts.poppins(
+            fontSize: 10.0.sp,
             fontWeight: FontWeight.w500,
             color: Colors.white70,
           ),
@@ -717,8 +718,8 @@ class _DevicesViewState extends State<DevicesView> {
                         children: [
                           Text(
                             "GPS TRACKER",
-                            style: GoogleFonts.manrope(
-                              fontSize: 11,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11.0.sp,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF2563EB),
                               letterSpacing: 0.5,
@@ -727,8 +728,8 @@ class _DevicesViewState extends State<DevicesView> {
                           const SizedBox(height: 2),
                           Text(
                             "TrackPod Pro",
-                            style: GoogleFonts.manrope(
-                              fontSize: 22,
+                            style: GoogleFonts.poppins(
+                              fontSize: 22.0.sp,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF0C1D37),
                             ),
@@ -755,8 +756,8 @@ class _DevicesViewState extends State<DevicesView> {
                             const SizedBox(width: 6),
                             Text(
                               "Live",
-                              style: GoogleFonts.manrope(
-                                fontSize: 11,
+                              style: GoogleFonts.poppins(
+                                fontSize: 11.0.sp,
                                 fontWeight: FontWeight.w800,
                                 color: const Color(0xFF10B981),
                               ),
@@ -834,8 +835,8 @@ class _DevicesViewState extends State<DevicesView> {
                         children: [
                           Text(
                             "Battery Life",
-                            style: GoogleFonts.manrope(
-                              fontSize: 14,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14.0.sp,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF0C1D37),
                             ),
@@ -843,8 +844,8 @@ class _DevicesViewState extends State<DevicesView> {
                           const SizedBox(height: 2),
                           Text(
                             "~6.1 days remaining",
-                            style: GoogleFonts.manrope(
-                              fontSize: 11,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11.0.sp,
                               fontWeight: FontWeight.w500,
                               color: const Color(0xFF94A3B8),
                             ),
@@ -854,8 +855,8 @@ class _DevicesViewState extends State<DevicesView> {
                     ),
                     Text(
                       "87%",
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.0.sp,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFFF59E0B),
                       ),
@@ -903,8 +904,8 @@ class _DevicesViewState extends State<DevicesView> {
                     children: [
                       Text(
                         "GPS Signal",
-                        style: GoogleFonts.manrope(
-                          fontSize: 14,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14.0.sp,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF0C1D37),
                         ),
@@ -912,8 +913,8 @@ class _DevicesViewState extends State<DevicesView> {
                       const SizedBox(height: 2),
                       Text(
                         "Last updated 2s ago",
-                        style: GoogleFonts.manrope(
-                          fontSize: 11,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11.0.sp,
                           fontWeight: FontWeight.w500,
                           color: const Color(0xFF94A3B8),
                         ),
@@ -943,8 +944,8 @@ class _DevicesViewState extends State<DevicesView> {
           // Today's Tracking Header
           Text(
             "Today's Tracking",
-            style: GoogleFonts.manrope(
-              fontSize: 16,
+            style: GoogleFonts.poppins(
+              fontSize: 16.0.sp,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF0C1D37),
             ),
@@ -967,8 +968,8 @@ class _DevicesViewState extends State<DevicesView> {
                   children: [
                     Text(
                       "Activity (24H)",
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13.0.sp,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF64748B),
                       ),
@@ -979,8 +980,8 @@ class _DevicesViewState extends State<DevicesView> {
                       },
                       child: Text(
                         "View All",
-                        style: GoogleFonts.manrope(
-                          fontSize: 13,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13.0.sp,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF3B82F6),
                         ),
@@ -1037,24 +1038,24 @@ class _DevicesViewState extends State<DevicesView> {
           children: [
             Text(
               "12AM",
-              style: GoogleFonts.manrope(
-                fontSize: 10,
+              style: GoogleFonts.poppins(
+                fontSize: 10.0.sp,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF94A3B8),
               ),
             ),
             Text(
               "12PM",
-              style: GoogleFonts.manrope(
-                fontSize: 10,
+              style: GoogleFonts.poppins(
+                fontSize: 10.0.sp,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF94A3B8),
               ),
             ),
             Text(
               "Now",
-              style: GoogleFonts.manrope(
-                fontSize: 10,
+              style: GoogleFonts.poppins(
+                fontSize: 10.0.sp,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF94A3B8),
               ),
@@ -1099,8 +1100,8 @@ class _DevicesViewState extends State<DevicesView> {
                       children: [
                         Text(
                           "Link Existing Tracker",
-                          style: GoogleFonts.manrope(
-                            fontSize: 20,
+                          style: GoogleFonts.poppins(
+                            fontSize: 20.0.sp,
                             fontWeight: FontWeight.w800,
                             color: AppColors.textPrimary,
                           ),
@@ -1114,8 +1115,8 @@ class _DevicesViewState extends State<DevicesView> {
                     const SizedBox(height: 8),
                     Text(
                       "Enter the 10-digit device ID or serial number printed on the back of your NaviQ tracker package.",
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13.0.sp,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textSecondary,
                         height: 1.4,
@@ -1199,8 +1200,8 @@ class _DevicesViewState extends State<DevicesView> {
                               )
                             : Text(
                                 "Connect Device",
-                                style: GoogleFonts.manrope(
-                                  fontSize: 16,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16.0.sp,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                 ),
@@ -1234,8 +1235,8 @@ class _DevicesViewState extends State<DevicesView> {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
                   "Device Management",
-                  style: GoogleFonts.manrope(
-                    fontSize: 18,
+                  style: GoogleFonts.poppins(
+                    fontSize: 18.0.sp,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
@@ -1251,7 +1252,7 @@ class _DevicesViewState extends State<DevicesView> {
                   ),
                   child: const Icon(Icons.volume_up_rounded, color: Color(0xFF3B82F6), size: 20),
                 ),
-                title: Text("Ping / Ring Device", style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
+                title: Text("Ping / Ring Device", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _triggerPingAnimation(context);
@@ -1266,7 +1267,7 @@ class _DevicesViewState extends State<DevicesView> {
                   ),
                   child: const Icon(Icons.restart_alt_rounded, color: Color(0xFFF59E0B), size: 20),
                 ),
-                title: Text("Reboot Device", style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
+                title: Text("Reboot Device", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _showRebootDialog(context);
@@ -1283,7 +1284,7 @@ class _DevicesViewState extends State<DevicesView> {
                 ),
                 title: Text(
                   "Unlink Device",
-                  style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: const Color(0xFFEF4444)),
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFFEF4444)),
                 ),
                 onTap: () {
                   Navigator.pop(sheetContext);
@@ -1318,7 +1319,7 @@ class _DevicesViewState extends State<DevicesView> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: Text(
                 "Reboot Tracker?",
-                style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w800),
               ),
               content: isRebooting
                   ? Column(
@@ -1329,13 +1330,13 @@ class _DevicesViewState extends State<DevicesView> {
                         const SizedBox(height: 16),
                         Text(
                           "Sending reboot command...",
-                          style: GoogleFonts.manrope(fontSize: 14, color: AppColors.textSecondary),
+                          style: GoogleFonts.poppins(fontSize: 14.0.sp, color: AppColors.textSecondary),
                         ),
                       ],
                     )
                   : Text(
                       "This will remotely restart the tracker device. It may take 1-2 minutes to reconnect online.",
-                      style: GoogleFonts.manrope(fontSize: 14, color: AppColors.textSecondary, height: 1.4),
+                      style: GoogleFonts.poppins(fontSize: 14.0.sp, color: AppColors.textSecondary, height: 1.4),
                     ),
               actions: isRebooting
                   ? null
@@ -1344,7 +1345,7 @@ class _DevicesViewState extends State<DevicesView> {
                         onPressed: () => Navigator.pop(dialogContext),
                         child: Text(
                           "Cancel",
-                          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textSecondary),
                         ),
                       ),
                       TextButton(
@@ -1362,7 +1363,7 @@ class _DevicesViewState extends State<DevicesView> {
                         },
                         child: Text(
                           "Reboot",
-                          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: const Color(0xFFF59E0B)),
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFFF59E0B)),
                         ),
                       ),
                     ],
@@ -1384,7 +1385,7 @@ class _DevicesViewState extends State<DevicesView> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: Text(
                 "Unlink Device?",
-                style: GoogleFonts.manrope(
+                style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFFEF4444),
                 ),
@@ -1398,13 +1399,13 @@ class _DevicesViewState extends State<DevicesView> {
                         const SizedBox(height: 16),
                         Text(
                           "Removing tracker association...",
-                          style: GoogleFonts.manrope(fontSize: 14, color: AppColors.textSecondary),
+                          style: GoogleFonts.poppins(fontSize: 14.0.sp, color: AppColors.textSecondary),
                         ),
                       ],
                     )
                   : Text(
                       "Are you sure you want to unlink this tracker from your account? This child will no longer be tracked using this hardware device.",
-                      style: GoogleFonts.manrope(fontSize: 14, color: AppColors.textSecondary, height: 1.4),
+                      style: GoogleFonts.poppins(fontSize: 14.0.sp, color: AppColors.textSecondary, height: 1.4),
                     ),
               actions: isUnlinking
                   ? null
@@ -1413,7 +1414,7 @@ class _DevicesViewState extends State<DevicesView> {
                         onPressed: () => Navigator.pop(dialogContext),
                         child: Text(
                           "Keep Linked",
-                          style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: AppColors.textSecondary),
                         ),
                       ),
                       TextButton(
@@ -1436,7 +1437,7 @@ class _DevicesViewState extends State<DevicesView> {
                         },
                         child: Text(
                           "Unlink",
-                          style: GoogleFonts.manrope(
+                          style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFFEF4444),
                           ),
@@ -1499,8 +1500,8 @@ class _PingSimulationDialogState extends State<_PingSimulationDialog> with Singl
           children: [
             Text(
               "Locating Device",
-              style: GoogleFonts.manrope(
-                fontSize: 18,
+              style: GoogleFonts.poppins(
+                fontSize: 18.0.sp,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
               ),
@@ -1508,8 +1509,8 @@ class _PingSimulationDialogState extends State<_PingSimulationDialog> with Singl
             const SizedBox(height: 8),
             Text(
               "Sending signal to play alarm...",
-              style: GoogleFonts.manrope(
-                fontSize: 13,
+              style: GoogleFonts.poppins(
+                fontSize: 13.0.sp,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textSecondary,
               ),
@@ -1605,8 +1606,8 @@ class _PingSimulationDialogState extends State<_PingSimulationDialog> with Singl
                 onPressed: widget.onCancel,
                 child: Text(
                   "Stop Ping",
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFFEF4444),
                   ),

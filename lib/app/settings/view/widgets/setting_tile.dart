@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class SettingTile extends StatelessWidget {
   final Widget leading;
@@ -47,7 +48,7 @@ class SettingTile extends StatelessWidget {
                       subtitle!,
                       
                       style: AppTextStyles.caption.copyWith(
-                        fontSize: 10,
+                        fontSize: 10.0.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),

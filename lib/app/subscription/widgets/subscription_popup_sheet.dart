@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
 import 'package:child_track/core/di/injector.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import '../models/subscription_plan.dart';
 import '../view_model/subscription_repository.dart';
 import '../view/subscription_detail_view.dart';
+import '../view/subscription_multi_plan_view.dart';
 
 class SubscriptionPopup {
   static void show(BuildContext context, SubscriptionTier tier) {
@@ -110,7 +112,7 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                   Text(
                     plan.name,
                     style: AppTextStyles.headline3.copyWith(
-                      fontSize: 24,
+                      fontSize: 24.0.sp,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -219,12 +221,34 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                     'Know More',
                     style: AppTextStyles.button.copyWith(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 16.0.sp,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+
+              // View All Plans
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SubscriptionMultiPlanView(),
+                    ),
+                  );
+                },
+                child: Text(
+                  'View All Plans',
+                  style: AppTextStyles.button.copyWith(
+                    color: AppColors.primaryColor,
+                    fontSize: 14.0.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
 
               // Disclaimer
               Text(
@@ -232,7 +256,7 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                 textAlign: TextAlign.center,
                 style: AppTextStyles.caption.copyWith(
                   color: Colors.grey[500],
-                  fontSize: 10,
+                  fontSize: 10.0.sp,
                 ),
               ),
             ],
@@ -273,14 +297,14 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                 title,
                 style: AppTextStyles.body1.copyWith(
                   color: Colors.grey[600],
-                  fontSize: 14,
+                  fontSize: 14.0.sp,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 '₹ ${price.round()}',
                 style: AppTextStyles.headline3.copyWith(
-                  fontSize: 24,
+                  fontSize: 24.0.sp,
                   fontWeight: FontWeight.bold,
                 ),
               ),

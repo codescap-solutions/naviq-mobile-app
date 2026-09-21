@@ -7,6 +7,7 @@ import 'package:child_track/core/services/device_info_service.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:child_track/app/auth/view/onboarding/permission_sequence_screen.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 
 class DeletionRestrictionConfigScreen extends StatefulWidget {
   const DeletionRestrictionConfigScreen({super.key});
@@ -149,8 +150,8 @@ class _DeletionRestrictionConfigScreenState
         const SizedBox(height: 20),
         Text(
           Platform.isAndroid ? 'Enable Deletion Protection' : 'Protect App from Deleting',
-          style: GoogleFonts.manrope(
-            fontSize: 24,
+          style: GoogleFonts.poppins(
+            fontSize: 24.0.sp,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF0F172A),
           ),
@@ -161,8 +162,8 @@ class _DeletionRestrictionConfigScreenState
           Platform.isAndroid
               ? 'Your parent has requested to prevent this app from being uninstalled.'
               : 'Configure Screen Time restrictions to prevent this app from being deleted.',
-          style: GoogleFonts.manrope(
-            fontSize: 14,
+          style: GoogleFonts.poppins(
+            fontSize: 14.0.sp,
             fontWeight: FontWeight.w500,
             color: const Color(0xFF64748B),
             height: 1.4,
@@ -199,8 +200,8 @@ class _DeletionRestrictionConfigScreenState
     return [
       Text(
         'Required Setup Steps',
-        style: GoogleFonts.manrope(
-          fontSize: 16,
+        style: GoogleFonts.poppins(
+          fontSize: 16.0.sp,
           fontWeight: FontWeight.w700,
           color: const Color(0xFF0F172A),
         ),
@@ -227,8 +228,8 @@ class _DeletionRestrictionConfigScreenState
     return [
       Text(
         'Required Setup Steps',
-        style: GoogleFonts.manrope(
-          fontSize: 16,
+        style: GoogleFonts.poppins(
+          fontSize: 16.0.sp,
           fontWeight: FontWeight.w700,
           color: const Color(0xFF0F172A),
         ),
@@ -270,8 +271,8 @@ class _DeletionRestrictionConfigScreenState
           child: Center(
             child: Text(
               stepNumber,
-              style: GoogleFonts.manrope(
-                fontSize: 14,
+              style: GoogleFonts.poppins(
+                fontSize: 14.0.sp,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF0066FF),
               ),
@@ -282,8 +283,8 @@ class _DeletionRestrictionConfigScreenState
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.manrope(
-              fontSize: 14,
+            style: GoogleFonts.poppins(
+              fontSize: 14.0.sp,
               fontWeight: FontWeight.w500,
               color: const Color(0xFF334155),
               height: 1.45,
@@ -327,8 +328,8 @@ class _DeletionRestrictionConfigScreenState
             ),
             label: Text(
               Platform.isAndroid ? 'Open Accessibility Settings' : 'Open Screen Time Settings',
-              style: GoogleFonts.manrope(
-                fontSize: 15,
+              style: GoogleFonts.poppins(
+                fontSize: 15.0.sp,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF0066FF),
               ),
@@ -358,8 +359,8 @@ class _DeletionRestrictionConfigScreenState
                   )
                 : Text(
                     Platform.isAndroid ? 'Verify & Proceed' : 'I have Enabled It',
-                    style: GoogleFonts.manrope(
-                      fontSize: 15,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15.0.sp,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
