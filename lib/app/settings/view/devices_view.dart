@@ -9,6 +9,10 @@ import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/core/services/revenue_cat_service.dart';
 import 'package:child_track/core/services/subscription_manager.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
+import 'package:child_track/core/di/injector.dart';
+import 'package:child_track/core/services/shared_prefs_service.dart';
+import 'package:child_track/app/home/view_model/home_repo.dart';
+import 'package:child_track/app/home/model/device_model.dart';
 import '../../subscription/models/subscription_plan.dart';
 import '../../subscription/view/subscription_multi_plan_view.dart';
 
@@ -22,11 +26,17 @@ class DevicesView extends StatefulWidget {
 class _DevicesViewState extends State<DevicesView> {
   bool _isLoading = true;
   bool _simulatedPurchased = false; // toggle for manual testing
+  DeviceInfo? _deviceInfo;
+  // device_info has no last-updated timestamp of its own — "when" lives on
+  // the sibling current_location section (LocationInfo.since), so this is
+  // tracked separately from _deviceInfo.
+  String? _lastUpdatedRaw;
 
   @override
   void initState() {
     super.initState();
     _checkSubscriptionStatus();
+    _loadDeviceInfo();
   }
 
   Future<void> _checkSubscriptionStatus() async {
@@ -44,6 +54,78 @@ class _DevicesViewState extends State<DevicesView> {
         _isLoading = false;
       });
     }
+  }
+
+  // Real tracker telemetry (battery/altitude/speed/online) for the device
+  // card — this screen previously showed only hardcoded marketing copy
+  // ("TrackPod Pro", "±2m accuracy", "87%") regardless of whether a real
+  // device was even linked. altitude/speed are only ever populated by the
+  // JT808 tracker pipeline (naviQ-server tcp/server.js), never a phone.
+  Future<void> _loadDeviceInfo() async {
+    try {
+      // Explicit childId — without it this hits the backend's default
+      // (the parent's primary child), not necessarily whichever child the
+      // parent currently has selected elsewhere in the app. Confirmed real
+      // case: viewing a non-primary child's Devices screen still showed
+      // this screen driven by a different child's data.
+      final childId = injector<SharedPrefsService>().getString('child_id');
+      final response = await injector<HomeRepository>().getHomeData(
+        childId: childId,
+      );
+      if (response.isSuccess && response.data != null && mounted) {
+        setState(() {
+          _deviceInfo = response.data!.deviceInfo;
+          _lastUpdatedRaw = response.data!.currentLocation.since;
+          // A real physical tracker already linked (device_imei set) means
+          // there's real device data to show regardless of RevenueCat
+          // subscription state — this screen used to only ever leave the
+          // "Not Purchased" marketing preview once an active entitlement
+          // was found, so a child with a genuinely linked, actively
+          // reporting tracker (confirmed real case) still showed a generic
+          // "buy this device" pitch instead of its own real data.
+          if (_deviceInfo?.deviceImei != null) {
+            _simulatedPurchased = true;
+          }
+        });
+      }
+    } catch (_) {
+      // Leave _deviceInfo null — cards below fall back to a neutral empty
+      // state rather than showing stale/fake numbers.
+    }
+  }
+
+  // Trusts the backend's own isOnline computation directly (it already has
+  // its own freshness threshold — deviceOfflineJob.js, 5 min). This used
+  // to ALSO require the location fix to be <15 min old, which conflated
+  // two different facts: a tracker can check in (battery/online ping)
+  // independently of sending a fresh GPS fix (stationary + power-saving,
+  // or weak signal) — confirmed real case: isOnline was true (device
+  // checked in 1.5 min ago) but the location fix was 4+ hours old, and
+  // this badge showed "Offline" anyway, contradicting the "Device online"
+  // note now shown on the home screen for the exact same child.
+  bool get _isDeviceLive => _deviceInfo?.isOnline ?? false;
+
+  String _formatDeviceLastUpdated() {
+    final since = DateTime.tryParse(_lastUpdatedRaw ?? '');
+    if (since == null) return 'No data yet';
+    final diff = DateTime.now().toUtc().difference(since.toUtc());
+    if (diff.isNegative || diff.inSeconds < 90) return 'Updated just now';
+    if (diff.inMinutes < 60) return 'Updated ${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return 'Updated ${diff.inHours}h ago';
+    return 'Updated ${diff.inDays}d ago';
+  }
+
+  // Compact form for the metric-pod value slot (matches "±2m"/"24H"-style
+  // short values) — _formatDeviceLastUpdated's "Updated Xm ago" phrasing is
+  // for the Battery Life card's longer caption line instead.
+  String _formatDeviceLastUpdatedCompact() {
+    final since = DateTime.tryParse(_lastUpdatedRaw ?? '');
+    if (since == null) return '—';
+    final diff = DateTime.now().toUtc().difference(since.toUtc());
+    if (diff.isNegative || diff.inSeconds < 90) return 'Now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    return '${diff.inDays}d';
   }
 
   @override
@@ -748,18 +830,22 @@ class _DevicesViewState extends State<DevicesView> {
                             Container(
                               width: 6,
                               height: 6,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF10B981),
+                              decoration: BoxDecoration(
+                                color: _isDeviceLive
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF94A3B8),
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              "Live",
+                              _isDeviceLive ? "Live" : "Offline",
                               style: GoogleFonts.poppins(
                                 fontSize: 11.0.sp,
                                 fontWeight: FontWeight.w800,
-                                color: const Color(0xFF10B981),
+                                color: _isDeviceLive
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF94A3B8),
                               ),
                             ),
                           ],
@@ -792,11 +878,21 @@ class _DevicesViewState extends State<DevicesView> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildPodMetric("±2m", "Accuracy"),
+                        _buildPodMetric(
+                          _deviceInfo != null
+                              ? '${_deviceInfo!.batteryPercentage}%'
+                              : '—',
+                          "Battery",
+                        ),
                         _buildPodMetricDivider(),
-                        _buildPodMetric("24H", "Coverage"),
+                        _buildPodMetric(
+                          _deviceInfo?.altitude != null
+                              ? '${_deviceInfo!.altitude!.round()}m'
+                              : '—',
+                          "Altitude",
+                        ),
                         _buildPodMetricDivider(),
-                        _buildPodMetric("7d", "Battery"),
+                        _buildPodMetric(_formatDeviceLastUpdatedCompact(), "Last seen"),
                       ],
                     ),
                   ),
@@ -843,7 +939,7 @@ class _DevicesViewState extends State<DevicesView> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            "~6.1 days remaining",
+                            _formatDeviceLastUpdated(),
                             style: GoogleFonts.poppins(
                               fontSize: 11.0.sp,
                               fontWeight: FontWeight.w500,
@@ -854,7 +950,9 @@ class _DevicesViewState extends State<DevicesView> {
                       ),
                     ),
                     Text(
-                      "87%",
+                      _deviceInfo != null
+                          ? '${_deviceInfo!.batteryPercentage}%'
+                          : '—',
                       style: GoogleFonts.poppins(
                         fontSize: 14.0.sp,
                         fontWeight: FontWeight.w800,
@@ -866,11 +964,16 @@ class _DevicesViewState extends State<DevicesView> {
                 const SizedBox(height: 12),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: const LinearProgressIndicator(
-                    value: 0.87,
+                  child: LinearProgressIndicator(
+                    value: ((_deviceInfo?.batteryPercentage ?? 0) / 100).clamp(
+                      0.0,
+                      1.0,
+                    ),
                     minHeight: 6,
-                    backgroundColor: Color(0xFFFEF3C7),
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF59E0B)),
+                    backgroundColor: const Color(0xFFFEF3C7),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Color(0xFFF59E0B),
+                    ),
                   ),
                 ),
               ],
@@ -1114,7 +1217,7 @@ class _DevicesViewState extends State<DevicesView> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Enter the 10-digit device ID or serial number printed on the back of your NaviQ tracker package.",
+                      "Enter the 10 or 11-digit device ID or serial number printed on the back of your NaviQ tracker package.",
                       style: GoogleFonts.poppins(
                         fontSize: 13.0.sp,
                         fontWeight: FontWeight.w500,
@@ -1126,9 +1229,9 @@ class _DevicesViewState extends State<DevicesView> {
                     TextFormField(
                       controller: controller,
                       keyboardType: TextInputType.number,
-                      maxLength: 10,
+                      maxLength: 11,
                       decoration: InputDecoration(
-                        hintText: "e.g., 9028341122",
+                        hintText: "e.g., 37250151398",
                         prefixIcon: const Icon(Icons.qr_code_scanner_rounded),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1148,7 +1251,7 @@ class _DevicesViewState extends State<DevicesView> {
                           return "Please enter device ID";
                         }
                         if (value.length < 10) {
-                          return "Device ID must be 10 digits";
+                          return "Device ID must be 10 or 11 digits";
                         }
                         return null;
                       },

@@ -17,6 +17,12 @@ class SocketService {
   final String _serverUrl = "https://naviq-server.codescap.com:443";
   final SharedPrefsService _sharedPrefsService = SharedPrefsService();
   String? _pendingChildIdForRoom;
+  // The room we want to be in. Socket.IO rooms are per-connection on the
+  // server, so every (re)connect — network blip, server redeploy, OS
+  // resuming a suspended socket — lands in NO room. Without remembering this
+  // and rejoining in onConnect, the parent only ever got live updates until
+  // the first reconnect, then silently nothing until a manual refresh.
+  String? _activeRoomChildId;
 
   // Streams
   final _locationController =
@@ -85,9 +91,10 @@ class SocketService {
       AppLogger.info('[SocketService] Connected: ${_socket!.id}');
       _connectionStatusController.add(true);
 
-      if (_pendingChildIdForRoom != null) {
-        joinRoom(_pendingChildIdForRoom!);
-        _pendingChildIdForRoom = null;
+      final roomToJoin = _pendingChildIdForRoom ?? _activeRoomChildId;
+      _pendingChildIdForRoom = null;
+      if (roomToJoin != null) {
+        joinRoom(roomToJoin);
       }
     });
 
@@ -155,6 +162,7 @@ class SocketService {
   }
 
   void joinRoom(String childId) {
+    _activeRoomChildId = childId;
     if (_socket == null || !_socket!.connected) {
       _pendingChildIdForRoom = childId;
       return;
@@ -166,6 +174,8 @@ class SocketService {
   }
 
   void leaveRoom(String childId) {
+    if (_activeRoomChildId == childId) _activeRoomChildId = null;
+    if (_pendingChildIdForRoom == childId) _pendingChildIdForRoom = null;
     if (_socket == null || !_socket!.connected) return;
     _socket!.emit('leave_child_room', {'childId': childId});
   }

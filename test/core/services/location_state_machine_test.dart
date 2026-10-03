@@ -261,4 +261,41 @@ void main() {
     expect(stateMachine.isTripTracking, false);
     expect(stateMachine.currentState, BgTripState.idle);
   });
+
+  test(
+    'Scenario 6: Posted body uses the fix\'s own timestamp, not DateTime.now()',
+    () async {
+      // Deliberately a stale timestamp far from "now" — mirrors the real
+      // Kusuma/585LQP case (2026-09-29): iOS handed back the same cached
+      // fix across several consecutive requests. If _postChildLocation ever
+      // regresses to DateTime.now(), this old fixTime would get silently
+      // relabeled as "just captured", which is exactly the bug that made 4
+      // identical stale coordinates look like 4 separate fresh pings to the
+      // backend's trip detection (see location_state_machine.dart's
+      // _postChildLocation comment).
+      final fixTime = DateTime.utc(2020, 1, 1, 0, 0, 0);
+      final p1 = createPosition(10.0, 20.0, fixTime, 0, 5);
+
+      await stateMachine.processLocation(p1);
+
+      final captured = verify(
+        () => mockChildRepo.postChildLocation(captureAny()),
+      ).captured;
+      expect(captured, isNotEmpty);
+      final body = captured.first as Map<String, dynamic>;
+
+      expect(body['timestamp'], fixTime.toIso8601String());
+      // Regression guard: a wall-clock timestamp would be within seconds of
+      // "now" (2026+), not this fixed 2020 date.
+      expect(
+        DateTime.parse(
+          body['timestamp'] as String,
+        ).isBefore(DateTime.now().subtract(const Duration(days: 365))),
+        isTrue,
+        reason:
+            'timestamp should be the stale fix time, not DateTime.now() — '
+            'regression to DateTime.now() would make this assertion fail',
+      );
+    },
+  );
 }

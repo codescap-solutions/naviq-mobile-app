@@ -185,7 +185,21 @@ class LocationStateMachine {
         'altitude': pos.altitude,
         'speed_accuracy': pos.speedAccuracy,
         'activity': activityName,
-        'timestamp': DateTime.now().toUtc().toIso8601String(),
+        // pos.timestamp (not DateTime.now()) — the actual moment this fix
+        // was captured. On a weak-signal highway stretch, iOS/Android can
+        // hand back the same cached CLLocation/FusedLocation fix across
+        // several consecutive requests instead of a fresh one; stamping
+        // each post with "now" relabeled 4 identical stale coordinates as 4
+        // distinct fresh pings ~2-8 min apart, which fed TripStateMachine's
+        // displacement check (>30m required) four separate "new" points
+        // that were secretly all the same point — the candidate window kept
+        // reopening and failing validation every cycle, so a real ~1.2km
+        // trip never got confirmed (confirmed real case, Kusuma/585LQP,
+        // 2026-09-29). Using the fix's own timestamp means a repeated stale
+        // fix carries the SAME timestamp each time instead of a fake new
+        // one, so it reads as what it actually is — one old point, not
+        // several new ones.
+        'timestamp': pos.timestamp.toUtc().toIso8601String(),
         'battery': batteryLevel,
       };
 

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
-import 'package:child_track/core/widgets/common_button.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:child_track/app/home/view/trip_detail_view.dart';
 import 'package:child_track/app/home/model/last_trip_model.dart';
@@ -19,7 +18,6 @@ import 'package:child_track/core/services/subscription_feature_gate.dart';
 import 'package:child_track/core/services/subscription_manager.dart';
 import 'package:child_track/app/subscription/models/subscription_plan.dart';
 import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
-import 'package:child_track/core/utils/responsive_font.dart';
 
 /// Trips List View - Shows all trips
 class TripsView extends StatefulWidget {
@@ -486,13 +484,11 @@ class _SimpleTripCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AppSizes.spacingM),
-                    CommonButton(
-                      padding: EdgeInsets.zero,
-                      width: 80,
-                      text: 'View',
-                      fontSize: 12.0.sp,
-                      textColor: AppColors.surfaceColor,
-                      onPressed: () async {
+                    // Circular icon-only CTA (44px, #0069F9, arrow icon) —
+                    // matches the Figma trip card's button shape/radius
+                    // family instead of a labeled pill button.
+                    GestureDetector(
+                      onTap: () async {
                         if (trip.points.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -555,7 +551,28 @@ class _SimpleTripCard extends StatelessWidget {
                           ),
                         );
                       },
-                      height: 30,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0069F9),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF0070F0,
+                              ).withValues(alpha: 0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
                     ),
                   ],
                 ),

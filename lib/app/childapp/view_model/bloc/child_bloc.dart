@@ -401,7 +401,10 @@ class ChildBloc extends Bloc<ChildEvent, ChildState> with WidgetsBindingObserver
         "accuracy_m": event.childLocation.accuracy,
         "speed_mps": event.childLocation.speed,
         "bearing": event.childLocation.heading,
-        "timestamp": DateTime.now().toUtc().toIso8601String(),
+        // event.childLocation.timestamp — see location_state_machine.dart's
+        // _postChildLocation for why DateTime.now() here is wrong: it
+        // relabels a stale cached OS location fix as freshly-captured.
+        "timestamp": event.childLocation.timestamp.toUtc().toIso8601String(),
       };
       AppLogger.info(
         'new logic: child location posting to api: reqest $requestBody',

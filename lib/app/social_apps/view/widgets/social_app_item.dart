@@ -36,9 +36,14 @@ class SocialAppItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        // Figma tints locked-app rows red — was flat white regardless of
+        // lock state.
+        color: isLocked ? const Color(0xFFFEF2F2) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
+        border: Border.all(
+          color: isLocked ? const Color(0xFFFECACA) : const Color(0xFFF1F5F9),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF0C1D37).withValues(alpha: 0.02),
@@ -187,11 +192,7 @@ class _DailyLimitButton extends StatelessWidget {
                   color: const Color(0xFF0066FF),
                 ),
               )
-            : const Icon(
-                Icons.add_rounded,
-                size: 18,
-                color: Color(0xFF94A3B8),
-              ),
+            : const Icon(Icons.add_rounded, size: 18, color: Color(0xFF94A3B8)),
       ),
     );
   }

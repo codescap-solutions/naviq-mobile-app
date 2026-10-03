@@ -27,7 +27,11 @@ class MapViewWidget extends StatefulWidget {
     this.useEagerGestures = false,
     this.onCameraMove,
     this.onMapTap,
+    this.mapPadding = EdgeInsets.zero,
   });
+  // Shifts the camera's visual centre (and the Google logo) — used by the Home
+  // map so the child marker sits in the part of the map not covered by the sheet.
+  final EdgeInsets mapPadding;
   final double width, height;
   final bool interactive, isPolyLines;
   final bool useEagerGestures;
@@ -91,7 +95,10 @@ class _MapViewWidgetState extends State<MapViewWidget> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 'Map Type',
-                style: TextStyle(fontSize: 18.0.sp, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18.0.sp,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             _buildMapTypeOption(context, 'Normal', MapType.normal, Icons.map),
@@ -263,6 +270,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                           widget.onMapTap?.call(position);
                         },
                         mapType: currentMapType,
+                        padding: widget.mapPadding,
                         mapToolbarEnabled: true,
                         zoomControlsEnabled: true,
                         compassEnabled: false,
@@ -291,12 +299,20 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                         polylines: () {
                           if (hasExplicitPolylines) {
                             final pts = widget.polylines!;
-                            debugPrint('[MapViewWidget] passing ${pts.length} polyline(s) to GoogleMap');
+                            debugPrint(
+                              '[MapViewWidget] passing ${pts.length} polyline(s) to GoogleMap',
+                            );
                             for (var i = 0; i < pts.length; i++) {
-                              debugPrint('[MapViewWidget]   polyline[$i].points.length = ${pts[i].points.length}');
+                              debugPrint(
+                                '[MapViewWidget]   polyline[$i].points.length = ${pts[i].points.length}',
+                              );
                               if (pts[i].points.isNotEmpty) {
-                                debugPrint('[MapViewWidget]   polyline[$i].first = ${pts[i].points.first}');
-                                debugPrint('[MapViewWidget]   polyline[$i].last  = ${pts[i].points.last}');
+                                debugPrint(
+                                  '[MapViewWidget]   polyline[$i].first = ${pts[i].points.first}',
+                                );
+                                debugPrint(
+                                  '[MapViewWidget]   polyline[$i].last  = ${pts[i].points.last}',
+                                );
                               }
                             }
                             return pts.toSet();

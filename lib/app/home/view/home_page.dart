@@ -63,6 +63,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   // ── Map-First UX ─────────────────────────────────────────────────────────
   late final ScrollController _homeScrollController;
+  // 0 = map fully visible, 1 = map fully washed out. Driven by the home scroll
+  // offset; a ValueNotifier so only the overlay repaints per scroll frame.
+  final ValueNotifier<double> _mapFadeAmount = ValueNotifier<double>(0);
   final GlobalKey<_HomeMapBackgroundState> _mapBackgroundKey = GlobalKey();
   double _mapHeightFraction =
       0.50; // Initial height (Expanded) — matches the Figma reference (~50% map on first load, with the location/Scroll/GeoGuard/Route-Map cards already visible underneath without scrolling)
@@ -101,6 +104,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _onHomeScroll() {
     if (!mounted) return;
     final offset = _homeScrollController.offset;
+    _mapFadeAmount.value = (offset / 260).clamp(0.0, 1.0);
+    // The map used to shrink in steps (0.50 -> 0.35 -> 0.20 of the screen) as
+    // the list scrolled. It's now pinned behind the scrolling content and just
+    // fades out (see _HomeMapHeaderDelegate), so the step logic is disabled:
+    /*
     double targetFraction = _mapHeightFraction;
 
     if (_mapHeightFraction == 0.50) {
@@ -131,6 +139,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         _mapHeightFraction = targetFraction;
       });
     }
+    */
   }
 
   void _startRefreshProgress() {
@@ -394,6 +403,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _sheetController.dispose();
     _homeScrollController.removeListener(_onHomeScroll);
     _homeScrollController.dispose();
+    _mapFadeAmount.dispose();
     _notificationSubscription?.cancel();
     _foregroundSubscription?.cancel();
     super.dispose();
@@ -2118,21 +2128,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return 'Since $displayHour:$minute $period';
   }
 
-  // Same dwell-time answer as _formatArrivalTime, but switches to a
-  // relative day-count once the child has been at this spot a full day or
-  // more — "Since 9:30 AM" reads fine for today, but the same wall-clock
-  // time reads as meaningless/stale once it's yesterday's or last week's
-  // clock time. Used for the status pill regardless of online/offline —
-  // "how long has the child been here" is the same question whether the
-  // device is currently reachable or not, so it shouldn't just say the bare
-  // word "Offline" with no sense of duration.
+  // Relative dwell duration for the status pill — "how long has the child
+  // been here", stated the same way the "Last moved Xh ago" line above it
+  // already states it. Used to show a wall-clock arrival time instead
+  // ("Since 6:54 PM"), which technically encodes the same information but
+  // reads as inconsistent/confusing next to a sibling line already saying
+  // "13h ago" for the exact same timestamp — a parent has to do the math
+  // themselves to see the two numbers agree. Matching the relative format
+  // removes that mental step. Used for the status pill regardless of
+  // online/offline — "how long has the child been here" is the same
+  // question whether the device is currently reachable or not, so it
+  // shouldn't just say the bare word "Offline" with no sense of duration.
   String _formatDwellTime(DateTime? since) {
     if (since == null) return 'Active';
     final diff = DateTime.now().toUtc().difference(since.toUtc());
-    if (!diff.isNegative && diff.inDays >= 1) {
-      return 'Since ${diff.inDays}d';
-    }
-    return _formatArrivalTime(since);
+    if (diff.isNegative || diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return 'Since ${diff.inMinutes}m';
+    if (diff.inHours < 24) return 'Since ${diff.inHours}h';
+    return 'Since ${diff.inDays}d';
   }
 
   // Sourced from trackingSnapshot.latestLocation.deviceTimestamp specifically
@@ -2144,16 +2157,57 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // the two ever telling a parent a contradictory story. Shown regardless of
   // whether location is off, so a parent isn't left with zero freshness
   // information when the badge alone can't fully explain what's going on.
+  //
+  // Labeled "Location updated", not just "Last updated" — a tracker can
+  // check in (battery/online ping) far more recently than it last sent an
+  // actual GPS fix (e.g. stationary and power-saving, or weak signal).
+  // Confirmed real case: deviceStatus.lastUpdated was 1.5 min old while
+  // this location timestamp was 4+ hours old — the bare word "Last
+  // updated" read as if the whole device had gone quiet for 4 hours, when
+  // only its location had.
   String? _formatLastUpdated(DateTime? deviceTimestamp) {
     if (deviceTimestamp == null) return null;
     final diff = DateTime.now().toUtc().difference(deviceTimestamp.toUtc());
-    if (diff.isNegative) return 'Last updated just now';
-    if (diff.inSeconds < 90) return 'Last updated just now';
-    if (diff.inMinutes < 60) return 'Last updated ${diff.inMinutes} min ago';
-    if (diff.inHours < 24) return 'Last updated ${diff.inHours}h ago';
-    if (diff.inDays == 1) return 'Last updated yesterday';
-    if (diff.inDays < 7) return 'Last updated ${diff.inDays}d ago';
-    return 'Last updated ${deviceTimestamp.toLocal().toString().split('.').first}';
+    if (diff.isNegative) return 'Location updated just now';
+    if (diff.inSeconds < 90) return 'Location updated just now';
+    if (diff.inMinutes < 60)
+      return 'Location updated ${diff.inMinutes} min ago';
+    if (diff.inHours < 24) return 'Location updated ${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'Location updated yesterday';
+    if (diff.inDays < 7) return 'Location updated ${diff.inDays}d ago';
+    return 'Location updated ${deviceTimestamp.toLocal().toString().split('.').first}';
+  }
+
+  // Readable text for a JT808 tracker alarm type (see naviQ-server
+  // tcp/jt808.js's ALARM_BIT_NAMES) — the raw enum string isn't something
+  // to show a parent directly.
+  String _formatAlarmLabel(String? alarmType) {
+    switch (alarmType) {
+      case 'GEOFENCE':
+        return 'Entry fence alarm';
+      case 'EMERGENCY_SOS':
+        return 'Emergency SOS alarm';
+      case 'OVERSPEED':
+        return 'Overspeed alarm';
+      case 'MAIN_POWER_OFF':
+        return 'Device power disconnected';
+      case 'MAIN_POWER_UNDERVOLTAGE':
+        return 'Device battery low';
+      case 'GNSS_MODULE_FAULT':
+        return 'GPS module fault';
+      case 'VEHICLE_THEFT':
+        return 'Theft alarm';
+      default:
+        return 'Device alarm';
+    }
+  }
+
+  String _formatLastAlarmTime(DateTime? at) {
+    if (at == null) return '';
+    final diff = DateTime.now().toUtc().difference(at.toUtc());
+    if (diff.isNegative || diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    return '${diff.inHours}h ago';
   }
 
   // Replaces the bare word "STALE" on the top status badge. A parent reading
@@ -2205,6 +2259,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (diff.inHours < 24) return 'Unchanged ${diff.inHours}h$plus';
     if (diff.inDays == 1) return 'Unchanged 1d$plus';
     return 'Unchanged ${diff.inDays}d$plus';
+  }
+
+  // Label for the isDeviceUnreachable pill. "Location unavailable" used to
+  // cover this case too, same wording/red styling as the genuine
+  // isLocationOff (permission/GPS toggle) case — misleading, since a device
+  // that simply hasn't phoned home (no network, app killed, iOS background
+  // suspension, powered off) may have location fully working on the phone
+  // itself. "Unreachable" + elapsed time says what's actually true.
+  String _unreachableDurationPill(DateTime? deviceTimestamp) {
+    if (deviceTimestamp == null) return 'Unreachable';
+    final diff = DateTime.now().toUtc().difference(deviceTimestamp.toUtc());
+    if (diff.isNegative || diff.inMinutes < 1) return 'Unreachable';
+    if (diff.inMinutes < 60) return 'Unreachable ${diff.inMinutes}m';
+    if (diff.inHours < 24) return 'Unreachable ${diff.inHours}h';
+    if (diff.inDays == 1) return 'Unreachable 1d';
+    return 'Unreachable ${diff.inDays}d';
   }
 
   // "Last moved" companion to _formatLastUpdated — consolidates the two
@@ -2294,7 +2364,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isSelected ? const Color(0xFFEFF6FF) : Colors.transparent,
+              gradient: isSelected
+                  ? const LinearGradient(
+                      colors: [Color(0x003DB5E9), Color(0x2E2352BB)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
             ),
             child: Icon(
               icon,
@@ -2431,259 +2507,353 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             state.trackingSnapshot?.uiDirective.displayState == 'NEVER_SHARED';
         final childName =
             _sharedPrefsService.getString('child_name') ?? 'Ananya';
-        final matchingPlace = _findMatchingPlace(
-          state.currentLocation?.lat,
-          state.currentLocation?.lng,
-        );
-        final placeName = matchingPlace != null
-            ? matchingPlace.name
-            : (state.currentLocation?.address != null
-                  ? _formatAddress(state.currentLocation?.address)
-                  : 'Unknown Place');
+        // Backend already resolves place_name authoritatively (Child.currentPlace,
+        // kept in sync by the geofence pipelines — see location.controller.js /
+        // geofence.service.js) — trust it first instead of re-deriving a match
+        // client-side. _findMatchingPlace's own box-match against _savedPlaces
+        // is a separately-fetched, per-child-switch list that can be stale or
+        // momentarily empty (e.g. right after switching children), which used
+        // to silently fall through to a client-side reverse-geocoded raw
+        // street address even while the backend already knew the correct
+        // place name (confirmed real case: backend said "House", this still
+        // showed "LIG Phase-III, BDA Apartment-Kaniminike, ..."). Only fall
+        // back to the client-side match/address when the backend genuinely
+        // has no place name for this location.
+        final backendPlaceName = state.currentLocation?.placeName;
+        final hasBackendPlaceName =
+            backendPlaceName != null &&
+            backendPlaceName.isNotEmpty &&
+            backendPlaceName != 'Unknown';
+        final matchingPlace = hasBackendPlaceName
+            ? null
+            : _findMatchingPlace(
+                state.currentLocation?.lat,
+                state.currentLocation?.lng,
+              );
+        final placeName = hasBackendPlaceName
+            ? backendPlaceName
+            : (matchingPlace != null
+                  ? matchingPlace.name
+                  : (state.currentLocation?.address != null
+                        ? _formatAddress(state.currentLocation?.address)
+                        : 'Unknown Place'));
 
         final double screenHeight = MediaQuery.of(context).size.height;
+        // The map is pinned behind the scroll content (reference behaviour:
+        // the sheet slides up OVER a fixed map). Its full painted height is
+        // half the screen, but the pinned header only reserves the part above
+        // the location card — the card (its own sliver) overlaps the rest.
+        const double kLocationCardOverlap = 195;
+        final double mapFullHeight = screenHeight * 0.5;
+        final double mapHeaderExtent = mapFullHeight - kLocationCardOverlap;
 
         return NotificationListener<ScrollNotification>(
           onNotification: (notification) {
+            // _isUserDraggingScroll used to drive the map's AnimatedContainer
+            // duration. The map no longer animates its height, and this
+            // setState rebuilt the ENTIRE Home page at the start and end of
+            // every drag — a visible hitch exactly when the sheet is grabbed.
+            /*
             final draggingNow =
                 notification is ScrollStartNotification ||
                 notification is ScrollUpdateNotification;
             if (draggingNow != _isUserDraggingScroll) {
-              // Avoid setState mid-build/scroll-callback re-entrancy issues
-              // by scheduling for the next frame.
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
                   setState(() => _isUserDraggingScroll = draggingNow);
                 }
               });
             }
+            */
             return false;
           },
-          child: CustomScrollView(
-            controller: _homeScrollController,
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            slivers: [
-              // Sliver 1: Map section — height driven by scroll position
-              SliverToBoxAdapter(
-                child: AnimatedContainer(
-                  duration: _isUserDraggingScroll
-                      ? Duration.zero
-                      : const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
-                  height: screenHeight * _mapHeightFraction,
-                  child: Stack(
-                    children: [
-                      // Layer 1: Map Background with rounded bottom corners
-                      Positioned.fill(
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(36),
-                            bottomRight: Radius.circular(36),
-                          ),
-                          child: RepaintBoundary(
-                            child: _HomeMapBackground(
-                              key: _mapBackgroundKey,
-                              loadCustomMarker: _loadCustomMarker,
-                              activeSharedChildData: _activeSharedChildData,
-                              viewingSharedChild: _viewingSharedChild,
-                              ownChildLocation: state.currentLocation != null
-                                  ? LatLng(
-                                      state.currentLocation!.lat,
-                                      state.currentLocation!.lng,
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Layer 1.4: "Updating location..." overlay while a
-                      // fresh fetch is in flight (e.g. right after switching
-                      // the selected child). homepage_bloc.dart already
-                      // clears currentLocation on a child switch so the OLD
-                      // child's marker doesn't flash before the new one loads
-                      // — but with nothing shown in its place, that gap read
-                      // as unexplained/confusing (reported live: briefly
-                      // shows the old child's spot, then jumps 1-2s later).
-                      // This makes the gap legible instead of silent.
-                      if (state.isLoading)
-                        Positioned(
-                          top: 16,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final double layoutHeight = box.maxHeight;
+              final double topInset = MediaQuery.of(context).padding.top;
+              // Sheet rests with its top at the location card (map visible
+              // above it) and can be dragged up to just under the status bar.
+              final double restSheet =
+                  ((layoutHeight - mapHeaderExtent) / layoutHeight).clamp(
+                    0.3,
+                    1.0,
+                  );
+              final double maxSheet = ((layoutHeight - topInset) / layoutHeight)
+                  .clamp(restSheet, 1.0);
+              // Dragging down lowers the sheet until the map fills ~75% of
+              // the screen (only the card header peeks above the nav bar).
+              const double kMapExpandedFraction = 0.75;
+              final double minSheet =
+                  (1.0 - (screenHeight * kMapExpandedFraction) / layoutHeight)
+                      .clamp(0.1, restSheet);
+              return NotificationListener<DraggableScrollableNotification>(
+                onNotification: (n) {
+                  // Map is only washed out when the sheet is raised ABOVE its
+                  // resting spot; lowering it just reveals more map.
+                  final range = n.maxExtent - restSheet;
+                  _mapFadeAmount.value = range <= 0
+                      ? 0.0
+                      : ((n.extent - restSheet) / range).clamp(0.0, 1.0);
+                  return false;
+                },
+                child: Stack(
+                  children: [
+                    // Fixed map behind the sheet.
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: layoutHeight,
+                      child: Stack(
+                        children: [
+                          // Layer 1: Map Background with rounded bottom corners
+                          Positioned.fill(
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                bottomLeft: Radius.circular(36),
+                                bottomRight: Radius.circular(36),
                               ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.75),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
+                              child: RepaintBoundary(
+                                child: _HomeMapBackground(
+                                  key: _mapBackgroundKey,
+                                  // Visible map (above the resting sheet) is the
+                                  // top half; pad the rest so the marker/camera
+                                  // centre lands in it, not behind the sheet.
+                                  mapPadding: EdgeInsets.only(
+                                    bottom: layoutHeight - mapFullHeight,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Updating location…',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12.5.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
+                                  loadCustomMarker: _loadCustomMarker,
+                                  activeSharedChildData: _activeSharedChildData,
+                                  viewingSharedChild: _viewingSharedChild,
+                                  ownChildLocation:
+                                      state.currentLocation != null
+                                      ? LatLng(
+                                          state.currentLocation!.lat,
+                                          state.currentLocation!.lng,
+                                        )
+                                      : null,
+                                ),
                               ),
                             ),
                           ),
-                        ),
 
-                      // Layer 1.5: Floating Overlay Avatar for Shared Kid
-                      () {
-                        final floatingChildren = state.sharedChildren.isNotEmpty
-                            ? state.sharedChildren
-                            : (_activeSharedChildData != null
-                                  ? [
-                                      SharedChild(
-                                        shareId:
-                                            _activeSharedChildData!['child_id'],
-                                        childId:
-                                            _activeSharedChildData!['child_id'],
-                                        childName:
-                                            _activeSharedChildData!['child_name'],
-                                        latitude:
-                                            _activeSharedChildData!['lat'],
-                                        longitude:
-                                            _activeSharedChildData!['lng'],
-                                        batteryPercentage:
-                                            _activeSharedChildData!['battery_percentage'] ??
-                                            50,
-                                        avatar:
-                                            _activeSharedChildData!['avatar'],
-                                        expiresAt:
-                                            _activeSharedChildData!['expires_at'],
-                                        lastSyncAt:
-                                            _activeSharedChildData!['last_sync_at'],
-                                      ),
-                                    ]
-                                  : <SharedChild>[]);
-
-                        if (floatingChildren.isEmpty)
-                          return const SizedBox.shrink();
-
-                        return Positioned(
-                          top: 80,
-                          right: 16,
-                          child: Column(
-                            children: floatingChildren.map((child) {
-                              final isSelected =
-                                  _viewingSharedChild &&
-                                  _activeSharedChildData != null &&
-                                  _activeSharedChildData!['child_id'] ==
-                                      child.childId;
-                              final hasAvatar =
-                                  child.avatar != null &&
-                                  child.avatar!.isNotEmpty;
-                              final String initials = child.childName
-                                  .substring(0, min(2, child.childName.length))
-                                  .toUpperCase();
-
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12.0),
-                                child: Column(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _activeSharedChildData = {
-                                            'child_id': child.childId,
-                                            'child_name': child.childName,
-                                            'avatar':
-                                                child.avatar ?? 'Boy 03.png',
-                                            'lat': child.latitude,
-                                            'lng': child.longitude,
-                                            'expires_at': child.expiresAt,
-                                            'battery_percentage':
-                                                child.batteryPercentage,
-                                            'last_sync_at': child.lastSyncAt,
-                                          };
-                                          _viewingSharedChild = true;
-                                        });
-                                      },
-                                      child: Container(
-                                        width: 56,
-                                        height: 56,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.white,
-                                          border: Border.all(
-                                            color: isSelected
-                                                ? const Color(0xFF0066FF)
-                                                : const Color(0xFFCBD5E1),
-                                            width: 2.5,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(
-                                                0.15,
-                                              ),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ],
+                          // Layer 1.2: wash the map out to white as the parent
+                          // scrolls the cards up over it (Figma/reference
+                          // behaviour). Ignores pointers so map gestures and the
+                          // overlays above it are unaffected.
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: ValueListenableBuilder<double>(
+                                valueListenable: _mapFadeAmount,
+                                builder: (context, fade, _) => fade <= 0.01
+                                    ? const SizedBox.shrink()
+                                    : ClipRRect(
+                                        borderRadius: const BorderRadius.only(
+                                          bottomLeft: Radius.circular(36),
+                                          bottomRight: Radius.circular(36),
                                         ),
-                                        alignment: Alignment.center,
-                                        child: Stack(
-                                          alignment: Alignment.center,
-                                          children: [
-                                            if (hasAvatar)
-                                              ClipOval(
-                                                child: Image(
-                                                  image:
-                                                      (child.avatar!.startsWith(
-                                                            'http://',
-                                                          ) ||
-                                                          child.avatar!
-                                                              .startsWith(
-                                                                'https://',
-                                                              ))
-                                                      ? NetworkImage(
-                                                          child.avatar!,
-                                                        )
-                                                      : AssetImage(
+                                        child: ColoredBox(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.92 * fade,
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+
+                          // Layer 1.4: "Updating location..." overlay while a
+                          // fresh fetch is in flight (e.g. right after switching
+                          // the selected child). homepage_bloc.dart already
+                          // clears currentLocation on a child switch so the OLD
+                          // child's marker doesn't flash before the new one loads
+                          // — but with nothing shown in its place, that gap read
+                          // as unexplained/confusing (reported live: briefly
+                          // shows the old child's spot, then jumps 1-2s later).
+                          // This makes the gap legible instead of silent.
+                          if (state.isLoading)
+                            Positioned(
+                              top: 16,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.75),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Updating location…',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12.5.sp,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                          // Layer 1.5: Floating Overlay Avatar for Shared Kid
+                          () {
+                            final floatingChildren =
+                                state.sharedChildren.isNotEmpty
+                                ? state.sharedChildren
+                                : (_activeSharedChildData != null
+                                      ? [
+                                          SharedChild(
+                                            shareId:
+                                                _activeSharedChildData!['child_id'],
+                                            childId:
+                                                _activeSharedChildData!['child_id'],
+                                            childName:
+                                                _activeSharedChildData!['child_name'],
+                                            latitude:
+                                                _activeSharedChildData!['lat'],
+                                            longitude:
+                                                _activeSharedChildData!['lng'],
+                                            batteryPercentage:
+                                                _activeSharedChildData!['battery_percentage'] ??
+                                                50,
+                                            avatar:
+                                                _activeSharedChildData!['avatar'],
+                                            expiresAt:
+                                                _activeSharedChildData!['expires_at'],
+                                            lastSyncAt:
+                                                _activeSharedChildData!['last_sync_at'],
+                                          ),
+                                        ]
+                                      : <SharedChild>[]);
+
+                            if (floatingChildren.isEmpty)
+                              return const SizedBox.shrink();
+
+                            return Positioned(
+                              top: 80,
+                              right: 16,
+                              child: Column(
+                                children: floatingChildren.map((child) {
+                                  final isSelected =
+                                      _viewingSharedChild &&
+                                      _activeSharedChildData != null &&
+                                      _activeSharedChildData!['child_id'] ==
+                                          child.childId;
+                                  final hasAvatar =
+                                      child.avatar != null &&
+                                      child.avatar!.isNotEmpty;
+                                  final String initials = child.childName
+                                      .substring(
+                                        0,
+                                        min(2, child.childName.length),
+                                      )
+                                      .toUpperCase();
+
+                                  return Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: 12.0,
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _activeSharedChildData = {
+                                                'child_id': child.childId,
+                                                'child_name': child.childName,
+                                                'avatar':
+                                                    child.avatar ??
+                                                    'Boy 03.png',
+                                                'lat': child.latitude,
+                                                'lng': child.longitude,
+                                                'expires_at': child.expiresAt,
+                                                'battery_percentage':
+                                                    child.batteryPercentage,
+                                                'last_sync_at':
+                                                    child.lastSyncAt,
+                                              };
+                                              _viewingSharedChild = true;
+                                            });
+                                          },
+                                          child: Container(
+                                            width: 56,
+                                            height: 56,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.white,
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? const Color(0xFF0066FF)
+                                                    : const Color(0xFFCBD5E1),
+                                                width: 2.5,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.15),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Stack(
+                                              alignment: Alignment.center,
+                                              children: [
+                                                if (hasAvatar)
+                                                  ClipOval(
+                                                    child: Image(
+                                                      image:
+                                                          (child.avatar!
+                                                                  .startsWith(
+                                                                    'http://',
+                                                                  ) ||
                                                               child.avatar!
-                                                                      .startsWith(
-                                                                        'assets/',
-                                                                      )
-                                                                  ? child
-                                                                        .avatar!
-                                                                  : 'assets/images/childavatar/${child.avatar!}',
+                                                                  .startsWith(
+                                                                    'https://',
+                                                                  ))
+                                                          ? NetworkImage(
+                                                              child.avatar!,
                                                             )
-                                                            as ImageProvider,
-                                                  width: 50,
-                                                  height: 50,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder:
-                                                      (
-                                                        context,
-                                                        error,
-                                                        stackTrace,
-                                                      ) {
-                                                        return Text(
-                                                          initials,
-                                                          style:
-                                                              GoogleFonts.poppins(
+                                                          : AssetImage(
+                                                                  child.avatar!
+                                                                          .startsWith(
+                                                                            'assets/',
+                                                                          )
+                                                                      ? child
+                                                                            .avatar!
+                                                                      : 'assets/images/childavatar/${child.avatar!}',
+                                                                )
+                                                                as ImageProvider,
+                                                      width: 50,
+                                                      height: 50,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder:
+                                                          (
+                                                            context,
+                                                            error,
+                                                            stackTrace,
+                                                          ) {
+                                                            return Text(
+                                                              initials,
+                                                              style: GoogleFonts.poppins(
                                                                 fontSize:
                                                                     14.0.sp,
                                                                 fontWeight:
@@ -2694,427 +2864,517 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                                       0xFF0066FF,
                                                                     ),
                                                               ),
-                                                        );
-                                                      },
-                                                ),
-                                              )
-                                            else
-                                              Text(
-                                                initials,
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 14.0.sp,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: const Color(
-                                                    0xFF0066FF,
+                                                            );
+                                                          },
+                                                    ),
+                                                  )
+                                                else
+                                                  Text(
+                                                    initials,
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize: 14.0.sp,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: const Color(
+                                                        0xFF0066FF,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                Positioned(
+                                                  top: 0,
+                                                  right: 0,
+                                                  child: Container(
+                                                    width: 12,
+                                                    height: 12,
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(
+                                                        0xFF10B981,
+                                                      ),
+                                                      shape: BoxShape.circle,
+                                                      border: Border.all(
+                                                        color: Colors.white,
+                                                        width: 1.5,
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
-                                              ),
-                                            Positioned(
-                                              top: 0,
-                                              right: 0,
-                                              child: Container(
-                                                width: 12,
-                                                height: 12,
-                                                decoration: BoxDecoration(
-                                                  color: const Color(
-                                                    0xFF10B981,
-                                                  ),
-                                                  shape: BoxShape.circle,
-                                                  border: Border.all(
-                                                    color: Colors.white,
-                                                    width: 1.5,
-                                                  ),
-                                                ),
-                                              ),
+                                              ],
                                             ),
-                                          ],
+                                          ),
                                         ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.9,
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.05,
+                                        const SizedBox(height: 4),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.9,
                                             ),
-                                            blurRadius: 4,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.05,
+                                                ),
+                                                blurRadius: 4,
+                                              ),
+                                            ],
                                           ),
-                                        ],
-                                      ),
-                                      child: Text(
-                                        child.childName,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 10.0.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF0C1D37),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        );
-                      }(),
-
-                      // Layer 1.6: Overlay banner if viewing shared child
-                      if (_viewingSharedChild && _activeSharedChildData != null)
-                        Positioned(
-                          top: 16,
-                          left: 16,
-                          right: 16,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.share_location,
-                                      color: Color(0xFF0066FF),
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Viewing: ${_activeSharedChildData!['child_name']} (Shared)',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 13.0.sp,
-                                            fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF0C1D37),
-                                          ),
-                                        ),
-                                        Text(
-                                          _getRemainingTimeText(
-                                            _activeSharedChildData!['expires_at'],
-                                          ),
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 11.0.sp,
-                                            color: const Color(0xFF64748B),
-                                            fontWeight: FontWeight.w500,
+                                          child: Text(
+                                            child.childName,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 10.0.sp,
+                                              fontWeight: FontWeight.bold,
+                                              color: const Color(0xFF0C1D37),
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
+                                  );
+                                }).toList(),
+                              ),
+                            );
+                          }(),
+
+                          // Layer 1.6: Overlay banner if viewing shared child
+                          if (_viewingSharedChild &&
+                              _activeSharedChildData != null)
+                            Positioned(
+                              top: 16,
+                              left: 16,
+                              right: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
                                   ],
                                 ),
-                                TextButton(
-                                  style: TextButton.styleFrom(
-                                    backgroundColor: const Color(0xFFF1F5F9),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.share_location,
+                                          color: Color(0xFF0066FF),
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Viewing: ${_activeSharedChildData!['child_name']} (Shared)',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 13.0.sp,
+                                                fontWeight: FontWeight.bold,
+                                                color: const Color(0xFF0C1D37),
+                                              ),
+                                            ),
+                                            Text(
+                                              _getRemainingTimeText(
+                                                _activeSharedChildData!['expires_at'],
+                                              ),
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 11.0.sp,
+                                                color: const Color(0xFF64748B),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _viewingSharedChild = false;
-                                    });
-                                  },
-                                  child: Text(
-                                    'Switch to Home',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12.0.sp,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF475569),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                      // Layer FAB: floating "Map" FAB visible only when collapsed (20% height)
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        bottom: (_mapHeightFraction == 0.20) ? 96 : -60,
-                        right: 16,
-                        child: AnimatedOpacity(
-                          opacity: (_mapHeightFraction == 0.20) ? 1.0 : 0.0,
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _mapHeightFraction = 0.50;
-                              });
-                              if (_homeScrollController.hasClients) {
-                                _homeScrollController.animateTo(
-                                  0,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOutCubic,
-                                );
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0066FF),
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.15),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.map_rounded,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Map',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14.0.sp,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Layer FAB: Locate Me button
-                      Positioned(
-                        bottom: 36,
-                        right: 16,
-                        child: GestureDetector(
-                          onTap: () {
-                            final target =
-                                _viewingSharedChild &&
-                                    _activeSharedChildData != null
-                                ? LatLng(
-                                    _activeSharedChildData!['lat'],
-                                    _activeSharedChildData!['lng'],
-                                  )
-                                : (state.currentLocation != null
-                                      ? LatLng(
-                                          state.currentLocation!.lat,
-                                          state.currentLocation!.lng,
-                                        )
-                                      : null);
-                            if (target != null) {
-                              _mapBackgroundKey.currentState?._animateTo(
-                                target,
-                                zoom: 15.0,
-                              );
-                            }
-                          },
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.my_location_rounded,
-                              color: Color(0xFF0C1D37),
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Layer 2: Overlay Location Card at the bottom of the map
-                      Positioned(
-                        left: 16,
-                        right: 16,
-                        bottom: (_mapHeightFraction == 0.20)
-                            ? 90
-                            : 20, // Responsive to prevent overlap
-                        child: _buildLocationCardOnly(
-                          context,
-                          _viewingSharedChild && _activeSharedChildData != null
-                              ? _activeSharedChildData!['child_name']
-                              : childName,
-                          _viewingSharedChild && _activeSharedChildData != null
-                              ? 'Shared Location'
-                              : placeName,
-                          state,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Sliver 2: Scrollable content cards below the map
-              if (!_viewingSharedChild)
-                SliverPadding(
-                  padding: const EdgeInsets.all(16.0),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      // Live Trip Status Card — shown only when actively
-                      // travelling. Hidden per request (kept here, not
-                      // deleted, so it's a one-line flip back to `true`).
-                      if (false)
-                        _LiveTripCard(
-                          activeTrip: state.activeTrip,
-                          isDeviceOffline: _isDeviceOffline(state),
-                        ),
-
-                      // 2. Scroll & Geo Guard Feature Cards — greyed out and
-                      // disabled until the child's device is actually paired
-                      // (see isChildNotPaired above).
-                      IgnorePointer(
-                        ignoring: isChildNotPaired,
-                        child: Opacity(
-                          opacity: isChildNotPaired ? 0.45 : 1.0,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: _buildFeatureCard(
-                                  title: 'Scroll',
-                                  subtitle: 'Social Media & Apps',
-                                  statusText:
-                                      state.features?.scrollStatusText ??
-                                      '0 Apps Locked',
-                                  icon: Icons.smartphone_rounded,
-                                  cardBg: const Color(0xFFEFF6FF),
-                                  borderCol: const Color(0xFFDBEAFE),
-                                  iconCol: const Color(0xFF3B82F6),
-                                  statusBg: const Color(0xFFDBEAFE),
-                                  statusTextCol: const Color(0xFF1D4ED8),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const SocialAppsView(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildFeatureCard(
-                                  title: 'Geo Guard',
-                                  subtitle: 'Places & Geofencing',
-                                  statusText:
-                                      state.features?.geoGuardStatusText ??
-                                      '0 Fencing',
-                                  icon: Icons.location_on_outlined,
-                                  cardBg: const Color(0xFFFFF7ED),
-                                  borderCol: const Color(0xFFFFEDD5),
-                                  iconCol: const Color(0xFFF97316),
-                                  statusBg: const Color(0xFFFFEDD5),
-                                  statusTextCol: const Color(0xFFC2410C),
-                                  onTap: () {
-                                    final childId = _sharedPrefsService
-                                        .getString('child_id');
-                                    final parentId = _sharedPrefsService
-                                        .getString('parent_id');
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => GeoFencingView(
-                                          childId: childId,
-                                          parentId: parentId,
+                                    TextButton(
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: const Color(
+                                          0xFFF1F5F9,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                       ),
-                                    ).then((_) {
-                                      injector<HomepageBloc>().add(
-                                        const GetHomepageData(),
-                                      );
-                                      _loadSavedPlaces();
-                                    });
-                                  },
+                                      onPressed: () {
+                                        setState(() {
+                                          _viewingSharedChild = false;
+                                        });
+                                      },
+                                      child: Text(
+                                        'Switch to Home',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12.0.sp,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF475569),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
+                            ),
+
+                          // Layer FAB: floating "Map" FAB visible only when collapsed (20% height)
+                          AnimatedPositioned(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOutCubic,
+                            bottom: (_mapHeightFraction == 0.20) ? 96 : -60,
+                            right: 16,
+                            child: AnimatedOpacity(
+                              opacity: (_mapHeightFraction == 0.20) ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _mapHeightFraction = 0.50;
+                                  });
+                                  if (_homeScrollController.hasClients) {
+                                    _homeScrollController.animateTo(
+                                      0,
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      curve: Curves.easeOutCubic,
+                                    );
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0066FF),
+                                    borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.map_rounded,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Map',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14.0.sp,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
+
+                          // Layer FAB: Locate Me button
+                          Positioned(
+                            top: mapHeaderExtent - 60,
+                            right: 16,
+                            child: GestureDetector(
+                              onTap: () {
+                                final target =
+                                    _viewingSharedChild &&
+                                        _activeSharedChildData != null
+                                    ? LatLng(
+                                        _activeSharedChildData!['lat'],
+                                        _activeSharedChildData!['lng'],
+                                      )
+                                    : (state.currentLocation != null
+                                          ? LatLng(
+                                              state.currentLocation!.lat,
+                                              state.currentLocation!.lng,
+                                            )
+                                          : null);
+                                if (target != null) {
+                                  _mapBackgroundKey.currentState?._animateTo(
+                                    target,
+                                    zoom: 15.0,
+                                  );
+                                }
+                              },
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.15),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.my_location_rounded,
+                                  color: Color(0xFF0C1D37),
+                                  size: 22,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Draggable sheet: slivers inside scroll once the sheet is
+                    // fully expanded; before that, dragging lifts the sheet
+                    // over the map (which fades to white).
+                    Positioned.fill(
+                      child: DraggableScrollableSheet(
+                        initialChildSize: restSheet,
+                        minChildSize: minSheet,
+                        maxChildSize: maxSheet,
+                        snap: true,
+                        snapSizes: [restSheet],
+                        builder: (context, scrollController) => CustomScrollView(
+                          controller: scrollController,
+                          physics: const ClampingScrollPhysics(),
+                          slivers: [
+                            // Sliver 1: location card — top of the sheet, floats over the map.
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  0,
+                                  16,
+                                  20,
+                                ),
+                                child: _buildLocationCardOnly(
+                                  context,
+                                  _viewingSharedChild &&
+                                          _activeSharedChildData != null
+                                      ? _activeSharedChildData!['child_name']
+                                      : childName,
+                                  _viewingSharedChild &&
+                                          _activeSharedChildData != null
+                                      ? 'Shared Location'
+                                      : placeName,
+                                  state,
+                                ),
+                              ),
+                            ),
+
+                            // Sliver 2: Scrollable content cards below the map
+                            if (!_viewingSharedChild)
+                              DecoratedSliver(
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF8FAFC),
+                                ),
+                                sliver: SliverPadding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  sliver: SliverList(
+                                    delegate: SliverChildListDelegate([
+                                      // Live Trip Status Card — shown only when actively
+                                      // travelling. Hidden per request (kept here, not
+                                      // deleted, so it's a one-line flip back to `true`).
+                                      if (false)
+                                        _LiveTripCard(
+                                          activeTrip: state.activeTrip,
+                                          isDeviceOffline: _isDeviceOffline(
+                                            state,
+                                          ),
+                                        ),
+
+                                      // 2. Scroll & Geo Guard Feature Cards — greyed out and
+                                      // disabled until the child's device is actually paired
+                                      // (see isChildNotPaired above).
+                                      IgnorePointer(
+                                        ignoring: isChildNotPaired,
+                                        child: Opacity(
+                                          opacity: isChildNotPaired
+                                              ? 0.45
+                                              : 1.0,
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: _buildFeatureCard(
+                                                  title: 'Scroll',
+                                                  subtitle:
+                                                      'Social Media & Apps',
+                                                  statusText:
+                                                      state
+                                                          .features
+                                                          ?.scrollStatusText ??
+                                                      '0 Apps Locked',
+                                                  icon:
+                                                      Icons.smartphone_rounded,
+                                                  cardBg: const Color(
+                                                    0xFFEFF6FF,
+                                                  ),
+                                                  borderCol: const Color(
+                                                    0xFFDBEAFE,
+                                                  ),
+                                                  iconCol: const Color(
+                                                    0xFF3B82F6,
+                                                  ),
+                                                  statusBg: const Color(
+                                                    0xFFDBEAFE,
+                                                  ),
+                                                  statusTextCol: const Color(
+                                                    0xFF1D4ED8,
+                                                  ),
+                                                  onTap: () {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (_) =>
+                                                            const SocialAppsView(),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: _buildFeatureCard(
+                                                  title: 'Geo Guard',
+                                                  subtitle:
+                                                      'Places & Geofencing',
+                                                  statusText:
+                                                      state
+                                                          .features
+                                                          ?.geoGuardStatusText ??
+                                                      '0 Fencing',
+                                                  icon: Icons
+                                                      .location_on_outlined,
+                                                  cardBg: const Color(
+                                                    0xFFFFF7ED,
+                                                  ),
+                                                  borderCol: const Color(
+                                                    0xFFFFEDD5,
+                                                  ),
+                                                  iconCol: const Color(
+                                                    0xFFF97316,
+                                                  ),
+                                                  statusBg: const Color(
+                                                    0xFFFFEDD5,
+                                                  ),
+                                                  statusTextCol: const Color(
+                                                    0xFFC2410C,
+                                                  ),
+                                                  onTap: () {
+                                                    final childId =
+                                                        _sharedPrefsService
+                                                            .getString(
+                                                              'child_id',
+                                                            );
+                                                    final parentId =
+                                                        _sharedPrefsService
+                                                            .getString(
+                                                              'parent_id',
+                                                            );
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (_) =>
+                                                            GeoFencingView(
+                                                              childId: childId,
+                                                              parentId:
+                                                                  parentId,
+                                                            ),
+                                                      ),
+                                                    ).then((_) {
+                                                      injector<HomepageBloc>().add(
+                                                        const GetHomepageData(),
+                                                      );
+                                                      _loadSavedPlaces();
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+
+                                      // 3. Today's Route Map Card — same disabled treatment.
+                                      IgnorePointer(
+                                        ignoring: isChildNotPaired,
+                                        child: Opacity(
+                                          opacity: isChildNotPaired
+                                              ? 0.45
+                                              : 1.0,
+                                          child: _buildRouteMapCard(context),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+
+                                      // 4. Upgrade to Pro Banner
+                                      _buildUpgradeProBanner(),
+                                      const SizedBox(height: 24),
+
+                                      // 5. Screentime Today Section — same disabled treatment.
+                                      IgnorePointer(
+                                        ignoring: isChildNotPaired,
+                                        child: Opacity(
+                                          opacity: isChildNotPaired
+                                              ? 0.45
+                                              : 1.0,
+                                          child: _buildScreentimeSection(
+                                            context,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+
+                                      // 6. Shortcuts Section
+                                      _buildShortcutsSection(context),
+                                      const SizedBox(height: 24),
+
+                                      // 7. Help Centre Section
+                                      _buildHelpCentreSection(context),
+                                    ]),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-
-                      // 3. Today's Route Map Card — same disabled treatment.
-                      IgnorePointer(
-                        ignoring: isChildNotPaired,
-                        child: Opacity(
-                          opacity: isChildNotPaired ? 0.45 : 1.0,
-                          child: _buildRouteMapCard(context),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 4. Upgrade to Pro Banner
-                      _buildUpgradeProBanner(),
-                      const SizedBox(height: 24),
-
-                      // 5. Screentime Today Section — same disabled treatment.
-                      IgnorePointer(
-                        ignoring: isChildNotPaired,
-                        child: Opacity(
-                          opacity: isChildNotPaired ? 0.45 : 1.0,
-                          child: _buildScreentimeSection(context),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // 6. Shortcuts Section
-                      _buildShortcutsSection(context),
-                      const SizedBox(height: 24),
-
-                      // 7. Help Centre Section
-                      _buildHelpCentreSection(context),
-                    ]),
-                  ),
+                    ),
+                  ],
                 ),
-            ],
+              );
+            },
           ),
         );
       },
@@ -3342,6 +3602,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final isDeviceUnreachable =
         !_viewingSharedChild &&
         (displayState == 'OFFLINE' || displayState == 'UNREACHABLE');
+    // Kid hasn't moved from the last known spot — device not phoning home
+    // right now doesn't mean the location itself is in doubt, it just means
+    // no new fix has come in. Showing plain dwell time ("11h" in the normal
+    // neutral pill) instead of a red "Unreachable" alert tells the parent
+    // what actually matters (child has been at this spot this whole time)
+    // without implying something's broken. Only escalate to the alert
+    // when there's truly no stationarySince to anchor a duration on (no
+    // location history at all to say "how long here").
+    final showUnreachableAlert =
+        isDeviceUnreachable &&
+        trackingSnapshot?.latestLocation?.stationarySince == null;
     // Distinct from isLocationOff: the device/GPS toggle is fine, but the
     // backend itself says this isn't live data right now (OFFLINE,
     // UNREACHABLE, STALE, ...). Reusing showLiveMarker rather than listing
@@ -3393,15 +3664,60 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               // <place>" now renders as its own line underneath instead of
               // being joined into this same text block.
               Expanded(
-                child: Text(
-                  childName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    fontSize: 18.0.sp,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0C1D37),
-                  ),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        childName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontSize: 18.0.sp,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0C1D37),
+                        ),
+                      ),
+                    ),
+                    // Data-source badge — tells the parent this location
+                    // came from the linked physical GPS tracker, not the
+                    // child's phone. Only ever shown when a tracker is
+                    // actually linked (device_imei set); confirmed real
+                    // case this was ambiguous to a parent otherwise.
+                    if (!_viewingSharedChild &&
+                        state.deviceInfo?.deviceImei != null) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.gps_fixed_rounded,
+                              size: 10,
+                              color: Color(0xFF2563EB),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'GPS Tracker',
+                              style: GoogleFonts.poppins(
+                                fontSize: 9.0.sp,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF2563EB),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -3486,7 +3802,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     size: 16,
                     color: Color(0xFF0C1D37),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     final lat =
                         _viewingSharedChild && _activeSharedChildData != null
                         ? _activeSharedChildData!['lat'] as double?
@@ -3495,6 +3811,55 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         _viewingSharedChild && _activeSharedChildData != null
                         ? _activeSharedChildData!['lng'] as double?
                         : state.currentLocation?.lng;
+                    // Both store links so whoever receives this (parent or
+                    // not already on NaviQ) can download it regardless of
+                    // which platform they're on — a share text can't detect
+                    // the recipient's device, so both are included labeled.
+                    const appDownloadLines =
+                        'Get NaviQ:\niOS: https://apps.apple.com/app/id6761759873\n'
+                        'Android: https://play.google.com/store/apps/details?id=com.truenyx.naviqandroid';
+                    // placeName (outer scope) is the raw backend/match
+                    // value, which can be one of the "Unknown" sentinels —
+                    // the card on screen never shows that bare word because
+                    // _DynamicLocationText resolves it client-side via
+                    // reverse geocoding before displaying it (same fix as
+                    // the "Unknown Place"/"Unknown Address" leaks fixed
+                    // earlier). The share text was bypassing that resolved
+                    // value entirely, confirmed real case: card showed a
+                    // real street address while Share's own preview showed
+                    // literally "device is at Unknown". Resolve the same
+                    // way here before sharing.
+                    String shareLocationLabel = placeName;
+                    const unresolvedSentinels = {
+                      'Unknown',
+                      'Unknown Location',
+                      'Shared Location',
+                      'Unknown Place',
+                    };
+                    if (unresolvedSentinels.contains(placeName) &&
+                        lat != null &&
+                        lng != null) {
+                      try {
+                        final placemarks = await placemarkFromCoordinates(
+                          lat,
+                          lng,
+                        );
+                        if (placemarks.isNotEmpty) {
+                          final p = placemarks.first;
+                          final resolved = [
+                            p.street,
+                            p.subLocality,
+                            p.locality,
+                            p.administrativeArea,
+                          ].where((e) => e != null && e.isNotEmpty).join(', ');
+                          if (resolved.isNotEmpty)
+                            shareLocationLabel = resolved;
+                        }
+                      } catch (_) {
+                        // Keep the raw placeName fallback — a failed lookup
+                        // shouldn't block sharing entirely.
+                      }
+                    }
                     if (lat != null && lng != null) {
                       // Google's universal maps link — opens the native
                       // Google Maps app when installed, otherwise falls
@@ -3502,9 +3867,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       // on iOS and Android, unlike a bare geo: URI.
                       final mapsLink =
                           'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
-                      Share.share('$childName is at $placeName\n$mapsLink');
+                      Share.share(
+                        '$childName is at $shareLocationLabel\n$mapsLink\n\n$appDownloadLines',
+                      );
                     } else {
-                      Share.share('$childName is at $placeName');
+                      Share.share(
+                        '$childName is at $shareLocationLabel\n\n$appDownloadLines',
+                      );
                     }
                   },
                 ),
@@ -3526,86 +3895,169 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     state.currentLocation?.lng ?? 0.0,
                   ),
           ),
-          // "Last updated"/"Last moved" — moved below the name+address block
-          // per request, instead of sitting above it next to the icon row.
+          // "Last updated" — moved below the name+address block per request,
+          // instead of sitting above it next to the icon row. "Last moved"
+          // used to sit alongside it but was dropped — the status pill's
+          // "Since Xh" already says the same dwell duration, so the two side
+          // by side was the exact same number said twice.
           if (!_viewingSharedChild &&
-              (_formatLastUpdated(
-                        trackingSnapshot?.latestLocation?.deviceTimestamp,
-                      ) !=
-                      null ||
-                  _formatLastMoved(trackingSnapshot?.latestLocation) !=
-                      null)) ...[
+              _formatLastUpdated(
+                    trackingSnapshot?.latestLocation?.deviceTimestamp,
+                  ) !=
+                  null) ...[
             const SizedBox(height: 4),
-            Text(
-              [
-                _formatLastUpdated(
-                  trackingSnapshot?.latestLocation?.deviceTimestamp,
-                ),
-                _formatLastMoved(trackingSnapshot?.latestLocation),
-              ].whereType<String>().join('  •  '),
-              style: GoogleFonts.poppins(
-                fontSize: 11.0.sp,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF94A3B8),
+            Builder(
+              builder: (context) {
+                final locTs = trackingSnapshot?.latestLocation?.deviceTimestamp;
+                final locStaleMinutes = locTs == null
+                    ? 0
+                    : DateTime.now()
+                          .toUtc()
+                          .difference(locTs.toUtc())
+                          .inMinutes;
+                // Reassures the parent that the device itself is fine when
+                // ONLY its location fix is stale — a tracker reports a
+                // battery/online ping independently of a GPS fix (power
+                // saving while stationary, or weak signal indoors), so
+                // "device gone quiet" and "location hasn't refreshed" are
+                // different facts the parent shouldn't have to infer.
+                final showDeviceOnlineNote =
+                    state.deviceInfo?.deviceImei != null &&
+                    state.deviceInfo?.isOnline == true &&
+                    locStaleMinutes > 15;
+                return Text(
+                  showDeviceOnlineNote
+                      ? '${_formatLastUpdated(locTs)!} • Device online'
+                      : _formatLastUpdated(locTs)!,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11.0.sp,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF94A3B8),
+                  ),
+                );
+              },
+            ),
+          ],
+          // Physical tracker alarm banner (GEOFENCE/MAIN_POWER_OFF/etc —
+          // see naviQ-server tcp/jt808.js's ALARM_BIT_NAMES). Only ever
+          // populated for a JT808 tracker, never a phone. Capped at 24h old
+          // so a one-off alarm from yesterday doesn't sit here forever.
+          if (!_viewingSharedChild &&
+              state.deviceInfo?.lastAlarmType != null &&
+              state.deviceInfo?.lastAlarmAt != null &&
+              DateTime.now()
+                      .toUtc()
+                      .difference(state.deviceInfo!.lastAlarmAt!.toUtc())
+                      .inHours <
+                  24) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: Color(0xFF92400E),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${_formatAlarmLabel(state.deviceInfo!.lastAlarmType)} • ${_formatLastAlarmTime(state.deviceInfo!.lastAlarmAt)}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11.0.sp,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF92400E),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildLocationStatusPill(
-                isLocationOff
-                    ? Icons.location_off_rounded
-                    : (isDeviceUnreachable
-                          ? Icons.wifi_off_rounded
-                          : Icons.access_time_rounded),
-                isLocationOff
-                    ? 'Location off'
-                    : (isDeviceUnreachable
-                          ? 'Location unavailable'
-                          : (_viewingSharedChild &&
-                                    _activeSharedChildData != null
-                                ? _formatSinceTime(
-                                    _activeSharedChildData!['last_sync_at']
-                                        ?.toString(),
-                                  )
-                                : _formatDwellTime(
-                                    trackingSnapshot
-                                        ?.latestLocation
-                                        ?.stationarySince,
-                                  ))),
-                backgroundColor: isLocationOff || isDeviceUnreachable
-                    ? const Color(0xFFFEE2E2)
-                    : const Color(0xFFEEF0F5),
-                contentColor: isLocationOff || isDeviceUnreachable
-                    ? const Color(0xFFDC2626)
-                    : const Color(0xFF323C56),
-              ),
-              const SizedBox(width: 8),
-              _buildLocationStatusPill(
-                _viewingSharedChild && _activeSharedChildData != null
-                    ? Icons.battery_std_rounded
-                    : (state.deviceInfo?.isCharging == true
-                          ? Icons.battery_charging_full_rounded
-                          : Icons.battery_std_rounded),
-                _viewingSharedChild && _activeSharedChildData != null
-                    ? '${_activeSharedChildData!['battery_percentage'] ?? 0}%'
-                    : '${state.deviceInfo?.batteryPercentage ?? 0}%',
-              ),
-              if (!_viewingSharedChild) ...[
+          // Horizontally scrollable instead of a fixed spaceAround Row —
+          // a 4th pill (altitude, tracker-only) plus a 5th (alarm context)
+          // down the line no longer has to fit a fixed card width; it was
+          // overflowing by 12px on a real tracker-linked child the moment
+          // the altitude pill had something to show (confirmed real case).
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildLocationStatusPill(
+                  isLocationOff
+                      ? Icons.location_off_rounded
+                      : (showUnreachableAlert
+                            ? Icons.wifi_off_rounded
+                            : Icons.access_time_rounded),
+                  isLocationOff
+                      ? 'Location off'
+                      : (showUnreachableAlert
+                            ? _unreachableDurationPill(
+                                trackingSnapshot
+                                    ?.latestLocation
+                                    ?.deviceTimestamp,
+                              )
+                            : (_viewingSharedChild &&
+                                      _activeSharedChildData != null
+                                  ? _formatSinceTime(
+                                      _activeSharedChildData!['last_sync_at']
+                                          ?.toString(),
+                                    )
+                                  : _formatDwellTime(
+                                      trackingSnapshot
+                                          ?.latestLocation
+                                          ?.stationarySince,
+                                    ))),
+                  backgroundColor: isLocationOff || showUnreachableAlert
+                      ? const Color(0xFFFEE2E2)
+                      : const Color(0xFFEEF0F5),
+                  contentColor: isLocationOff || showUnreachableAlert
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFF323C56),
+                ),
                 const SizedBox(width: 8),
                 _buildLocationStatusPill(
-                  state.deviceInfo?.soundProfile.toLowerCase() == 'silent'
-                      ? Icons.volume_off_rounded
-                      : (state.deviceInfo?.soundProfile.toLowerCase() ==
-                                'vibrate'
-                            ? Icons.vibration_rounded
-                            : Icons.volume_up_rounded),
-                  state.deviceInfo?.soundProfile ?? 'Vibrate',
+                  _viewingSharedChild && _activeSharedChildData != null
+                      ? Icons.battery_std_rounded
+                      : (state.deviceInfo?.isCharging == true
+                            ? Icons.battery_charging_full_rounded
+                            : Icons.battery_std_rounded),
+                  _viewingSharedChild && _activeSharedChildData != null
+                      ? '${_activeSharedChildData!['battery_percentage'] ?? 0}%'
+                      : '${state.deviceInfo?.batteryPercentage ?? 0}%',
                 ),
+                if (!_viewingSharedChild) ...[
+                  const SizedBox(width: 8),
+                  _buildLocationStatusPill(
+                    state.deviceInfo?.soundProfile.toLowerCase() == 'silent'
+                        ? Icons.volume_off_rounded
+                        : (state.deviceInfo?.soundProfile.toLowerCase() ==
+                                  'vibrate'
+                              ? Icons.vibration_rounded
+                              : Icons.volume_up_rounded),
+                    state.deviceInfo?.soundProfile ?? 'Vibrate',
+                  ),
+                ],
+                // Altitude — only present for a physical JT808 tracker
+                // (naviQ-server tcp/server.js), never a phone, so this pill
+                // simply doesn't render for a phone-only child.
+                if (!_viewingSharedChild &&
+                    state.deviceInfo?.altitude != null) ...[
+                  const SizedBox(width: 8),
+                  _buildLocationStatusPill(
+                    Icons.terrain_rounded,
+                    '${state.deviceInfo!.altitude!.round()}m',
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ],
       ),
@@ -4682,9 +5134,11 @@ class _HomeMapBackground extends StatefulWidget {
   final Map<String, dynamic>? activeSharedChildData;
   final bool viewingSharedChild;
   final LatLng? ownChildLocation;
+  final EdgeInsets mapPadding;
 
   const _HomeMapBackground({
     super.key,
+    this.mapPadding = EdgeInsets.zero,
     required this.loadCustomMarker,
     required this.activeSharedChildData,
     required this.viewingSharedChild,
@@ -4940,6 +5394,7 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
             children: [
               MapViewWidget(
                 key: const ValueKey('home_map_static'),
+                mapPadding: widget.mapPadding,
                 width: double.infinity,
                 height: double.infinity,
                 interactive: true,
@@ -5033,9 +5488,18 @@ class _DynamicLocationTextState extends State<_DynamicLocationText> {
   }
 
   void _resolveAddressIfNeeded() {
+    // 'Unknown Place' is _findMatchingPlace's own fallback text (home_page.dart)
+    // for "not inside any saved geofence, and no backend/client address to show
+    // yet" — a different literal string from the backend's "Unknown" default,
+    // so it silently fell through this check and rendered as the dead label
+    // "is at Unknown Place" instead of resolving a real address the same way
+    // the other no-name cases already do. Confirmed real case: a genuinely
+    // fresh location (4 min old, outside any saved place) showed "Unknown
+    // Place" while the child had clearly moved.
     if (widget.initialPlaceName == 'Unknown Location' ||
         widget.initialPlaceName == 'Unknown' ||
-        widget.initialPlaceName == 'Shared Location') {
+        widget.initialPlaceName == 'Shared Location' ||
+        widget.initialPlaceName == 'Unknown Place') {
       _fetchAddress();
     }
   }

@@ -145,7 +145,10 @@ class _SocialAppsViewState extends State<SocialAppsView> {
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEFF6FF),
                   borderRadius: BorderRadius.circular(16),
@@ -281,8 +284,8 @@ class _SocialAppsViewState extends State<SocialAppsView> {
                     _selectedFilterIndex == 1
                         ? 'No active apps'
                         : _selectedFilterIndex == 2
-                            ? 'No blocked apps'
-                            : 'No apps found',
+                        ? 'No blocked apps'
+                        : 'No apps found',
                     style: AppTextStyles.textSecondary,
                   ),
                 );
@@ -299,100 +302,106 @@ class _SocialAppsViewState extends State<SocialAppsView> {
 
                   final app = filteredData[index];
 
-              // Detect iOS entries: they use opaque tokens like "usage_cat_XXX"
-              final isIOSEntry =
-                  app.platform == 'ios' ||
-                  app.packageName.startsWith('usage_cat_') ||
-                  app.packageName.startsWith('usage_app_');
+                  // Detect iOS entries: they use opaque tokens like "usage_cat_XXX"
+                  final isIOSEntry =
+                      app.platform == 'ios' ||
+                      app.packageName.startsWith('usage_cat_') ||
+                      app.packageName.startsWith('usage_app_');
 
-              ImageProvider iconProvider;
-              if (isIOSEntry) {
-                // iOS entries can't have real icons — use default
-                iconProvider = const AssetImage(
-                  'assets/images/APK_format_icon_(2014-2019).png',
-                );
-              } else if (app.iconUrl?.isNotEmpty ?? false) {
-                iconProvider = NetworkImage(app.iconUrl!);
-              } else if (app.iconBase64?.isNotEmpty ?? false) {
-                try {
-                  iconProvider = MemoryImage(base64Decode(app.iconBase64!));
-                } catch (e) {
-                  iconProvider = const AssetImage(
-                    'assets/images/APK_format_icon_(2014-2019).png',
-                  );
-                }
-              } else {
-                iconProvider = const AssetImage(
-                  'assets/images/APK_format_icon_(2014-2019).png',
-                );
-              }
+                  ImageProvider iconProvider;
+                  if (isIOSEntry) {
+                    // iOS entries can't have real icons — use default
+                    iconProvider = const AssetImage(
+                      'assets/images/APK_format_icon_(2014-2019).png',
+                    );
+                  } else if (app.iconUrl?.isNotEmpty ?? false) {
+                    iconProvider = NetworkImage(app.iconUrl!);
+                  } else if (app.iconBase64?.isNotEmpty ?? false) {
+                    try {
+                      iconProvider = MemoryImage(base64Decode(app.iconBase64!));
+                    } catch (e) {
+                      iconProvider = const AssetImage(
+                        'assets/images/APK_format_icon_(2014-2019).png',
+                      );
+                    }
+                  } else {
+                    iconProvider = const AssetImage(
+                      'assets/images/APK_format_icon_(2014-2019).png',
+                    );
+                  }
 
-              // Clean display name for iOS entries
-              String displayName;
-              if (isIOSEntry) {
-                // Use the resolved name from backend (written by Swift Label resolver)
-                // If it still looks like a hash placeholder, use numbered fallback
-                final backendName = app.appName;
-                if (backendName.isNotEmpty &&
-                    !backendName.startsWith('Tracked') &&
-                    !backendName.contains('(') &&
-                    backendName.length > 2) {
-                  displayName = backendName;
-                } else {
-                  // Fallback: "Category 1" / "App 1" based on type
-                  final isCategory = app.packageName.startsWith('usage_cat_');
-                  displayName = isCategory
-                      ? 'Category ${index + 1}'
-                      : 'App ${index + 1}';
-                }
-              } else {
-                displayName = app.appName.isNotEmpty
-                    ? app.appName
-                    : app.packageName;
-              }
+                  // Clean display name for iOS entries
+                  String displayName;
+                  if (isIOSEntry) {
+                    // Use the resolved name from backend (written by Swift Label resolver)
+                    // If it still looks like a hash placeholder, use numbered fallback
+                    final backendName = app.appName;
+                    if (backendName.isNotEmpty &&
+                        !backendName.startsWith('Tracked') &&
+                        !backendName.contains('(') &&
+                        backendName.length > 2) {
+                      displayName = backendName;
+                    } else {
+                      // Fallback: "Category 1" / "App 1" based on type
+                      final isCategory = app.packageName.startsWith(
+                        'usage_cat_',
+                      );
+                      displayName = isCategory
+                          ? 'Category ${index + 1}'
+                          : 'App ${index + 1}';
+                    }
+                  } else {
+                    displayName = app.appName.isNotEmpty
+                        ? app.appName
+                        : app.packageName;
+                  }
 
-              return BlocBuilder<AppLockBloc, AppLockState>(
-                builder: (context, lockState) {
-                  final isLocked =
-                      lockState is AppLockLoaded &&
-                      lockState.lockedPackages.contains(app.packageName);
+                  return BlocBuilder<AppLockBloc, AppLockState>(
+                    builder: (context, lockState) {
+                      final isLocked =
+                          lockState is AppLockLoaded &&
+                          lockState.lockedPackages.contains(app.packageName);
 
-                  return BlocBuilder<TimeLimitBloc, TimeLimitState>(
-                    builder: (context, limitState) {
-                      final limitItem = limitState is TimeLimitLoaded
-                          ? limitState.limitsByPackage[app.packageName]
-                          : null;
+                      return BlocBuilder<TimeLimitBloc, TimeLimitState>(
+                        builder: (context, limitState) {
+                          final limitItem = limitState is TimeLimitLoaded
+                              ? limitState.limitsByPackage[app.packageName]
+                              : null;
 
-                      return SocialAppItem(
-                        icon: iconProvider,
-                        name: displayName,
-                        usage: app.usageTimeFormatted,
-                        isLocked: isLocked,
-                        onLockToggle: (isLocked, duration) {
-                          if (!_guardScreenTimeAction(context)) return;
-                          _appLockBloc.add(
-                            ToggleAppLock(
-                              packageName: app.packageName,
-                              appName: displayName,
-                              isLocked: isLocked,
-                              durationMinutes: duration,
-                            ),
+                          return SocialAppItem(
+                            icon: iconProvider,
+                            name: displayName,
+                            usage: app.usageTimeFormatted,
+                            isLocked: isLocked,
+                            onLockToggle: (isLocked, duration) {
+                              if (!_guardScreenTimeAction(context)) return;
+                              _appLockBloc.add(
+                                ToggleAppLock(
+                                  packageName: app.packageName,
+                                  appName: displayName,
+                                  isLocked: isLocked,
+                                  durationMinutes: duration,
+                                ),
+                              );
+                            },
+                            dailyLimitMinutes: limitItem?.dailyLimitMinutes,
+                            onSetDailyLimit: (minutes) {
+                              if (!_guardScreenTimeAction(context)) return;
+                              if (minutes == null) {
+                                _timeLimitBloc.add(
+                                  RemoveTimeLimit(app.packageName),
+                                );
+                              } else {
+                                _timeLimitBloc.add(
+                                  SetTimeLimit(
+                                    packageName: app.packageName,
+                                    appName: displayName,
+                                    dailyLimitMinutes: minutes,
+                                  ),
+                                );
+                              }
+                            },
                           );
-                        },
-                        dailyLimitMinutes: limitItem?.dailyLimitMinutes,
-                        onSetDailyLimit: (minutes) {
-                          if (!_guardScreenTimeAction(context)) return;
-                          if (minutes == null) {
-                            _timeLimitBloc.add(RemoveTimeLimit(app.packageName));
-                          } else {
-                            _timeLimitBloc.add(
-                              SetTimeLimit(
-                                packageName: app.packageName,
-                                appName: displayName,
-                                dailyLimitMinutes: minutes,
-                              ),
-                            );
-                          }
                         },
                       );
                     },
@@ -401,13 +410,11 @@ class _SocialAppsViewState extends State<SocialAppsView> {
               );
             },
           );
-        },
-      );
-    }
-    return const SizedBox.shrink();
-  },
-);
-}
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
 }
 
 class _ScreenTimeHeader extends StatefulWidget {
@@ -444,16 +451,17 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
   Future<void> _onBlockAll(BuildContext context) async {
     if (!_guardScreenTimeAction(context)) return;
     if (widget.allPackages.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No apps to block')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No apps to block')));
       return;
     }
 
     // Show duration picker dialog
     final Duration? duration = await showDialog<Duration>(
       context: context,
-      builder: (ctx) => _BlockAllDurationDialog(appCount: widget.allPackages.length),
+      builder: (ctx) =>
+          _BlockAllDurationDialog(appCount: widget.allPackages.length),
     );
     if (duration == null) return; // user cancelled
 
@@ -495,8 +503,21 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
   String _getFormattedDate() {
     final now = DateTime.now();
     final weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    final months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    
+    final months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
     if (widget.selectedTabIndex == 0) {
       final yesterday = now.subtract(const Duration(days: 1));
       return "Yesterday · ${weekdays[yesterday.weekday % 7]}, ${months[yesterday.month - 1]} ${yesterday.day}";
@@ -626,7 +647,10 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
     final limitSeconds = widget.selectedTabIndex == 2 ? 42 * 3600 : 6 * 3600;
     final limitText = widget.selectedTabIndex == 2 ? "42h limit" : "6h limit";
     final double hours = widget.totalUsageSeconds / 3600.0;
-    final double percentage = (widget.totalUsageSeconds / limitSeconds).clamp(0.0, 1.0);
+    final double percentage = (widget.totalUsageSeconds / limitSeconds).clamp(
+      0.0,
+      1.0,
+    );
     final String hoursStr = hours.toStringAsFixed(1);
     final String usedPctText = "${(percentage * 100).toInt()}% used";
 
@@ -643,7 +667,8 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
       comparisonText = "+1.6h vs yesterday";
     } else if (diffHours != null) {
       final sign = diffHours >= 0 ? "+" : "-";
-      comparisonText = "$sign${diffHours.abs().toStringAsFixed(1)}h vs last week";
+      comparisonText =
+          "$sign${diffHours.abs().toStringAsFixed(1)}h vs last week";
     } else {
       comparisonText = "No data for last week";
     }
@@ -712,17 +737,26 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                   OutlinedButton(
                     onPressed: widget.allPackages.isEmpty
                         ? null
-                        : () => allBlocked ? _onUnblockAll(context) : _onBlockAll(context),
+                        : () => allBlocked
+                              ? _onUnblockAll(context)
+                              : _onBlockAll(context),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: allBlocked ? const Color(0xFFEF4444) : const Color(0xFF0066FF),
+                      foregroundColor: allBlocked
+                          ? const Color(0xFFEF4444)
+                          : const Color(0xFF0066FF),
                       side: BorderSide(
-                        color: allBlocked ? const Color(0xFFEF4444) : const Color(0xFF0066FF),
+                        color: allBlocked
+                            ? const Color(0xFFEF4444)
+                            : const Color(0xFF0066FF),
                         width: 1.5,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -736,7 +770,9 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                         ),
                         const SizedBox(width: 6),
                         Icon(
-                          allBlocked ? Icons.lock_open_rounded : Icons.tune_rounded,
+                          allBlocked
+                              ? Icons.lock_open_rounded
+                              : Icons.tune_rounded,
                           size: 15,
                         ),
                       ],
@@ -782,9 +818,7 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
               const SizedBox(height: 12),
 
               // Segmented Progress Bar
-              Row(
-                children: _buildSegmentedProgressBar(percentage),
-              ),
+              Row(children: _buildSegmentedProgressBar(percentage)),
               const SizedBox(height: 20),
 
               // Footer Row — "Know More" only makes sense (and only expands
@@ -798,14 +832,20 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                     style: GoogleFonts.poppins(
                       fontSize: 13.0.sp,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFFEF4444),
+                      // Same orange/amber as the usage progress bar above —
+                      // was red, a hue mismatch vs the Figma spec.
+                      color: const Color(0xFFF97316),
                     ),
                   ),
                   if (isWeekTab)
                     GestureDetector(
-                      onTap: () => setState(() => _weekExpanded = !_weekExpanded),
+                      onTap: () =>
+                          setState(() => _weekExpanded = !_weekExpanded),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEFF6FF),
                           borderRadius: BorderRadius.circular(16),
@@ -964,7 +1004,8 @@ class _BlockAllDurationDialog extends StatefulWidget {
   const _BlockAllDurationDialog({required this.appCount});
 
   @override
-  State<_BlockAllDurationDialog> createState() => _BlockAllDurationDialogState();
+  State<_BlockAllDurationDialog> createState() =>
+      _BlockAllDurationDialogState();
 }
 
 class _BlockAllDurationDialogState extends State<_BlockAllDurationDialog> {
@@ -990,8 +1031,10 @@ class _BlockAllDurationDialogState extends State<_BlockAllDurationDialog> {
 
   String get _description {
     if (_hours == 0 && _minutes == 0) return 'Select a duration';
-    if (_hours == 0) return '${widget.appCount} apps will be locked for $_minutes min';
-    if (_minutes == 0) return '${widget.appCount} apps will be locked for $_hours hr';
+    if (_hours == 0)
+      return '${widget.appCount} apps will be locked for $_minutes min';
+    if (_minutes == 0)
+      return '${widget.appCount} apps will be locked for $_hours hr';
     return '${widget.appCount} apps will be locked for $_hours hr $_minutes min';
   }
 
@@ -1035,12 +1078,18 @@ class _BlockAllDurationDialogState extends State<_BlockAllDurationDialog> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 22),
+                  const Icon(
+                    Icons.lock_outline_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Block All ${widget.appCount} Apps',
-                      style: AppTextStyles.headline6.copyWith(color: Colors.white),
+                      style: AppTextStyles.headline6.copyWith(
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -1053,7 +1102,10 @@ class _BlockAllDurationDialogState extends State<_BlockAllDurationDialog> {
                 children: [
                   // Description chip
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryColor.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
@@ -1064,7 +1116,11 @@ class _BlockAllDurationDialogState extends State<_BlockAllDurationDialog> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primaryColor),
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 16,
+                          color: AppColors.primaryColor,
+                        ),
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
@@ -1121,9 +1177,9 @@ class _BlockAllDurationDialogState extends State<_BlockAllDurationDialog> {
                     onPressed: (_hours == 0 && _minutes == 0)
                         ? null
                         : () => Navigator.pop(
-                              context,
-                              Duration(hours: _hours, minutes: _minutes),
-                            ),
+                            context,
+                            Duration(hours: _hours, minutes: _minutes),
+                          ),
                     width: double.infinity,
                     height: 50,
                   ),
@@ -1256,7 +1312,9 @@ class FilterTabs extends StatelessWidget {
                 color: isSelected ? const Color(0xffE8EEFF) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isSelected ? AppColors.primaryColor.withValues(alpha: 0.3) : Colors.transparent,
+                  color: isSelected
+                      ? AppColors.primaryColor.withValues(alpha: 0.3)
+                      : Colors.transparent,
                 ),
               ),
               child: Text(

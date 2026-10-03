@@ -299,22 +299,19 @@ class _GeoFencingViewState extends State<GeoFencingView> {
           ),
         ],
       ),
+      // Plain circular "+" FAB (60px, #0069F9) — matches the Figma shape
+      // family instead of a labeled pill button.
       floatingActionButton: _isPrimaryParent
-          ? FloatingActionButton.extended(
-              onPressed: _navigateToPlaceSelection,
-              backgroundColor: const Color(0xFF0066FF),
-              foregroundColor: Colors.white,
-              elevation: 4,
-              icon: const Icon(Icons.add_location_alt_rounded, size: 22),
-              label: Text(
-                'Add Fence',
-                style: GoogleFonts.poppins(
-                  fontSize: 14.0.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
+          ? SizedBox(
+              width: 60,
+              height: 60,
+              child: FloatingActionButton(
+                onPressed: _navigateToPlaceSelection,
+                backgroundColor: const Color(0xFF0069F9),
+                foregroundColor: Colors.white,
+                elevation: 4,
+                shape: const CircleBorder(),
+                child: const Icon(Icons.add_rounded, size: 28),
               ),
             )
           : null,

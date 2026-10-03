@@ -98,30 +98,30 @@ class _SettingsViewState extends State<SettingsView> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
-        leadingWidth: 56,
+        leadingWidth: 68,
         leading: Center(
           child: Padding(
             padding: const EdgeInsets.only(left: 16.0),
             child: GestureDetector(
               onTap: () => Navigator.of(context).maybePop(),
               child: Container(
-                width: 40,
-                height: 40,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 2,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: const Icon(
                   CupertinoIcons.chevron_left,
                   color: Colors.black,
-                  size: 18,
+                  size: 20,
                 ),
               ),
             ),
@@ -140,23 +140,23 @@ class _SettingsViewState extends State<SettingsView> {
             child: Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: Container(
-                width: 40,
-                height: 40,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 2,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: const Icon(
                   CupertinoIcons.search,
                   color: Colors.black,
-                  size: 20,
+                  size: 22,
                 ),
               ),
             ),
@@ -525,8 +525,12 @@ class _SettingsViewState extends State<SettingsView> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF1E6), // Soft peach/orange background
-        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFE8D6), Color(0xFFFFECD6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -605,9 +609,9 @@ class _SettingsViewState extends State<SettingsView> {
           title,
           style: GoogleFonts.poppins(
             fontSize: 11.0.sp,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF94A3B8),
-            letterSpacing: 1.0,
+            fontWeight: FontWeight.w400,
+            color: const Color(0xFF9BA4B5),
+            letterSpacing: 0.6,
           ),
         ),
       ),
@@ -619,12 +623,12 @@ class _SettingsViewState extends State<SettingsView> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0C1D37).withValues(alpha: 0.015),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -651,8 +655,9 @@ class _SettingsViewState extends State<SettingsView> {
                 title,
                 style: GoogleFonts.poppins(
                   fontSize: 15.0.sp,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF0C1D37),
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF0F1320),
+                  letterSpacing: 0.1,
                 ),
               ),
             ),
@@ -1093,7 +1098,7 @@ class _SettingsViewState extends State<SettingsView> {
     showAboutDialog(
       context: context,
       applicationName: 'NaviQ',
-      applicationVersion: 'Naviq Dev 1.0.4(Sep 17)',
+      applicationVersion: 'Naviq Dev 1.0.4(Oct 2)',
       applicationIcon: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(

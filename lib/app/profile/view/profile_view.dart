@@ -267,7 +267,7 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
         title: Text(
           'Profiles',
           style: GoogleFonts.poppins(
-            fontSize: 22.0.sp,
+            fontSize: 32.0.sp,
             fontWeight: FontWeight.w800,
             color: Colors.white,
           ),
@@ -406,97 +406,107 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0C1D37).withValues(alpha: 0.04),
-            blurRadius: 16,
+            color: const Color(0xFF2E5476).withValues(alpha: 0.18),
+            blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         child: Column(
           children: [
-            // Top Section (Blue Gradient)
+            // Top Section — steel-blue vertical gradient from the Figma
+            // profile card (#6C8EA9 top -> #2E5476 bottom).
             GestureDetector(
               onTap: onTap,
               child: Container(
-                height: 200,
+                height: 216,
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF5F9EFA),
-                      Color(0xFF3B82F6),
-                      Color(0xFF1D4ED8),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF6C8EA9), Color(0xFF2E5476)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
                 ),
                 child: Stack(
                   children: [
-                    // Decorative Circle 1
+                    // Decorative Circle 1 (behind avatar)
                     Positioned(
                       top: -40,
-                      right: -40,
+                      right: -20,
                       child: Container(
-                        width: 200,
-                        height: 200,
+                        width: 176,
+                        height: 176,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.06),
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
                     ),
                     // Decorative Circle 2
                     Positioned(
-                      bottom: -60,
-                      left: -20,
+                      top: 64,
+                      left: -60,
                       child: Container(
-                        width: 180,
-                        height: 180,
+                        width: 208,
+                        height: 208,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.06),
+                          color: Colors.black.withValues(alpha: 0.1),
                         ),
                       ),
                     ),
-                    // Active Badge
-                    if (isActive)
-                      Positioned(
-                        top: 16,
-                        left: 16,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDCFCE7),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'active',
-                            style: GoogleFonts.poppins(
-                              color: const Color(0xFF15803D),
-                              fontSize: 12.0.sp,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                    // Decorative Circle 3
+                    Positioned(
+                      top: 24,
+                      left: 32,
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
+                    ),
+                    // Active Badge — hidden per request (commented out, not deleted).
+                    // if (isActive)
+                    //   Positioned(
+                    //     top: 16,
+                    //     left: 16,
+                    //     child: Container(
+                    //       padding: const EdgeInsets.symmetric(
+                    //         horizontal: 10,
+                    //         vertical: 4,
+                    //       ),
+                    //       decoration: BoxDecoration(
+                    //         color: const Color(0xFFDCFCE7),
+                    //         borderRadius: BorderRadius.circular(6),
+                    //       ),
+                    //       child: Text(
+                    //         'active',
+                    //         style: GoogleFonts.poppins(
+                    //           color: const Color(0xFF15803D),
+                    //           fontSize: 12.0.sp,
+                    //           fontWeight: FontWeight.w700,
+                    //         ),
+                    //       ),
+                    //     ),
+                    //   ),
                     // More Button
                     Positioned(
-                      top: 16,
-                      right: 16,
+                      top: 12,
+                      right: 12,
                       child: GestureDetector(
                         onTap: onMorePressed,
                         child: Container(
-                          width: 32,
-                          height: 32,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
@@ -514,25 +524,34 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const SizedBox(height: 20),
-                          // Profile Avatar image/placeholder
+                          const SizedBox(height: 12),
+                          // Profile Avatar image/placeholder — white outer
+                          // ring (112px, 3.5px padding) around the actual
+                          // 105px avatar, matching the Figma frame.
                           GestureDetector(
                             onTap: onTap,
                             child: Container(
-                              width: 88,
-                              height: 88,
+                              width: 112,
+                              height: 112,
+                              padding: const EdgeInsets.all(3.5),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 8),
                                   ),
                                 ],
                               ),
-                              child: _buildAvatarWidget(avatar),
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF3F4F6),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: _buildAvatarWidget(avatar),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -686,8 +705,8 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
       return ClipOval(
         child: Image.network(
           avatar,
-          width: 88,
-          height: 88,
+          width: 105,
+          height: 105,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) =>
               Icon(Icons.person_rounded, color: Colors.blue.shade300, size: 48),
@@ -706,8 +725,8 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
     return ClipOval(
       child: Image.asset(
         finalPath,
-        width: 88,
-        height: 88,
+        width: 105,
+        height: 105,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) =>
             Icon(Icons.person_rounded, color: Colors.blue.shade300, size: 48),

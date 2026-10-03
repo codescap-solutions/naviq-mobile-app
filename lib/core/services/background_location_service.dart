@@ -426,7 +426,11 @@ Future<bool> onIosBackground(ServiceInstance service) async {
       'speed': position.speed < 0 ? 0.0 : position.speed,
       'speed_mps': position.speed < 0 ? 0.0 : position.speed,
       'bearing': position.heading < 0 ? 0.0 : position.heading,
-      'timestamp': DateTime.now().toUtc().toIso8601String(),
+      // position.timestamp, not DateTime.now() — see location_state_machine.dart's
+      // _postChildLocation for why: a stale cached OS fix relabeled with a
+      // fresh wall-clock timestamp looks like real new movement to the
+      // backend's trip detection when it's actually the same old point.
+      'timestamp': position.timestamp.toUtc().toIso8601String(),
     });
 
     StructuredLogger.log(
