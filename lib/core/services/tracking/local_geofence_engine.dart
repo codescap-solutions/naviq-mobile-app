@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:child_track/core/utils/structured_logger.dart';
 import 'package:child_track/core/utils/parser_utils.dart';
+import 'package:child_track/core/services/tracking/geofence_tracking_config.dart';
 
 // ── Geofence model ───────────────────────────────────────────────────────────
 
@@ -261,11 +262,41 @@ class LocalGeofenceEngine {
 
   // ── Processing ────────────────────────────────────────────────────────────
 
+  bool get hasFences => _fences.isNotEmpty;
+
+  /// Smallest (distance to a fence centre − that fence's radius) over all
+  /// registered fences, in metres. Negative = inside. Null when none are
+  /// registered. Drives the near-fence tracking zone.
+  double? nearestEdgeDistanceMeters(double lat, double lng) {
+    double? best;
+    for (final fence in _fences.values) {
+      final edge = _haversine(lat, lng, fence.lat, fence.lng) - fence.radiusMeters;
+      if (best == null || edge < best) best = edge;
+    }
+    return best;
+  }
+
   /// Call on every new GPS position.
-  void processPosition(double lat, double lng) {
-    final now = DateTime.now();
+  ///
+  /// [accuracyMeters] / [capturedAt] (the fix's own timestamp, not "now"):
+  /// a coarse fix (e.g. iOS low-power 100–500 m) must not emit a client-side
+  /// ENTER/EXIT — it can't say which side of a boundary the child is on, and
+  /// the server ignores it as evidence anyway. A cached fix replayed later
+  /// must not be stamped "now" either. Both are optional for callers that
+  /// have neither (the previous behaviour).
+  void processPosition(
+    double lat,
+    double lng, {
+    double? accuracyMeters,
+    DateTime? capturedAt,
+  }) {
+    final now = capturedAt ?? DateTime.now();
     for (final fence in _fences.values) {
       final dist = _haversine(lat, lng, fence.lat, fence.lng);
+      if (accuracyMeters != null &&
+          accuracyMeters > GeofenceTrackingConfig.reliableAccuracyLimitMeters(fence.radiusMeters)) {
+        continue; // coarse fix: cannot decide a boundary crossing
+      }
 
       if (!fence.isInside) {
         // ENTER condition: distance is <= radius

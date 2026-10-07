@@ -21,7 +21,8 @@ import 'package:child_track/core/services/csv_file_logger.dart';
 import 'package:child_track/core/services/oem_battery_helper.dart';
 import 'package:child_track/core/services/location_service.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:child_track/app/childapp/view_model/repository/child_location_repo.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:child_track/core/services/tracking/geofence_tracking_config.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart' show GlobalKey, NavigatorState, MaterialPageRoute;
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -165,7 +166,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         await initializeDependencies();
       }
 
-      await _performForceRefresh(childId);
+      await _performForceRefresh(
+        childId,
+        geofenceProbe: message.data['purpose'] == 'GEOFENCE_VERIFY',
+      );
       AppLogger.info('FORCE_REFRESH_DATA (bg): Sync completed successfully');
     } catch (e) {
       AppLogger.error('FORCE_REFRESH_DATA background error: $e');
@@ -227,26 +231,71 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 /// Helper function to perform the actual data refresh and upload.
 /// This is used by both foreground and background handlers.
-Future<void> _performForceRefresh(String childId) async {
+Future<void> _performForceRefresh(
+  String childId, {
+  bool geofenceProbe = false,
+}) async {
   try {
-    AppLogger.info('🚀 Executing FORCE_REFRESH_DATA for $childId');
+    AppLogger.info(
+      '🚀 Executing FORCE_REFRESH_DATA for $childId'
+      '${geofenceProbe ? " (geofence verification probe)" : ""}',
+    );
 
-    // 1. Get Location
-    Position? position;
-    try {
-      position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 15),
-      );
-    } catch (e) {
-      AppLogger.error('Force Refresh: Failed to get location: $e');
+    // 1. Get a fresh location and POST IT FIRST. Everything else in this
+    // refresh (device status, OEM telemetry, screen time) can take many
+    // seconds; the server may be holding a possible geofence ENTRY/EXIT that
+    // only this fix can confirm or cancel, so it must not wait behind them.
+    // Uses the fix's own timestamp (never "now" — a cached OS fix relabelled
+    // fresh would count as fresh evidence) and no client-side reverse
+    // geocoding (the server resolves addresses itself).
+    final childRepo = injector<ChildRepo>();
+    final fixCount = geofenceProbe ? 2 : 1;
+    for (var i = 0; i < fixCount; i++) {
+      if (i > 0) await Future.delayed(const Duration(seconds: 12));
+      try {
+        final fix = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 15),
+        );
+        final locationResponse = await childRepo.postChildLocation({
+          'child_id': childId,
+          'lat': fix.latitude,
+          'lng': fix.longitude,
+          'accuracy_m': fix.accuracy,
+          'speed_mps': fix.speed < 0 ? 0.0 : fix.speed,
+          'bearing': fix.heading < 0 ? 0.0 : fix.heading,
+          'timestamp': fix.timestamp.toUtc().toIso8601String(),
+          // Engineering diagnostics only.
+          'platform': Platform.isIOS ? 'ios' : 'android',
+          'tracking_profile': geofenceProbe ? 'probe' : 'force_refresh',
+          'fix_source': geofenceProbe ? 'geofence_probe' : 'force_refresh',
+        });
+        AppLogger.info(
+          locationResponse.isSuccess
+              ? '✅ Force Refresh: Location synced (acc ${fix.accuracy.toStringAsFixed(0)}m)'
+              : '❌ Force Refresh: Location failed: ${locationResponse.message}',
+        );
+      } catch (e) {
+        AppLogger.error('Force Refresh: Failed to get/post location: $e');
+      }
+    }
+
+    // A probe means "evidence needed now": also boost the always-on tracking
+    // service (separate isolate) so points keep flowing at high accuracy for
+    // the next few minutes, then it returns to normal low-power by itself.
+    if (geofenceProbe) {
+      try {
+        FlutterBackgroundService().invoke('boost', {
+          'seconds': GeofenceTrackingConfig.boostDuration.inSeconds,
+        });
+      } catch (e) {
+        AppLogger.error('Force Refresh: could not boost tracking service: $e');
+      }
     }
 
     // 2. Get Device Status
     final childInfoService = injector<ChildInfoService>();
     final deviceInfo = await childInfoService.getDeviceInfo();
-
-    final childRepo = injector<ChildRepo>();
 
     // 3. Post Device Status
     final statusData = {
@@ -300,37 +349,6 @@ Future<void> _performForceRefresh(String childId) async {
       AppLogger.error(
         '❌ Force Refresh: Device status failed: ${statusResponse.message}',
       );
-    }
-
-    // 4. Post Location (if available)
-    if (position != null) {
-      final locationRepo = injector<ChildGoogleMapsRepo>();
-      final locationInfo = await locationRepo.getAddressAndPlaceName(
-        position.latitude,
-        position.longitude,
-      );
-
-      final locationData = {
-        "address": locationInfo?['address'] ?? 'Unknown Address',
-        "place_name": locationInfo?['place_name'] ?? 'Unknown Place',
-        "child_id": childId,
-        "lat": position.latitude,
-        "lng": position.longitude,
-        "accuracy_m": position.accuracy,
-        "speed_mps": position.speed,
-        "bearing": position.heading,
-        "timestamp": DateTime.now().toUtc().toIso8601String(),
-      };
-      final locationResponse = await childRepo.postChildLocation(locationData);
-      if (locationResponse.isSuccess) {
-        AppLogger.info('✅ Force Refresh: Location synced');
-      } else {
-        AppLogger.error(
-          '❌ Force Refresh: Location failed: ${locationResponse.message}',
-        );
-      }
-    } else {
-      AppLogger.warning('⚠️ Force Refresh: Skipping location (not available)');
     }
 
     // 5. Post Screen Time
@@ -570,7 +588,10 @@ class FirebaseNotificationService {
         final prefs = injector<SharedPrefsService>();
         final childId = prefs.getString('child_id');
         if (childId != null && childId.isNotEmpty) {
-          await _performForceRefresh(childId);
+          await _performForceRefresh(
+            childId,
+            geofenceProbe: message.data['purpose'] == 'GEOFENCE_VERIFY',
+          );
           AppLogger.info('FORCE_REFRESH_DATA (fg): Sync triggered');
         }
       } catch (e) {

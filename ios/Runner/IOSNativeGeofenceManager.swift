@@ -57,6 +57,13 @@ class IOSNativeGeofenceManager: NSObject {
     /// breadcrumb at the new position.
     var onBreadcrumbCrossed: ((CLLocationCoordinate2D) -> Void)?
 
+    /// Called after a parent-defined geofence ENTER/EXIT region callback has
+    /// been recorded/posted. A region callback is only a HINT — the server
+    /// confirms it from RELIABLE, FRESH location points — so AppDelegate uses
+    /// this to take and post fresh accurate fixes right away instead of
+    /// waiting for the next routine update.
+    var onGeofenceRegionCrossed: ((String) -> Void)?
+
     // MARK: - Breadcrumb Region (force-quit tracking backstop)
     //
     // Standard continuous location updates (startUpdatingLocation) and
@@ -280,6 +287,7 @@ class IOSNativeGeofenceManager: NSObject {
         
         // Save enter event
         processEvent(geofenceId: circularRegion.identifier, type: "ENTER", coordinate: circularRegion.center)
+        onGeofenceRegionCrossed?("region_enter")
         
         // Persist enter timestamp for non-timer dwell detection (Fix 1)
         if let defaults = sharedDefaults {
@@ -306,6 +314,7 @@ class IOSNativeGeofenceManager: NSObject {
         os_log("📍 [NativeGeofence] EXIT geofence: %{public}@", log: self.log, type: .info, circularRegion.identifier)
         
         processEvent(geofenceId: circularRegion.identifier, type: "EXIT", coordinate: circularRegion.center)
+        onGeofenceRegionCrossed?("region_exit")
         
         // Clear persisted enter/dwell timestamp keys (Fix 1)
         if let defaults = sharedDefaults {

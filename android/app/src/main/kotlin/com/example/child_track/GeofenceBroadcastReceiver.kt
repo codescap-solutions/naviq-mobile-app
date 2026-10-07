@@ -43,6 +43,53 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
             return fmt.format(Date())
         }
 
+        private fun isoAt(epochMs: Long): String {
+            val fmt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+            fmt.timeZone = TimeZone.getTimeZone("UTC")
+            return fmt.format(Date(epochMs))
+        }
+
+        /** Timeout for the fresh evidence fix taken right after a region callback. */
+        private const val FRESH_FIX_TIMEOUT_MS = 6_000L
+
+        /**
+         * A region callback is only a HINT — the server confirms an ENTER/EXIT
+         * from RELIABLE, FRESH location points (naviQ-server
+         * geofenceEvidence.js). Take one high-accuracy fix right now and post
+         * it, instead of leaving the server to wait for the next routine ping
+         * (which in low-power mode can be minutes away). The fix's OWN capture
+         * time is sent, never "now". Best-effort: failures are ignored — the
+         * server's verification probe covers the gap.
+         */
+        private fun postFreshEvidenceFix(context: Context, childId: String, source: String) {
+            try {
+                val client = LocationServices.getFusedLocationProviderClient(context)
+                val cts = CancellationTokenSource()
+                val fix = Tasks.await(
+                    client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token),
+                    FRESH_FIX_TIMEOUT_MS,
+                    TimeUnit.MILLISECONDS,
+                ) ?: return
+                val payload = JSONObject().apply {
+                    put("child_id", childId)
+                    put("lat", fix.latitude)
+                    put("lng", fix.longitude)
+                    put("accuracy_m", fix.accuracy.toDouble())
+                    put("speed_mps", if (fix.hasSpeed()) fix.speed.toDouble() else 0.0)
+                    put("bearing", if (fix.hasBearing()) fix.bearing.toDouble() else 0.0)
+                    put("timestamp", isoAt(if (fix.time > 0) fix.time else System.currentTimeMillis()))
+                    // Engineering diagnostics only.
+                    put("platform", "android")
+                    put("tracking_profile", "native_region")
+                    put("fix_source", source)
+                }
+                val ok = NativeApiClient.postJson(context, "child/location", payload)
+                Log.i(TAG, "fresh evidence fix posted=$ok acc=${fix.accuracy}m source=$source")
+            } catch (e: Exception) {
+                Log.w(TAG, "fresh evidence fix failed: ${e.message}")
+            }
+        }
+
         private fun transitionTypeToString(transition: Int): String = when (transition) {
             Geofence.GEOFENCE_TRANSITION_ENTER -> "ENTER"
             Geofence.GEOFENCE_TRANSITION_EXIT -> "EXIT"
@@ -214,6 +261,7 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
 
                 val timestamp = isoNow()
                 val now = System.currentTimeMillis()
+                var reportedAny = false
                 for (geofenceId in triggeringIds) {
                     if (transitionType == "EXIT") {
                         val fence = fenceDefs[geofenceId]
@@ -257,6 +305,12 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
                     if (!posted) {
                         enqueuePending(appContext, payload)
                     }
+                    reportedAny = true
+                }
+
+                // Hint → evidence: post a fresh accurate fix right away.
+                if (reportedAny && (transitionType == "ENTER" || transitionType == "EXIT")) {
+                    postFreshEvidenceFix(appContext, childId, "region_${transitionType.lowercase(Locale.US)}")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error handling geofence event: ${e.message}", e)

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:battery_plus/battery_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:child_track/core/utils/structured_logger.dart';
@@ -13,6 +14,7 @@ import 'package:child_track/core/services/tracking/stop_detection_service.dart';
 import 'package:child_track/core/services/tracking/offline_trip_queue.dart';
 import 'package:child_track/core/services/tracking/local_geofence_engine.dart';
 import 'package:child_track/core/services/tracking/tracking_config_service.dart';
+import 'package:child_track/core/services/tracking/geofence_tracking_config.dart';
 
 export 'package:child_track/core/services/tracking/trip_classification_engine.dart'
     show BgTripMode;
@@ -47,6 +49,20 @@ class LocationStateMachine {
   DateTime? _lastConfigFetch;
   DateTime? _lastGeofenceFetch;
 
+  // ── Geofence-aware tracking ───────────────────────────────────────────────
+  /// Set by the background service: asks it to boost the location stream
+  /// (high accuracy / small filter, time-boxed) — e.g. after a native region
+  /// callback, when fresh evidence is needed fast.
+  void Function(Duration duration)? onRequestBoost;
+
+  /// Set by the background service; returns the current tracking profile
+  /// label for the (engineering-only) `tracking_profile` field on posts.
+  String Function()? profileLabelProvider;
+
+  bool _isNearFence = false;
+  bool _freshFixBurstRunning = false;
+  Timer? _queueFlushTimer;
+
   LocationStateMachine({
     required ChildRepo childRepo,
     required ChildGoogleMapsRepo locationRepo,
@@ -73,9 +89,19 @@ class LocationStateMachine {
     // instead of relying solely on the server inferring transitions from the
     // next routine location ping.
     _geoTriggerSub = _geoEngine.triggers.listen(_onGeofenceTrigger);
+
+    // Retry queued uploads on a timer too. Draining only when a new GPS point
+    // arrives meant a stationary device (no new points) could sit on a queued
+    // location/geofence event indefinitely — one of the ways fresh evidence
+    // reached the server minutes late.
+    _queueFlushTimer = Timer.periodic(GeofenceTrackingConfig.queueFlushInterval, (_) {
+      final childId = _prefs.getString('child_id');
+      if (childId != null && childId.isNotEmpty) _tryDrainOfflineQueue(childId);
+    });
   }
 
   void dispose() {
+    _queueFlushTimer?.cancel();
     _ar.stop();
     _stopSub?.cancel();
     _geoTriggerSub?.cancel();
@@ -123,7 +149,15 @@ class LocationStateMachine {
     _lastPostedLocation = position;
 
     // ── Local geofence check (immediate, no HTTP) ──────────────────────────
-    _geoEngine.processPosition(position.latitude, position.longitude);
+    // Uses the fix's own timestamp + accuracy: a coarse or cached fix must
+    // not produce a client-side ENTER/EXIT (the server would ignore it as
+    // evidence anyway).
+    _geoEngine.processPosition(
+      position.latitude,
+      position.longitude,
+      accuracyMeters: position.accuracy,
+      capturedAt: position.timestamp,
+    );
 
     // ── Stop detection ─────────────────────────────────────────────────────
     _ar.updateSpeedFallback(position.speed);
@@ -161,10 +195,70 @@ class LocationStateMachine {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
+  // GEOFENCE-AWARE TRACKING
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Is [position] inside the near-fence zone (within a saved place's radius
+  /// + [GeofenceTrackingConfig.nearFenceBufferMeters])? Has hysteresis so GPS
+  /// jitter at the zone edge doesn't thrash the location stream.
+  bool updateNearFence(Position position) {
+    final edge = _geoEngine.nearestEdgeDistanceMeters(position.latitude, position.longitude);
+    if (edge == null) {
+      _isNearFence = false;
+      return false;
+    }
+    final limit = GeofenceTrackingConfig.nearFenceBufferMeters +
+        (_isNearFence ? GeofenceTrackingConfig.nearFenceExitExtraMeters : 0);
+    _isNearFence = edge <= limit;
+    return _isNearFence;
+  }
+
+  bool get isNearFence => _isNearFence;
+
+  /// Take a few explicit fresh high-accuracy fixes and post each one
+  /// immediately (bypassing the 5 m distance gate and any batching). Used
+  /// right after a native region callback so the server gets >= 2 consistent,
+  /// fresh, accurate points within its confirmation dwell instead of waiting
+  /// for the next routine ping. Also boosts the stream for a short window.
+  Future<void> runFreshFixBurst(String reason) async {
+    if (_freshFixBurstRunning) return;
+    final childId = _prefs.getString('child_id');
+    if (childId == null || childId.isEmpty) return;
+    _freshFixBurstRunning = true;
+    onRequestBoost?.call(GeofenceTrackingConfig.boostDuration);
+    StructuredLogger.log(LogTag.BG, '[Geofence] Fresh-fix burst ($reason)');
+    final started = DateTime.now();
+    try {
+      for (final offset in GeofenceTrackingConfig.freshFixSchedule) {
+        final wait = offset - DateTime.now().difference(started);
+        if (wait > Duration.zero) await Future.delayed(wait);
+        try {
+          final pos = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+            timeLimit: GeofenceTrackingConfig.freshFixTimeout,
+          );
+          _lastPostedLocation = pos;
+          _geoEngine.processPosition(
+            pos.latitude,
+            pos.longitude,
+            accuracyMeters: pos.accuracy,
+            capturedAt: pos.timestamp,
+          );
+          await _postChildLocation(pos, childId, source: reason);
+        } catch (e) {
+          StructuredLogger.log(LogTag.BG, '[Geofence] Fresh fix failed ($reason)', error: e);
+        }
+      }
+    } finally {
+      _freshFixBurstRunning = false;
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
   // LOCATION POSTING
   // ══════════════════════════════════════════════════════════════════════════
 
-  Future<void> _postChildLocation(Position pos, String childId) async {
+  Future<void> _postChildLocation(Position pos, String childId, {String source = 'stream'}) async {
     try {
       int batteryLevel = 100;
       try {
@@ -201,6 +295,11 @@ class LocationStateMachine {
         // several new ones.
         'timestamp': pos.timestamp.toUtc().toIso8601String(),
         'battery': batteryLevel,
+        // Engineering diagnostics only (never shown to a parent): which
+        // platform/tracking profile produced this fix and why it was taken.
+        'platform': Platform.isIOS ? 'ios' : 'android',
+        'tracking_profile': profileLabelProvider?.call() ?? 'unknown',
+        'fix_source': source,
       };
 
       StructuredLogger.log(LogTag.BG, 'Posting location → $requestBody');
@@ -211,7 +310,7 @@ class LocationStateMachine {
       );
       StructuredLogger.log(
         LogTag.LOCATION,
-        'source=stream lat=${pos.latitude} lng=${pos.longitude} '
+        'source=$source lat=${pos.latitude} lng=${pos.longitude} '
         'acc=${pos.accuracy.toStringAsFixed(1)}m status=posted',
         buffered: true,
       );
@@ -223,20 +322,29 @@ class LocationStateMachine {
         await _offlineQueue.enqueueLocation(
           childId: childId,
           payload: {
+            // The server rejects a location post without child_id (400);
+            // queued entries used to omit it and were dead-lettered after
+            // their retries, i.e. an offline fix was never actually delivered.
+            'child_id': childId,
             'lat': pos.latitude,
             'lng': pos.longitude,
             'accuracy_m': pos.accuracy,
             'speed_mps': pos.speed < 0 ? 0.0 : pos.speed,
             'bearing': pos.heading < 0 ? 0.0 : pos.heading,
-            'timestamp': DateTime.now().toUtc().toIso8601String(),
+            // The fix's own capture time (not the time the upload failed), so
+            // the server can tell how old the evidence is when it replays.
+            'timestamp': pos.timestamp.toUtc().toIso8601String(),
+            'accuracy': pos.accuracy,
             'battery': battery,
+            'platform': Platform.isIOS ? 'ios' : 'android',
+            'fix_source': source,
           },
         );
         status = 'queued';
       } catch (_) {}
       StructuredLogger.log(
         LogTag.LOCATION,
-        'source=stream lat=${pos.latitude} lng=${pos.longitude} '
+        'source=$source lat=${pos.latitude} lng=${pos.longitude} '
         'acc=${pos.accuracy.toStringAsFixed(1)}m status=$status',
         buffered: true,
       );
@@ -526,6 +634,13 @@ class LocationStateMachine {
       eventType: eventType,
       timestamp: trigger.timestamp.toUtc().toIso8601String(),
     );
+
+    // A region callback is only a HINT: the server confirms it from reliable,
+    // fresh location points. Produce that evidence now instead of waiting for
+    // the next routine ping (which, in low-power mode, can be minutes away).
+    if (trigger.event != GeofenceEvent.dwell) {
+      runFreshFixBurst('region_${eventType.toLowerCase()}');
+    }
   }
 
   Future<void> _postGeofenceEvent({
@@ -583,7 +698,11 @@ class LocationStateMachine {
       try {
         switch (entry.type) {
           case OfflineEntryType.location:
-            final response = await _childRepo.postChildLocation(entry.payload);
+            // Entries queued before child_id was stored need it re-attached.
+            final response = await _childRepo.postChildLocation({
+              'child_id': entry.childId,
+              ...entry.payload,
+            });
             return response.isSuccess;
           case OfflineEntryType.tripPoints:
             final response = await _childRepo.postTripLocation(

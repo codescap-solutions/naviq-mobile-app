@@ -12,6 +12,7 @@ import 'package:child_track/core/utils/structured_logger.dart';
 import 'package:child_track/core/services/location_state_machine.dart';
 import 'package:child_track/core/services/tracking/tracking_profile_manager.dart';
 import 'package:child_track/core/services/tracking/tracking_config_service.dart';
+import 'package:child_track/core/services/tracking/geofence_tracking_config.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -156,6 +157,25 @@ Future<String> _getLocationPermissionStatus() async {
   }
 }
 
+Timer? _boostTimer;
+
+/// Start/extend a time-boxed boost and make sure the stream actually ends it
+/// even if no further position arrives (e.g. the device goes still).
+void _applyBoost(ServiceInstance service, Duration duration) {
+  final newlyActive = _profileManager.startBoost(duration);
+  _boostTimer?.cancel();
+  _boostTimer = Timer(duration + const Duration(seconds: 1), () {
+    if (_profileManager.expireBoostIfDue()) {
+      StructuredLogger.log(LogTag.BG, 'Boost expired → restarting stream');
+      _startLocationStream(service);
+    }
+  });
+  if (newlyActive) {
+    StructuredLogger.log(LogTag.BG, 'Boost started (${duration.inSeconds}s) → restarting stream');
+    _startLocationStream(service);
+  }
+}
+
 /// Restart the location stream whenever the profile changes.
 void _startLocationStream(ServiceInstance service) {
   _positionSubscription?.cancel();
@@ -187,10 +207,19 @@ void _startLocationStream(ServiceInstance service) {
       // Dynamically adapt tracking profile based on speed
       final changed =
           _profileManager.updateFromSpeed(position.speed < 0 ? 0 : position.speed);
-      if (changed) {
+      // Geofence-aware: near a saved place the low-power `still` profile is
+      // upgraded to precise fixes (see GeofenceTrackingConfig); a finished
+      // boost is dropped here too.
+      final nearChanged = _profileManager.setNearFence(
+        _stateMachine?.updateNearFence(position) ?? false,
+      );
+      final boostEnded = _profileManager.expireBoostIfDue();
+      if (changed || nearChanged || boostEnded) {
         StructuredLogger.log(
           LogTag.BG,
-          'Profile changed → ${_profileManager.currentProfile.name}. Restarting stream.',
+          'Tracking settings changed → ${_profileManager.effectiveProfileLabel}'
+          '${changed ? " (profile)" : ""}${nearChanged ? " (near-fence)" : ""}'
+          '${boostEnded ? " (boost ended)" : ""}. Restarting stream.',
         );
         // Restart stream with new settings
         _startLocationStream(service);
@@ -276,6 +305,19 @@ void onStart(ServiceInstance service) async {
       service.stopSelf();
     });
 
+    // Fresh-evidence boost requested from another isolate (FCM handler:
+    // server geofence-verification probe) — high accuracy / small filter for
+    // a short, time-boxed window, then back to normal.
+    service.on('boost').listen((event) {
+      final seconds = (event?['seconds'] as num?)?.toInt();
+      _applyBoost(
+        service,
+        seconds != null
+            ? Duration(seconds: seconds)
+            : GeofenceTrackingConfig.boostDuration,
+      );
+    });
+
     // Allow profile override from UI isolate
     service.on('setProfile').listen((event) {
       final profileName = event?['profile'] as String?;
@@ -327,6 +369,9 @@ void onStart(ServiceInstance service) async {
       battery: battery,
       configService: trackingConfigService,
     );
+
+    _stateMachine!.onRequestBoost = (d) => _applyBoost(service, d);
+    _stateMachine!.profileLabelProvider = () => _profileManager.effectiveProfileLabel;
 
     // Start with 'still' profile — adapts on first position
     _startLocationStream(service);

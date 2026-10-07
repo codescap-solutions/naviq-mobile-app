@@ -144,6 +144,21 @@ import os.log
             })
         }
 
+        // A parent-geofence region callback is a HINT, not proof. The server
+        // confirms it from reliable, FRESH, accurate points — so take fresh
+        // fixes right away (now, +15s, +30s) and post each one with its own
+        // capture time, instead of leaving the server waiting for the next
+        // routine update (minutes away in low-power mode).
+        IOSNativeGeofenceManager.shared.onGeofenceRegionCrossed = { [weak self] reason in
+            guard let self = self else { return }
+            os_log("📍 Region crossed (%{public}@) — posting fresh evidence fixes", log: self.log, type: .info, reason)
+            for delay in [0.0, 15.0, 30.0] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                    self?.handleNativeDataSync(forceFreshLocation: true, fixSource: reason, completionHandler: { _ in })
+                }
+            }
+        }
+
         let controller = window?.rootViewController as! FlutterViewController
         setupChannels(controller: controller)
 
@@ -322,6 +337,8 @@ import os.log
 
     private func handleNativeDataSync(
         pushPayloadChildId: String? = nil,
+        forceFreshLocation: Bool = false,
+        fixSource: String = "native_sync",
         completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
         guard
@@ -358,9 +375,11 @@ import os.log
         defaults.synchronize()
 
         // Optimization 4: stale location check — request fresh GPS if location > 15 min old
-        if locationAge > 900 && networkType != "none" {
-            print("AppDelegate: 📍 Location is stale (\(Int(locationAge))s) — requesting fresh fix")
-            requestFreshLocationWithTimeout(5.0) { [weak self] freshLoc in
+        // forceFreshLocation: geofence evidence — a cached fix, however recent,
+        // is not good enough, always take a new one.
+        if (forceFreshLocation || locationAge > 900) && networkType != "none" {
+            print("AppDelegate: 📍 Location is stale/forced (\(Int(locationAge))s) — requesting fresh fix")
+            requestFreshLocationWithTimeout(forceFreshLocation ? 8.0 : 5.0) { [weak self] freshLoc in
                 guard let self = self else { return }
                 if let fresh = freshLoc {
                     let d = self.sharedDefaults
@@ -368,13 +387,15 @@ import os.log
                     d?.set(fresh.coordinate.longitude,           forKey: self.kCachedLng)
                     d?.set(fresh.horizontalAccuracy,             forKey: self.kCachedAcc)
                     d?.set(max(0, fresh.speed),                  forKey: self.kCachedSpd)
-                    d?.set(Date().timeIntervalSince1970,         forKey: self.kCachedLocTs)
+                    // The fix's OWN capture time, not "now".
+                    d?.set(fresh.timestamp.timeIntervalSince1970, forKey: self.kCachedLocTs)
                     print("AppDelegate: 📍 Fresh location acquired")
                 }
-                let finalAge = freshLoc != nil ? 0.0 : locationAge
+                let finalAge = freshLoc != nil ? max(0, Date().timeIntervalSince(freshLoc!.timestamp)) : locationAge
                 self.buildAndPostSyncPayload(
                     childId: childId, authToken: authToken, apiBase: apiBase,
                     networkType: networkType, locationAge: finalAge,
+                    fixSource: fixSource,
                     completionHandler: completionHandler
                 )
             }
@@ -382,6 +403,7 @@ import os.log
             buildAndPostSyncPayload(
                 childId: childId, authToken: authToken, apiBase: apiBase,
                 networkType: networkType, locationAge: locationAge,
+                fixSource: fixSource,
                 completionHandler: completionHandler
             )
         }
@@ -449,6 +471,7 @@ import os.log
         apiBase: String,
         networkType: String,
         locationAge: Double,
+        fixSource: String = "native_sync",
         completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
         let defaults = sharedDefaults
@@ -480,6 +503,13 @@ import os.log
             let isOnline   = networkType != "none"
             let isoNow     = ISO8601DateFormatter().string(from: Date())
             let isStale    = locationAge > 900
+            // The coordinates are the cached fix (possibly old) — label them
+            // with THEIR capture time. Stamping a cached position "now" made
+            // an old fix look like a fresh one to the server's geofence
+            // evidence engine.
+            let cachedTs   = defaults?.double(forKey: self.kCachedLocTs) ?? 0
+            let fixCapturedAt = cachedTs > 0 ? Date(timeIntervalSince1970: cachedTs) : Date()
+            let fixIso     = ISO8601DateFormatter().string(from: fixCapturedAt)
 
             // — Payload 1: Device Status —
             // Field names match Dart _onPostDeviceInfo exactly
@@ -507,7 +537,11 @@ import os.log
                 "place_name":            "",
                 "is_stale":              isStale,
                 "location_age_seconds":  Int(locationAge),
-                "timestamp":             isoNow
+                "timestamp":             fixIso,
+                // Engineering diagnostics only (never shown to a parent).
+                "platform":              "ios",
+                "tracking_profile":      "native_sync",
+                "fix_source":            fixSource
             ]
 
             // — Payload 3: Screen Time (only if records exist) —
@@ -1014,7 +1048,9 @@ extension AppDelegate: CLLocationManagerDelegate {
         d?.set(loc.coordinate.longitude,              forKey: kCachedLng)
         d?.set(max(0, loc.speed),                     forKey: kCachedSpd)
         d?.set(loc.horizontalAccuracy,                forKey: kCachedAcc)
-        d?.set(Date().timeIntervalSince1970,          forKey: kCachedLocTs)
+        // The fix's own capture time (iOS can deliver deferred/batched
+        // updates late) — not the delivery time.
+        d?.set(loc.timestamp.timeIntervalSince1970,   forKey: kCachedLocTs)
 
         // Cheap while a normal continuous update is flowing (no-op unless
         // actually drifted past the rearm threshold) — keeps the breadcrumb
