@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 
 class ConnectToParentScreen extends StatefulWidget {
   const ConnectToParentScreen({super.key});
@@ -93,7 +94,13 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
         ),
         actions: [
           TextButton(
-            child: Text('Close', style: GoogleFonts.poppins(color: const Color(0xFF0066FF), fontWeight: FontWeight.bold)),
+            child: Text(
+              'Close',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF0066FF),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             onPressed: () => Navigator.pop(context),
           ),
         ],
@@ -104,351 +111,360 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF8FAFC),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: true,
-        leadingWidth: 60,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Center(
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).maybePop(),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.arrow_back,
-                  color: Color(0xFF0C1D37),
-                  size: 20,
-                ),
-              ),
-            ),
-          ),
-        ),
-        title: Text(
-          'Add Child',
-          style: GoogleFonts.poppins(
-            fontSize: 20.0.sp,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF0C1D37),
-          ),
+      backgroundColor: const Color(0xFFF5F8FE),
+      // Figma: 52px white back circle with an arrow, centred Bold title, on
+      // the same near-white blue as the page.
+      appBar: figmaAppBar(
+        context,
+        title: 'Add Child',
+        titleSize: 22,
+        titleColor: const Color(0xFF16181A),
+        background: const Color(0xFFFAFCFE),
+        backIcon: const Icon(
+          Icons.arrow_back_rounded,
+          color: Color(0xFF16181A),
+          size: 24,
         ),
       ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight - 48,
-                ),
-                child: IntrinsicHeight(
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        Text(
-                          'Enter Child Code',
-                          style: GoogleFonts.poppins(
-                            fontSize: 26.0.sp,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0C1D37),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'The six didgit code that generated in Parents App',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14.0.sp,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF64748B),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        // How to get code blue box
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFFDBEAFE),
-                              width: 1.5,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFFAFCFE), Color(0xFFF5F8FE)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(22, 20, 22, 24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 44,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Enter Child Code',
+                            style: GoogleFonts.poppins(
+                              fontSize: 24.0.sp,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF16181A),
                             ),
                           ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFDBEAFE),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.people_outline,
-                                  color: Color(0xFF0066FF),
-                                  size: 18,
-                                ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'The six didgit code that generated in Parents App',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14.0.sp,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF4A5267),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          // How to get code blue box
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF7FF),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xFFD9E6F8),
+                                width: 1.5,
                               ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'How to get the code?',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14.0.sp,
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF0C1D37),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    RichText(
-                                      text: TextSpan(
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 12.0.sp,
-                                          color: const Color(0xFF64748B),
-                                          height: 1.4,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        children: [
-                                          const TextSpan(text: "Incase you installed kids app first go parents app and "),
-                                          TextSpan(
-                                            text: "Finish Sign Up",
-                                            style: GoogleFonts.poppins(
-                                              fontWeight: FontWeight.bold,
-                                              color: const Color(0xFF0066FF),
-                                            ),
-                                          ),
-                                          const TextSpan(text: " . The 6-character code will appear there."),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFD9EAFF),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.people_outline,
+                                    color: Color(0xFF0069F9),
+                                    size: 16,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        Text(
-                          'Child Code',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14.0.sp,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF0C1D37),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _childCodeController,
-                          textCapitalization: TextCapitalization.characters,
-                          textAlign: TextAlign.center,
-                          onChanged: (value) {
-                            setState(() {}); // Rebuild to update segment dashes
-                          },
-                          style: GoogleFonts.poppins(
-                            fontSize: 28.0.sp,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF0C1D37),
-                            letterSpacing: 4,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'e.g. KIDS01',
-                            hintStyle: GoogleFonts.poppins(
-                              color: const Color(0xFF94A3B8),
-                              fontSize: 28.0.sp,
-                              letterSpacing: 4,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: Color(0xFF0C1D37), width: 2.0),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: Color(0xFF0C1D37), width: 2.0),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: Color(0xFF0066FF), width: 2.0),
-                            ),
-                            errorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: Colors.red, width: 1.0),
-                            ),
-                            focusedErrorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: Colors.red, width: 2.0),
-                            ),
-                          ),
-                          inputFormatters: [
-                            UpperCaseTextFormatter(),
-                            LengthLimitingTextInputFormatter(6),
-                          ],
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter child code';
-                            }
-                            if (value.trim().length < 6) {
-                              return 'Child code must be exactly 6 characters';
-                            }
-                            return null;
-                          },
-                          onFieldSubmitted: (_) => _connectToParent(),
-                        ),
-                        const SizedBox(height: 12),
-                        // 6 segment dashes below code box
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: List.generate(6, (index) {
-                            final isEntered = _childCodeController.text.length > index;
-                            return Expanded(
-                              child: Container(
-                                height: 6,
-                                margin: const EdgeInsets.symmetric(horizontal: 4),
-                                decoration: BoxDecoration(
-                                  color: isEntered ? const Color(0xFF5593F8) : const Color(0xFFE2E8F0),
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 24),
-                        // Yellow Note box
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFFBEB),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xFFFDE68A),
-                              width: 1.0,
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '💡 ',
-                                style: TextStyle(fontSize: 14.0.sp),
-                              ),
-                              Expanded(
-                                child: RichText(
-                                  text: TextSpan(
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12.0.sp,
-                                      color: const Color(0xFFB45309),
-                                      height: 1.4,
-                                    ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      const TextSpan(
-                                        text: 'Note: ',
-                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      Text(
+                                        'How to get the code?',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14.0.sp,
+                                          fontWeight: FontWeight.w600,
+                                          color: const Color(0xFF16181A),
+                                        ),
                                       ),
-                                      const TextSpan(
-                                        text: 'You can add multiple kids by adding in parent app',
-                                        style: TextStyle(fontWeight: FontWeight.w600),
+                                      const SizedBox(height: 4),
+                                      RichText(
+                                        text: TextSpan(
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12.0.sp,
+                                            color: const Color(0xFF4A5267),
+                                            height: 1.5,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                          children: [
+                                            const TextSpan(
+                                              text:
+                                                  "Incase you installed kids app first go parents app and ",
+                                            ),
+                                            TextSpan(
+                                              text: "Finish Sign Up",
+                                              style: GoogleFonts.poppins(
+                                                fontWeight: FontWeight.w600,
+                                                color: const Color(0xFF0069F9),
+                                              ),
+                                            ),
+                                            const TextSpan(
+                                              text:
+                                                  " . The 6-character code will appear there.",
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        const Spacer(),
-                        const SizedBox(height: 32),
-                        // Verify Code Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 54,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5593F8),
-                              shape: RoundedRectangleBorder(
+                          const SizedBox(height: 28),
+                          Text(
+                            'Child Code',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14.0.sp,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF16181A),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _childCodeController,
+                            textCapitalization: TextCapitalization.characters,
+                            onChanged: (value) {
+                              setState(
+                                () {},
+                              ); // Rebuild to update segment dashes
+                            },
+                            style: GoogleFonts.poppins(
+                              fontSize: 20.0.sp,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF16181A),
+                              letterSpacing: 4,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'e.g. KIDS01',
+                              hintStyle: GoogleFonts.poppins(
+                                color: const Color(0xFF949DAA),
+                                fontSize: 20.0.sp,
+                                letterSpacing: 4,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF16181A),
+                                  width: 1.5,
+                                ),
                               ),
-                              elevation: 0,
-                            ),
-                            onPressed: _isLoading ? null : _connectToParent,
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2.5,
-                                    ),
-                                  )
-                                : Text(
-                                    'Verify Code',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16.0.sp,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Help footer link
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Can't find the code? ",
-                              style: GoogleFonts.poppins(
-                                fontSize: 13.0.sp,
-                                color: const Color(0xFF64748B),
-                                fontWeight: FontWeight.w500,
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF16181A),
+                                  width: 1.5,
+                                ),
                               ),
-                            ),
-                            GestureDetector(
-                              onTap: _showHelpDialog,
-                              child: Text(
-                                "Help",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13.0.sp,
-                                  color: const Color(0xFF5593F8),
-                                  fontWeight: FontWeight.bold,
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF0069F9),
+                                  width: 2.0,
+                                ),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(
+                                  color: Colors.red,
+                                  width: 1.0,
+                                ),
+                              ),
+                              focusedErrorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(
+                                  color: Colors.red,
+                                  width: 2.0,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                      ],
+                            inputFormatters: [
+                              UpperCaseTextFormatter(),
+                              LengthLimitingTextInputFormatter(6),
+                            ],
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter child code';
+                              }
+                              if (value.trim().length < 6) {
+                                return 'Child code must be exactly 6 characters';
+                              }
+                              return null;
+                            },
+                            onFieldSubmitted: (_) => _connectToParent(),
+                          ),
+                          const SizedBox(height: 12),
+                          // 6 segment dashes below code box
+                          Row(
+                            children: List.generate(6, (index) {
+                              final isEntered =
+                                  _childCodeController.text.length > index;
+                              return Expanded(
+                                child: Container(
+                                  height: 5,
+                                  margin: EdgeInsets.only(
+                                    left: index == 0 ? 0 : 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isEntered
+                                        ? const Color(0xFF5593F8)
+                                        : const Color(0xFFE2E7F3),
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                          const SizedBox(height: 28),
+                          // Yellow Note box
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFFBEF),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFFFF1C4),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: RichText(
+                                    text: TextSpan(
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12.0.sp,
+                                        color: const Color(0xFF8C7612),
+                                        height: 1.4,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      children: const [
+                                        TextSpan(
+                                          text:
+                                              'Note: You can add multiple kids by adding in parent app',
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                          const SizedBox(height: 32),
+                          // Verify Code Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF61A2F9),
+                                disabledBackgroundColor: const Color(
+                                  0xFF61A2F9,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 0,
+                              ),
+                              onPressed: _isLoading ? null : _connectToParent,
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Verify Code',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 20.0.sp,
+                                        fontWeight: FontWeight.w400,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Help footer link
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Can't find the code? ",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14.0.sp,
+                                  color: const Color(0xFF4A5267),
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: _showHelpDialog,
+                                child: Text(
+                                  "Help",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14.0.sp,
+                                    color: const Color(0xFF0069F9),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

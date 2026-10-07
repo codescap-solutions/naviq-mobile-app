@@ -20,6 +20,7 @@ import '../view_model/bloc/geofence_event.dart';
 import '../view_model/bloc/geofence_state.dart';
 import '../model/geofence_model.dart';
 import 'widgets/geoplace_card.dart';
+import 'widgets/preset_place_card_body.dart';
 import 'package:child_track/core/widgets/geo_fencing_shimmer.dart';
 
 class GeoFencingView extends StatefulWidget {
@@ -546,13 +547,13 @@ class _GeoFencingViewState extends State<GeoFencingView> {
 
   void _navigateToPlaceSelection() {
     if (!_canCreateNewGeofence()) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PlaceSelectionScreen(
-          childId: widget.childId,
-          parentId: widget.parentId,
-        ),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => PlaceSelectionScreen(
+        childId: widget.childId,
+        parentId: widget.parentId,
       ),
     ).then((_) {
       if (!mounted) return;
@@ -598,44 +599,44 @@ class _GeoFencingViewState extends State<GeoFencingView> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      mainAxisSpacing: 12,
+      mainAxisSpacing: 10,
       crossAxisSpacing: 12,
-      childAspectRatio: 1.35,
+      childAspectRatio: (MediaQuery.of(context).size.width - 12) / 2 / 102,
       children: [
         _buildPresetGridCard(
           label: "School",
-          icon: Icons.school_rounded,
-          circleBg: const Color(0xFF22C55E),
+          emoji: '🏫',
+          circleBg: const Color(0xFF0DBF75),
           category: "school",
         ),
         _buildPresetGridCard(
           label: "Coaching",
-          icon: Icons.school_outlined,
-          circleBg: const Color(0xFFF59E0B),
+          emoji: '🎓',
+          circleBg: const Color(0xFFF5A623),
           category: "tuition",
         ),
         _buildPresetGridCard(
           label: "Grandma's",
-          icon: Icons.face_retouching_natural_rounded,
-          circleBg: const Color(0xFFEF4444),
+          emoji: '👵',
+          circleBg: const Color(0xFFF03E3E),
           category: "other",
         ),
         _buildPresetGridCard(
           label: "Temple/Masjid",
-          icon: Icons.account_balance_rounded,
-          circleBg: const Color(0xFF8B5CF6),
+          emoji: '⛪',
+          circleBg: const Color(0xFF0069F9),
           category: "other",
         ),
         _buildPresetGridCard(
           label: "Sports Ground",
-          icon: Icons.sports_cricket_rounded,
-          circleBg: const Color(0xFF0066FF),
+          emoji: '🏏',
+          circleBg: const Color(0xFF003A8C),
           category: "other",
         ),
         _buildPresetGridCard(
           label: "Current Location",
-          icon: Icons.location_on_rounded,
-          circleBg: const Color(0xFF64748B),
+          emoji: '📍',
+          circleBg: const Color(0xFF9BA4B5),
           category: "other",
           isCurrentLocation: true,
         ),
@@ -645,7 +646,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
 
   Widget _buildPresetGridCard({
     required String label,
-    required IconData icon,
+    required String emoji,
     required Color circleBg,
     required String category,
     bool isCurrentLocation = false,
@@ -703,42 +704,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
           injector<HomepageBloc>().add(const GetHomepageData());
         });
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0C1D37).withValues(alpha: 0.03),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: circleBg,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: Colors.white, size: 24),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 13.0.sp,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF0C1D37),
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: PresetPlaceCardBody(label: label, emoji: emoji, color: circleBg),
     );
   }
 }

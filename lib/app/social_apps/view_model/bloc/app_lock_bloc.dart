@@ -154,7 +154,8 @@ class AppLockBloc extends Bloc<AppLockEvent, AppLockState> {
       if (childId.isEmpty) return;
 
       // Determine platform from the package name pattern
-      final platform = event.packageName.startsWith('usage_cat_') ||
+      final platform =
+          event.packageName.startsWith('usage_cat_') ||
               event.packageName.startsWith('usage_app_')
           ? 'ios'
           : 'android';
@@ -181,7 +182,9 @@ class AppLockBloc extends Bloc<AppLockEvent, AppLockState> {
         await _fetchParentLockedApps(emit);
       } else {
         // Revert optimistic update
-        AppLogger.error('Failed to ${event.isLocked ? "lock" : "unlock"} apps: ${response.message}');
+        AppLogger.error(
+          'Failed to ${event.isLocked ? "lock" : "unlock"} apps: ${response.message}',
+        );
         if (event.isLocked) {
           newLockedPackages.remove(event.packageName);
         } else {
@@ -233,7 +236,9 @@ class AppLockBloc extends Bloc<AppLockEvent, AppLockState> {
 
     // Split by platform (Android vs iOS tokens)
     final androidPkgs = event.packageNames
-        .where((p) => !p.startsWith('usage_cat_') && !p.startsWith('usage_app_'))
+        .where(
+          (p) => !p.startsWith('usage_cat_') && !p.startsWith('usage_app_'),
+        )
         .toList();
     final iosPkgs = event.packageNames
         .where((p) => p.startsWith('usage_cat_') || p.startsWith('usage_app_'))

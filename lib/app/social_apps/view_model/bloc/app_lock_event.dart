@@ -48,10 +48,7 @@ class BlockAllApps extends AppLockEvent {
   final List<String> packageNames;
   final int durationMinutes;
 
-  const BlockAllApps({
-    required this.packageNames,
-    this.durationMinutes = 0,
-  });
+  const BlockAllApps({required this.packageNames, this.durationMinutes = 0});
 
   @override
   List<Object> get props => [packageNames, durationMinutes];

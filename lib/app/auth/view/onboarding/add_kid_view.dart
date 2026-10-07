@@ -14,6 +14,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:child_track/core/models/child_profile.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 
 class AddKidView extends StatefulWidget {
   final ChildProfile? childToEdit;
@@ -108,15 +109,24 @@ class _AddKidViewState extends State<AddKidView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFEDF4FE),
+      // Figma: white header band with the 52px back circle and a centred Bold
+      // title; the soft blue gradient only starts below it.
+      appBar: figmaAppBar(
+        context,
+        title: widget.childToEdit != null ? 'Edit Kid' : 'Add Kid',
+        titleSize: 22,
+        titleColor: const Color(0xFF16181A),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFFBFCFE), Color(0xFFEDF4FE)],
+            colors: [Color(0xFFFAFBFD), Color(0xFFEDF4FE)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
         child: SafeArea(
+          top: false,
           child: SingleChildScrollView(
             physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
@@ -125,17 +135,15 @@ class _AddKidViewState extends State<AddKidView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: AppSizes.spacingS),
-                  _buildCustomAppBar(),
-                  const SizedBox(height: AppSizes.spacingL),
+                  const SizedBox(height: 28),
                   _buildHeader(),
-                  const SizedBox(height: AppSizes.spacingXL),
+                  const SizedBox(height: 20),
                   _buildAvatarSelector(),
-                  const SizedBox(height: AppSizes.spacingXL),
+                  const SizedBox(height: 20),
                   _buildDetailsSection(),
-                  const SizedBox(height: AppSizes.spacingXL),
+                  const SizedBox(height: 24),
                   _buildTravelModeSelector(),
-                  const SizedBox(height: AppSizes.spacingXXL),
+                  const SizedBox(height: 64),
                   _buildSubmitButton(),
                   const SizedBox(height: AppSizes.spacingXL),
                 ],
@@ -147,38 +155,6 @@ class _AddKidViewState extends State<AddKidView> {
     );
   }
 
-  Widget _buildCustomAppBar() {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            }
-          },
-          icon: const Icon(
-            Icons.chevron_left_rounded,
-            color: AppColors.textPrimary,
-            size: 32,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          widget.childToEdit != null ? 'Edit Kid' : 'Add Kid',
-          style: GoogleFonts.poppins(
-            fontSize: 18.0.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const Spacer(),
-        const SizedBox(
-          width: 48,
-        ), // Align text to center by balancing the Back button size
-      ],
-    );
-  }
-
   Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,30 +163,32 @@ class _AddKidViewState extends State<AddKidView> {
           widget.childToEdit != null ? 'EDIT CHILD DETAILS' : 'CHILD DETAILS',
           style: GoogleFonts.poppins(
             fontSize: 12.0.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF0066FF),
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.2,
+            color: const Color(0xFF0069F9),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Text(
           widget.childToEdit != null
               ? 'Update child information'
               : 'Tell us about your child',
-          style: GoogleFonts.oswald(
-            fontSize: 22.0.sp,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF1D293C),
+          style: GoogleFonts.poppins(
+            fontSize: 24.0.sp,
+            fontWeight: FontWeight.w700,
+            height: 1.5,
+            color: const Color(0xFF16181A),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 2),
         Text(
           widget.childToEdit != null
               ? 'Update the profile name or choose a new avatar.'
               : 'This personalises tracking alerts for their age & routine.',
           style: GoogleFonts.poppins(
-            fontSize: 13.0.sp,
+            fontSize: 12.0.sp,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF62748E),
+            color: const Color(0xFF4A5267),
           ),
         ),
       ],
@@ -250,94 +228,95 @@ class _AddKidViewState extends State<AddKidView> {
           style: GoogleFonts.poppins(
             fontSize: 12.0.sp,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF7C8BA0),
+            color: const Color(0xFF16181A),
           ),
         ),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
+        const SizedBox(height: 10),
+        // Figma: 48px circles filling the avatar art (no white ring), a grey
+        // rounded-square "+" for a custom photo pinned to the right.
+        Padding(
+          padding: const EdgeInsets.only(right: 20),
           child: Row(
             children: [
-              ..._presetAvatars.map((avatar) {
-                final isSelected =
-                    _selectedAvatar == avatar && _customAvatarFile == null;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedAvatar = avatar;
-                        _customAvatarFile = null;
-                      });
-                    },
-                    child: Container(
-                      width: 56,
-                      height: 56,
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: [
+                      ..._presetAvatars.map((avatar) {
+                        final isSelected =
+                            _selectedAvatar == avatar &&
+                            _customAvatarFile == null;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 16),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedAvatar = avatar;
+                                _customAvatarFile = null;
+                              });
+                            },
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              foregroundDecoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? const Color(0xFF0069F9)
+                                      : Colors.transparent,
+                                  width: 2.5,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: Image.asset(avatar, fit: BoxFit.cover),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: _pickImage,
+                child: Builder(
+                  builder: (context) {
+                    final hasCustom = _customAvatarFile != null;
+                    final isSelected = _selectedAvatar == '+' && hasCustom;
+                    return Container(
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF0066FF).withValues(alpha: 0.1)
-                            : Colors.white,
-                        shape: BoxShape.circle,
+                        color: const Color(0xFFDDE1EA),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      foregroundDecoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isSelected
-                              ? const Color(0xFF0066FF)
-                              : AppColors.borderColor,
-                          width: isSelected ? 2.5 : 1.5,
+                              ? const Color(0xFF0069F9)
+                              : Colors.transparent,
+                          width: 2.5,
                         ),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: ClipOval(
-                          child: Image.asset(avatar, fit: BoxFit.cover),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
-              // Add Custom Button / Selected Custom Image
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: Builder(
-                    builder: (context) {
-                      final hasCustom = _customAvatarFile != null;
-                      final isSelected = _selectedAvatar == '+' && hasCustom;
-                      return Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFF0066FF).withValues(alpha: 0.1)
-                              : Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isSelected
-                                ? const Color(0xFF0066FF)
-                                : AppColors.borderColor,
-                            width: isSelected ? 2.5 : 1.5,
-                          ),
-                        ),
-                        child: hasCustom
-                            ? Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: ClipOval(
-                                  child: Image.file(
-                                    _customAvatarFile!,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              )
-                            : const Icon(
-                                Icons.add_a_photo_outlined,
-                                color: Color(0xFF7C8BA0),
-                                size: 20,
+                      child: hasCustom
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.file(
+                                _customAvatarFile!,
+                                fit: BoxFit.cover,
                               ),
-                      );
-                    },
-                  ),
+                            )
+                          : const Icon(
+                              Icons.add_rounded,
+                              color: Color(0xFF16181A),
+                              size: 30,
+                            ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -346,6 +325,53 @@ class _AddKidViewState extends State<AddKidView> {
       ],
     );
   }
+
+  TextStyle get _figmaHint => GoogleFonts.poppins(
+    fontSize: 16.0.sp,
+    fontWeight: FontWeight.w400,
+    color: const Color(0xFF6B7280),
+  );
+
+  TextStyle get _figmaDropdownStyle => GoogleFonts.poppins(
+    fontSize: 16.0.sp,
+    fontWeight: FontWeight.w400,
+    color: const Color(0xFF16181A),
+  );
+
+  InputDecoration get _figmaDropdownDecoration => InputDecoration(
+    filled: true,
+    fillColor: Colors.white,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide.none,
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide.none,
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: Color(0xFF0069F9), width: 1.5),
+    ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: AppColors.error),
+    ),
+    focusedErrorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+    ),
+  );
+
+  Widget _buildFigmaLabel(String text) => Text(
+    text,
+    style: GoogleFonts.poppins(
+      fontSize: 16.0.sp,
+      fontWeight: FontWeight.w500,
+      color: const Color(0xFF4A5267),
+    ),
+  );
 
   Widget _buildDetailsSection() {
     final isEditMode = widget.childToEdit != null;
@@ -357,28 +383,24 @@ class _AddKidViewState extends State<AddKidView> {
           style: GoogleFonts.poppins(
             fontSize: 12.0.sp,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF7C8BA0),
+            color: const Color(0xFF16181A),
           ),
         ),
-        const SizedBox(height: 16),
-        // Name field
-        Text(
-          'Name of the Kid',
-          style: GoogleFonts.poppins(
-            fontSize: 10.0.sp,
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFF7C8BA0),
-          ),
-        ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
+        // Name field — Figma: 58px white pill, 1px dark outline, hint only
+        // (no label above, no leading icon).
         CommonTextField(
           controller: _nameController,
-          hintText: 'Enter child name',
+          hintText: 'Name of the Kid',
           keyboardType: TextInputType.name,
-          prefixIcon: const Icon(
-            Icons.person_outline_rounded,
-            color: Color(0xFF7C8BA0),
+          fillColor: Colors.white,
+          borderColor: const Color(0xFF404040),
+          borderRadius: 16,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 40,
+            vertical: 18,
           ),
+          hintStyle: _figmaHint,
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Please enter child name';
@@ -386,25 +408,22 @@ class _AddKidViewState extends State<AddKidView> {
             return null;
           },
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 25),
         if (isEditMode) ...[
-          Text(
-            'Age',
-            style: GoogleFonts.poppins(
-              fontSize: 10.0.sp,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF7C8BA0),
-            ),
-          ),
-          const SizedBox(height: 8),
+          _buildFigmaLabel('Age'),
+          const SizedBox(height: 16),
           CommonTextField(
             controller: _ageController,
             hintText: 'Enter child age',
             keyboardType: TextInputType.number,
-            prefixIcon: const Icon(
-              Icons.calendar_today_outlined,
-              color: Color(0xFF7C8BA0),
+            fillColor: Colors.white,
+            borderColor: const Color(0xFF404040),
+            borderRadius: 16,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 40,
+              vertical: 18,
             ),
+            hintStyle: _figmaHint,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter child age';
@@ -417,161 +436,67 @@ class _AddKidViewState extends State<AddKidView> {
             },
           ),
         ] else ...[
-          // Birthday Selection Row
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Birth Year',
-                      style: GoogleFonts.poppins(
-                        fontSize: 10.0.sp,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF7C8BA0),
-                      ),
+          // Figma: one "Age" label over a Year / Month pair of plain white
+          // dropdowns (the per-field "Birth Year/Month" captions are gone).
+          _buildFigmaLabel('Age'),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.only(right: 38),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    initialValue: _selectedYear,
+                    isExpanded: true,
+                    hint: Text('Year', style: _figmaDropdownStyle),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(0xFF16181A),
                     ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
-                      initialValue: _selectedYear,
-                      hint: Text(
-                        'Year',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14.0.sp,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF7C8BA0),
-                        ),
-                      ),
-                      icon: const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: Color(0xFF7C8BA0),
-                      ),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderColor,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderColor,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF0066FF),
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                      style: GoogleFonts.poppins(
-                        fontSize: 14.0.sp,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                      ),
-                      items: _years.map((year) {
-                        return DropdownMenuItem<int>(
-                          value: year,
-                          child: Text(year.toString()),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          _selectedYear = val;
-                        });
-                      },
-                      validator: (val) => val == null ? 'Year required' : null,
-                    ),
-                  ],
+                    decoration: _figmaDropdownDecoration,
+                    style: _figmaDropdownStyle,
+                    items: _years.map((year) {
+                      return DropdownMenuItem<int>(
+                        value: year,
+                        child: Text(year.toString()),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedYear = val;
+                      });
+                    },
+                    validator: (val) => val == null ? 'Year required' : null,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Birth Month',
-                      style: GoogleFonts.poppins(
-                        fontSize: 10.0.sp,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF7C8BA0),
-                      ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _selectedMonth,
+                    isExpanded: true,
+                    hint: Text('Month', style: _figmaDropdownStyle),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(0xFF16181A),
                     ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedMonth,
-                      hint: Text(
-                        'Month',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14.0.sp,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF7C8BA0),
-                        ),
-                      ),
-                      icon: const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: Color(0xFF7C8BA0),
-                      ),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderColor,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: AppColors.borderColor,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF0066FF),
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                      style: GoogleFonts.poppins(
-                        fontSize: 14.0.sp,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                      ),
-                      items: _months.map((month) {
-                        return DropdownMenuItem<String>(
-                          value: month,
-                          child: Text(month),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          _selectedMonth = val;
-                        });
-                      },
-                      validator: (val) => val == null ? 'Month required' : null,
-                    ),
-                  ],
+                    decoration: _figmaDropdownDecoration,
+                    style: _figmaDropdownStyle,
+                    items: _months.map((month) {
+                      return DropdownMenuItem<String>(
+                        value: month,
+                        child: Text(month),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedMonth = val;
+                      });
+                    },
+                    validator: (val) => val == null ? 'Month required' : null,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ],
@@ -594,12 +519,12 @@ class _AddKidViewState extends State<AddKidView> {
           style: GoogleFonts.poppins(
             fontSize: 12.0.sp,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF7C8BA0),
+            color: const Color(0xFF16181A),
           ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 5,
           children: modes.map((mode) {
             final emoji = mode['emoji']!;
             final label = mode['label']!;
@@ -612,35 +537,29 @@ class _AddKidViewState extends State<AddKidView> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                width: 62,
-                height: 72,
+                width: 63,
+                height: 66,
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF0066FF).withValues(alpha: 0.05)
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFF0066FF)
-                        : AppColors.borderColor,
+                        ? const Color(0xFFA9B4C8)
+                        : const Color(0xFFDDE1EA),
                     width: isSelected ? 2.0 : 1.0,
                   ),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(emoji, style: TextStyle(fontSize: 22.0.sp)),
-                    const SizedBox(height: 6),
+                    Text(emoji, style: TextStyle(fontSize: 20.0.sp)),
+                    const SizedBox(height: 4),
                     Text(
                       label,
                       style: GoogleFonts.poppins(
                         fontSize: 12.0.sp,
-                        fontWeight: isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                        color: isSelected
-                            ? const Color(0xFF0066FF)
-                            : const Color(0xFF62748E),
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF4A5267),
                       ),
                     ),
                   ],
@@ -654,35 +573,38 @@ class _AddKidViewState extends State<AddKidView> {
   }
 
   Widget _buildSubmitButton() {
-    return InkWell(
-      onTap: _isLoading ? null : _onSubmit,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        height: 60,
-        decoration: BoxDecoration(
-          color: _isLoading
-              ? const Color(0xFF0066FF).withValues(alpha: 0.5)
-              : const Color(0xFF0066FF),
-          borderRadius: BorderRadius.circular(16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: InkWell(
+        onTap: _isLoading ? null : _onSubmit,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          height: 60,
+          decoration: BoxDecoration(
+            color: _isLoading
+                ? const Color(0xFF0069F9).withValues(alpha: 0.5)
+                : const Color(0xFF0069F9),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          alignment: Alignment.center,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.5,
+                  ),
+                )
+              : Text(
+                  widget.childToEdit != null ? 'Update' : 'Continue',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20.0.sp,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white,
+                  ),
+                ),
         ),
-        alignment: Alignment.center,
-        child: _isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.5,
-                ),
-              )
-            : Text(
-                widget.childToEdit != null ? 'Update' : 'Continue',
-                style: GoogleFonts.poppins(
-                  fontSize: 16.0.sp,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
       ),
     );
   }

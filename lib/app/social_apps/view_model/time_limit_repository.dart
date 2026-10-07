@@ -29,7 +29,10 @@ class TimeLimitRepository extends BaseService {
         return BaseResponse.error(message: 'Failed to parse time limits: $e');
       }
     }
-    return BaseResponse.error(message: response.message, statusCode: response.statusCode);
+    return BaseResponse.error(
+      message: response.message,
+      statusCode: response.statusCode,
+    );
   }
 
   /// POST /app-time-limits — parent sets/updates a daily limit for one app.
@@ -50,7 +53,9 @@ class TimeLimitRepository extends BaseService {
         'daily_limit_minutes': dailyLimitMinutes,
       },
     );
-    AppLogger.info('setTimeLimit response: ${response.isSuccess}, ${response.message}');
+    AppLogger.info(
+      'setTimeLimit response: ${response.isSuccess}, ${response.message}',
+    );
     return response;
   }
 
@@ -63,7 +68,9 @@ class TimeLimitRepository extends BaseService {
       ApiEndpoints.appTimeLimits,
       data: {'childId': childId, 'package_name': packageName},
     );
-    AppLogger.info('removeTimeLimit response: ${response.isSuccess}, ${response.message}');
+    AppLogger.info(
+      'removeTimeLimit response: ${response.isSuccess}, ${response.message}',
+    );
     return response;
   }
 
@@ -82,12 +89,15 @@ class TimeLimitRepository extends BaseService {
         'requested_minutes': requestedMinutes,
       },
     );
-    AppLogger.info('requestExtension response: ${response.isSuccess}, ${response.message}');
+    AppLogger.info(
+      'requestExtension response: ${response.isSuccess}, ${response.message}',
+    );
     return response;
   }
 
   /// GET /time-extension-requests?status=pending — parent views pending asks.
-  Future<BaseResponse<List<TimeExtensionRequestItem>>> listPendingRequests() async {
+  Future<BaseResponse<List<TimeExtensionRequestItem>>>
+  listPendingRequests() async {
     final response = await get<Map<String, dynamic>>(
       ApiEndpoints.timeExtensionRequests,
       queryParameters: {'status': 'pending'},
@@ -96,15 +106,23 @@ class TimeLimitRepository extends BaseService {
     if (response.isSuccess) {
       try {
         final list = (response.data?['data'] as List? ?? [])
-            .map((e) => TimeExtensionRequestItem.fromJson(e as Map<String, dynamic>))
+            .map(
+              (e) =>
+                  TimeExtensionRequestItem.fromJson(e as Map<String, dynamic>),
+            )
             .toList();
         return BaseResponse.success(data: list, message: response.message);
       } catch (e) {
         AppLogger.error('Failed to parse extension requests: $e');
-        return BaseResponse.error(message: 'Failed to parse extension requests: $e');
+        return BaseResponse.error(
+          message: 'Failed to parse extension requests: $e',
+        );
       }
     }
-    return BaseResponse.error(message: response.message, statusCode: response.statusCode);
+    return BaseResponse.error(
+      message: response.message,
+      statusCode: response.statusCode,
+    );
   }
 
   /// POST /time-extension-requests/:id/resolve — parent approves/denies.
@@ -117,7 +135,9 @@ class TimeLimitRepository extends BaseService {
       ApiEndpoints.resolveTimeExtensionRequest(requestId),
       data: {'approve': approve, 'platform': platform},
     );
-    AppLogger.info('resolveExtensionRequest response: ${response.isSuccess}, ${response.message}');
+    AppLogger.info(
+      'resolveExtensionRequest response: ${response.isSuccess}, ${response.message}',
+    );
     return response;
   }
 }

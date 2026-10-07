@@ -28,7 +28,9 @@ class MapViewWidget extends StatefulWidget {
     this.onCameraMove,
     this.onMapTap,
     this.mapPadding = EdgeInsets.zero,
+    this.initialZoom = 15,
   });
+  final double initialZoom;
   // Shifts the camera's visual centre (and the Google logo) — used by the Home
   // map so the child marker sits in the part of the map not covered by the sheet.
   final EdgeInsets mapPadding;
@@ -63,7 +65,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       target:
           widget.currentPosition ??
           const LatLng(11.258753, 75.780410), // fallback
-      zoom: 15,
+      zoom: widget.initialZoom,
     );
   }
 

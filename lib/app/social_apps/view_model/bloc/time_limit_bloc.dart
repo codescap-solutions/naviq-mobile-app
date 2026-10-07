@@ -12,18 +12,23 @@ class TimeLimitBloc extends Bloc<TimeLimitEvent, TimeLimitState> {
   TimeLimitBloc({
     required TimeLimitRepository repository,
     required SharedPrefsService sharedPrefsService,
-  })  : _repository = repository,
-        _prefs = sharedPrefsService,
-        super(TimeLimitInitial()) {
+  }) : _repository = repository,
+       _prefs = sharedPrefsService,
+       super(TimeLimitInitial()) {
     on<FetchTimeLimits>(_onFetchTimeLimits);
     on<SetTimeLimit>(_onSetTimeLimit);
     on<RemoveTimeLimit>(_onRemoveTimeLimit);
   }
 
   String get _childId =>
-      _prefs.getString('selected_child_id') ?? _prefs.getString('child_id') ?? '';
+      _prefs.getString('selected_child_id') ??
+      _prefs.getString('child_id') ??
+      '';
 
-  Future<void> _onFetchTimeLimits(FetchTimeLimits event, Emitter<TimeLimitState> emit) async {
+  Future<void> _onFetchTimeLimits(
+    FetchTimeLimits event,
+    Emitter<TimeLimitState> emit,
+  ) async {
     emit(TimeLimitLoading());
     final childId = _childId;
     if (childId.isEmpty) {
@@ -40,7 +45,10 @@ class TimeLimitBloc extends Bloc<TimeLimitEvent, TimeLimitState> {
     }
   }
 
-  Future<void> _onSetTimeLimit(SetTimeLimit event, Emitter<TimeLimitState> emit) async {
+  Future<void> _onSetTimeLimit(
+    SetTimeLimit event,
+    Emitter<TimeLimitState> emit,
+  ) async {
     final childId = _childId;
     if (childId.isEmpty) return;
 
@@ -59,7 +67,10 @@ class TimeLimitBloc extends Bloc<TimeLimitEvent, TimeLimitState> {
     }
   }
 
-  Future<void> _onRemoveTimeLimit(RemoveTimeLimit event, Emitter<TimeLimitState> emit) async {
+  Future<void> _onRemoveTimeLimit(
+    RemoveTimeLimit event,
+    Emitter<TimeLimitState> emit,
+  ) async {
     final childId = _childId;
     if (childId.isEmpty) return;
 

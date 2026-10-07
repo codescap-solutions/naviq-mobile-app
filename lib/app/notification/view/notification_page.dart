@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:intl/intl.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -32,9 +33,7 @@ class _NotificationPageState extends State<NotificationPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
           'Clear Notifications',
           style: GoogleFonts.poppins(
@@ -161,37 +160,33 @@ class _NotificationPageState extends State<NotificationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF0C1D37), size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Notifications',
-          style: GoogleFonts.poppins(
-            fontSize: 18.0.sp,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF0C1D37),
-          ),
-        ),
-        actions: [
-          if (_notifications.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444)),
-              onPressed: _clearAllNotifications,
-              tooltip: 'Clear All',
-            ),
-        ],
+      backgroundColor: const Color(0xFFF7F8FA),
+      appBar: figmaAppBar(
+        context,
+        title: 'Notifications',
+        titleSize: 24,
+        titleColor: const Color(0xFF0F1320),
+        trailing: _notifications.isEmpty
+            ? null
+            : GestureDetector(
+                onTap: _clearAllNotifications,
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  alignment: Alignment.center,
+                  color: Colors.transparent,
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Color(0xFFEF4444),
+                  ),
+                ),
+              ),
       ),
       body: _notifications.isEmpty
           ? _buildEmptyState()
           : ListView.builder(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
               itemCount: _notifications.length,
               itemBuilder: (context, index) {
                 final notification = _notifications[index];
@@ -210,21 +205,27 @@ class _NotificationPageState extends State<NotificationPage> {
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEE2E2),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444)),
+                    child: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: Color(0xFFEF4444),
+                    ),
                   ),
                   onDismissed: (_) => _deleteNotification(id),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF0C1D37).withValues(alpha: 0.02),
-                          blurRadius: 10,
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -232,58 +233,77 @@ class _NotificationPageState extends State<NotificationPage> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          height: 40,
-                          width: 40,
-                          decoration: BoxDecoration(
-                            color: _getColorForType(type).withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            _getIconForType(type),
-                            color: _getColorForType(type),
-                            size: 20,
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Container(
+                            height: 36,
+                            width: 36,
+                            decoration: BoxDecoration(
+                              color: _getColorForType(type),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _getIconForType(type),
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      title,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 15.0.sp,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF0C1D37),
-                                      ),
-                                    ),
-                                  ),
-                                  Text(
-                                    _formatTimestamp(timestamp),
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 11.0.sp,
-                                      fontWeight: FontWeight.w500,
-                                      color: const Color(0xFF94A3B8),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
                               Text(
-                                body,
+                                title,
                                 style: GoogleFonts.poppins(
                                   fontSize: 13.0.sp,
-                                  fontWeight: FontWeight.w500,
-                                  color: const Color(0xFF475569),
-                                  height: 1.3,
+                                  fontWeight: FontWeight.w700,
+                                  height: 19.5 / 13,
+                                  color: const Color(0xFF0F1320),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  body,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11.0.sp,
+                                    fontWeight: FontWeight.w400,
+                                    height: 16.5 / 11,
+                                    color: const Color(0xFF6B7280),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  _formatTimestamp(timestamp),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 10.0.sp,
+                                    fontWeight: FontWeight.w400,
+                                    height: 15 / 10,
+                                    color: const Color(0xFF9BA4B5),
+                                  ),
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => _deleteNotification(id),
+                          behavior: HitTestBehavior.opaque,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 4, top: 2),
+                            child: Text(
+                              '×',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16.0.sp,
+                                fontWeight: FontWeight.w500,
+                                height: 1.0,
+                                color: const Color(0xFFD1D5DC),
+                              ),
+                            ),
                           ),
                         ),
                       ],

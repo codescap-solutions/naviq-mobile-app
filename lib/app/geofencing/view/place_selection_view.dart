@@ -2,17 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:google_fonts/google_fonts.dart';
 import 'location_selections.dart';
+import 'widgets/preset_place_card_body.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 
 class PlaceSelectionScreen extends StatefulWidget {
   final String? childId;
   final String? parentId;
 
-  const PlaceSelectionScreen({
-    super.key,
-    this.childId,
-    this.parentId,
-  });
+  const PlaceSelectionScreen({super.key, this.childId, this.parentId});
 
   @override
   State<PlaceSelectionScreen> createState() => _PlaceSelectionScreenState();
@@ -66,7 +63,7 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
 
   Widget _buildPresetCard({
     required String label,
-    required IconData icon,
+    required String emoji,
     required Color circleBg,
     required String category,
     bool isCurrentLocation = false,
@@ -77,242 +74,182 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
         customName: label,
         isCurrentLocation: isCurrentLocation,
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0C1D37).withValues(alpha: 0.03),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: circleBg,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: Colors.white,
-                size: 26,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 14.0.sp,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF0C1D37),
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: PresetPlaceCardBody(label: label, emoji: emoji, color: circleBg),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        leadingWidth: 72,
-        leading: Align(
-          alignment: Alignment.centerLeft,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).maybePop(),
-              child: Container(
-                width: 40,
-                height: 40,
+    // Figma "New Fencing": a bottom sheet over the Geofencing list — white,
+    // 12px top radius, preset grid, custom-place card, Create button.
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 12,
+                  childAspectRatio:
+                      (MediaQuery.of(context).size.width - 36) / 2 / 102,
+                  children: [
+                    _buildPresetCard(
+                      label: "School",
+                      emoji: '🏫',
+                      circleBg: const Color(0xFF0DBF75),
+                      category: "school",
+                    ),
+                    _buildPresetCard(
+                      label: "Coaching",
+                      emoji: '🎓',
+                      circleBg: const Color(0xFFF5A623),
+                      category: "tuition",
+                    ),
+                    _buildPresetCard(
+                      label: "Grandma's",
+                      emoji: '👵',
+                      circleBg: const Color(0xFFF03E3E),
+                      category: "other",
+                    ),
+                    _buildPresetCard(
+                      label: "Temple/Masjid",
+                      emoji: '⛪',
+                      circleBg: const Color(0xFF0069F9),
+                      category: "other",
+                    ),
+                    _buildPresetCard(
+                      label: "Sports Ground",
+                      emoji: '🏏',
+                      circleBg: const Color(0xFF003A8C),
+                      category: "other",
+                    ),
+                    _buildPresetCard(
+                      label: "Current Location",
+                      emoji: '📍',
+                      circleBg: const Color(0xFF9BA4B5),
+                      category: "other",
+                      isCurrentLocation: true,
+                    ),
+                  ],
+                ),
+              ),
+              // Add Custom Place: white card, 12px padding, soft shadow, with a
+              // 50px bordered input (Figma "AddItemCard").
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
                 ),
-                child: const Icon(
-                  CupertinoIcons.chevron_left,
-                  color: Colors.black,
-                  size: 18,
+                child: Container(
+                  height: 50,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  alignment: Alignment.centerLeft,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFDDE1EA)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 6,
+                        spreadRadius: -1,
+                        offset: const Offset(0, 4),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        spreadRadius: -2,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _customPlaceController,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16.0.sp,
+                      fontWeight: FontWeight.w400,
+                      height: 24 / 16,
+                      letterSpacing: 0.2,
+                      color: const Color(0xFF0F1320),
+                    ),
+                    decoration: InputDecoration(
+                      hintText: "Add Custom Place",
+                      hintStyle: GoogleFonts.poppins(
+                        fontSize: 16.0.sp,
+                        fontWeight: FontWeight.w400,
+                        height: 24 / 16,
+                        letterSpacing: 0.2,
+                        color: const Color(0xFF9BA4B5),
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      isCollapsed: true,
+                      filled: false,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        ),
-        title: Text(
-          'Geofencing',
-          style: GoogleFonts.poppins(
-            fontSize: 22.0.sp,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF0C1D37),
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
-          child: Column(
-            children: [
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 1.35,
-                children: [
-                  _buildPresetCard(
-                    label: "School",
-                    icon: Icons.school_rounded,
-                    circleBg: const Color(0xFF22C55E),
-                    category: "school",
-                  ),
-                  _buildPresetCard(
-                    label: "Coaching",
-                    icon: Icons.school_outlined,
-                    circleBg: const Color(0xFFF59E0B),
-                    category: "tuition",
-                  ),
-                  _buildPresetCard(
-                    label: "Grandma's",
-                    icon: Icons.face_retouching_natural_rounded,
-                    circleBg: const Color(0xFFEF4444),
-                    category: "other",
-                  ),
-                  _buildPresetCard(
-                    label: "Temple/Masjid",
-                    icon: Icons.account_balance_rounded,
-                    circleBg: const Color(0xFF8B5CF6),
-                    category: "other",
-                  ),
-                  _buildPresetCard(
-                    label: "Sports Ground",
-                    icon: Icons.sports_cricket_rounded,
-                    circleBg: const Color(0xFF0066FF),
-                    category: "other",
-                  ),
-                  _buildPresetCard(
-                    label: "Current Location",
-                    icon: Icons.location_on_rounded,
-                    circleBg: const Color(0xFF64748B),
-                    category: "other",
-                    isCurrentLocation: true,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Add Custom Place Container — was a plain white box (no icon,
-              // no border) that read as a low-contrast search field next to
-              // the colorful preset grid above it, so it barely registered
-              // as its own option. Given a blue accent border/background and
-              // a leading icon badge (matching the preset cards' circular
-              // icon treatment) so it stands out as a real, distinct action.
+              // Create button row
               Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0066FF).withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFF0066FF).withValues(alpha: 0.35),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0C1D37).withValues(alpha: 0.03),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF0066FF),
-                        shape: BoxShape.circle,
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                alignment: Alignment.centerRight,
+                color: Colors.white,
+                child: GestureDetector(
+                  onTap: _canCreate
+                      ? () {
+                          _navigateToMap(
+                            category: "other",
+                            customName: _customPlaceController.text.trim(),
+                          );
+                        }
+                      : null,
+                  child: Opacity(
+                    opacity: _canCreate ? 1 : 0.5,
+                    child: Container(
+                      width: 75,
+                      padding: const EdgeInsets.all(10),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0069F9),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
-                        Icons.add_location_alt_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _customPlaceController,
+                      child: Text(
+                        "Create",
                         style: GoogleFonts.poppins(
-                          fontSize: 14.0.sp,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF0C1D37),
+                          fontSize: 10.0.sp,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                          color: Colors.white,
                         ),
-                        decoration: InputDecoration(
-                          hintText: "Add Custom Place",
-                          hintStyle: GoogleFonts.poppins(
-                            color: const Color(0xFF0066FF),
-                            fontSize: 14.0.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Create Button Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0066FF),
-                      elevation: 0,
-                      shadowColor: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: _canCreate
-                        ? () {
-                            _navigateToMap(
-                              category: "other",
-                              customName: _customPlaceController.text.trim(),
-                            );
-                          }
-                        : null,
-                    child: Text(
-                      "Create",
-                      style: GoogleFonts.poppins(
-                        fontSize: 14.0.sp,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
+              SizedBox(height: 38 + MediaQuery.of(context).padding.bottom),
             ],
           ),
         ),

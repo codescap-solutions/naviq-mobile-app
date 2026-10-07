@@ -26,7 +26,9 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
   bool _extensionRequestSent = false;
 
   Future<void> _askForMoreTime() async {
-    if (widget.packageName == null || _requestingExtension || _extensionRequestSent) {
+    if (widget.packageName == null ||
+        _requestingExtension ||
+        _extensionRequestSent) {
       return;
     }
     setState(() => _requestingExtension = true);
@@ -47,8 +49,8 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
           response.isSuccess
               ? 'Request sent — your parent will be notified.'
               : (response.message.isNotEmpty
-                  ? response.message
-                  : 'Could not send request. Try again.'),
+                    ? response.message
+                    : 'Could not send request. Try again.'),
         ),
       ),
     );
@@ -309,7 +311,9 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: (_requestingExtension || _extensionRequestSent) ? null : _askForMoreTime,
+        onPressed: (_requestingExtension || _extensionRequestSent)
+            ? null
+            : _askForMoreTime,
         style: ElevatedButton.styleFrom(
           backgroundColor: _extensionRequestSent
               ? Colors.white.withValues(alpha: 0.08)
@@ -318,25 +322,38 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
           disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
           disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: _requestingExtension
             ? const SizedBox(
                 width: 22,
                 height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    _extensionRequestSent ? Icons.check_circle_outline_rounded : Icons.timer_outlined,
+                    _extensionRequestSent
+                        ? Icons.check_circle_outline_rounded
+                        : Icons.timer_outlined,
                     size: 20,
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    _extensionRequestSent ? 'Request Sent' : 'Ask for More Time',
-                    style: TextStyle(fontSize: 16.0.sp, fontWeight: FontWeight.w600, letterSpacing: 0.3),
+                    _extensionRequestSent
+                        ? 'Request Sent'
+                        : 'Ask for More Time',
+                    style: TextStyle(
+                      fontSize: 16.0.sp,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
                   ),
                 ],
               ),

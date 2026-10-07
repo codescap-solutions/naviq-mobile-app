@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +5,7 @@ import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:child_track/core/models/child_profile.dart';
 import 'package:child_track/app/home/view_model/bloc/homepage_bloc.dart';
 import 'package:child_track/app/home/view_model/home_repo.dart';
@@ -234,146 +234,74 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        toolbarHeight: 80,
-        backgroundColor: const Color(0xFF48546A),
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        leadingWidth: 72,
-        leading: Align(
-          alignment: Alignment.centerLeft,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: GestureDetector(
-              onTap: widget.onNavigateToHome,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE2E8F0),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  CupertinoIcons.chevron_left,
-                  color: Color(0xFF0C1D37),
-                  size: 18,
-                ),
-              ),
-            ),
+      backgroundColor: const Color(0xFFF6F8FA),
+      // Figma: white header band, 52px back / add circles, centred Bold
+      // title. The old manual-refresh circle is now pull-to-refresh on the
+      // list (same _loadChildren), so the header matches the single "+".
+      appBar: figmaAppBar(
+        context,
+        title: 'Profiles',
+        titleSize: 32,
+        titleColor: const Color(0xFF0F1320),
+        onBack: widget.onNavigateToHome,
+        circleColor: const Color(0xFFDFE2E8),
+        trailing: FigmaCircleButton(
+          color: const Color(0xFFDFE2E8),
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddKidView()),
+            );
+            _loadChildren();
+          },
+          child: const Icon(
+            Icons.add_circle_outline_rounded,
+            color: Color(0xFF0F1320),
+            size: 24,
           ),
         ),
-        title: Text(
-          'Profiles',
-          style: GoogleFonts.poppins(
-            fontSize: 32.0.sp,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-          ),
-        ),
-        actions: [
-          // Manual refresh — the same child list is otherwise only fetched
-          // once at HomePage's initState (see _loadChildren doc above), so
-          // a child added from another device wouldn't appear here without
-          // this until a full logout+login.
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 4.0),
-              child: GestureDetector(
-                onTap: _isRefreshing ? null : _loadChildren,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE2E8F0),
-                    shape: BoxShape.circle,
-                  ),
-                  child: _isRefreshing
-                      ? const Padding(
-                          padding: EdgeInsets.all(11),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFF0C1D37),
-                          ),
-                        )
-                      : const Icon(
-                          Icons.refresh_rounded,
-                          color: Color(0xFF0C1D37),
-                          size: 22,
-                        ),
-                ),
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: GestureDetector(
-                onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AddKidView()),
-                  );
-                  _loadChildren();
-                },
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE2E8F0),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.add_rounded,
-                    color: Color(0xFF0C1D37),
-                    size: 22,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: _children.isEmpty
           ? SafeArea(child: _buildEmptyState())
           : SafeArea(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                itemCount: _children.length,
-                itemBuilder: (context, index) {
-                  final child = _children[index];
+              child: RefreshIndicator(
+                onRefresh: _loadChildren,
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: _children.length,
+                  itemBuilder: (context, index) {
+                    final child = _children[index];
 
-                  final status = child.isActive
-                      ? 'online & tracking'
-                      : 'last active: ${_formatLastActive(child.lastActiveAt)}';
-                  final screenTime = child.formattedScreenTimeToday;
-                  final maxSpeed =
-                      '${child.todayMaxSpeedKmph.toStringAsFixed(0)} km/hr';
-                  final entireRoute =
-                      '${child.todayRouteKm.toStringAsFixed(1)} km';
+                    final status = child.isActive
+                        ? 'online & tracking'
+                        : 'last active: ${_formatLastActive(child.lastActiveAt)}';
+                    final screenTime = child.formattedScreenTimeToday;
+                    final maxSpeed =
+                        '${child.todayMaxSpeedKmph.toStringAsFixed(0)} km/hr';
+                    final entireRoute =
+                        '${child.todayRouteKm.toStringAsFixed(1)} km';
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24.0,
-                      vertical: 8.0,
-                    ),
-                    child: _buildProfileCard(
-                      name: child.childName,
-                      childCode: child.childCode,
-                      avatar: child.avatar,
-                      status: status,
-                      screenTime: screenTime,
-                      maxSpeed: maxSpeed,
-                      entireRoute: entireRoute,
-                      isActive: child.isActive,
-                      onTap: () => _setActiveChild(child),
-                      onMorePressed: () => _showMoreActions(child),
-                    ),
-                  );
-                },
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14.0,
+                        vertical: 0,
+                      ),
+                      child: _buildProfileCard(
+                        name: child.childName,
+                        childCode: child.childCode,
+                        avatar: child.avatar,
+                        status: status,
+                        screenTime: screenTime,
+                        maxSpeed: maxSpeed,
+                        entireRoute: entireRoute,
+                        isActive: child.isActive,
+                        onTap: () => _setActiveChild(child),
+                        onMorePressed: () => _showMoreActions(child),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
     );
@@ -402,33 +330,39 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
     required VoidCallback onMorePressed,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 15),
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2E5476).withValues(alpha: 0.18),
+            color: const Color(0xFF2E5476).withValues(alpha: 0.12),
             blurRadius: 20,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Column(
           children: [
             // Top Section — steel-blue vertical gradient from the Figma
-            // profile card (#6C8EA9 top -> #2E5476 bottom).
+            // profile card (#6C8EA9 top -> #2E5476 bottom; the active child's
+            // card ends in the bluer #3F6296).
             GestureDetector(
               onTap: onTap,
               child: Container(
                 height: 216,
                 width: double.infinity,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF6C8EA9), Color(0xFF2E5476)],
+                    colors: [
+                      const Color(0xFF6C8EA9),
+                      isActive
+                          ? const Color(0xFF3F6296)
+                          : const Color(0xFF2E5476),
+                    ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -500,13 +434,13 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                     //   ),
                     // More Button
                     Positioned(
-                      top: 12,
-                      right: 12,
+                      top: 15,
+                      right: 15,
                       child: GestureDetector(
                         onTap: onMorePressed,
                         child: Container(
-                          width: 36,
-                          height: 36,
+                          width: 34,
+                          height: 34,
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
@@ -520,86 +454,96 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                       ),
                     ),
                     // Avatar & Text info
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 12),
-                          // Profile Avatar image/placeholder — white outer
-                          // ring (112px, 3.5px padding) around the actual
-                          // 105px avatar, matching the Figma frame.
-                          GestureDetector(
-                            onTap: onTap,
-                            child: Container(
-                              width: 112,
-                              height: 112,
-                              padding: const EdgeInsets.all(3.5),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.2),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 8),
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 27),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Profile Avatar image/placeholder — white outer
+                            // ring (112px, 3.5px padding) around the actual
+                            // 105px avatar, matching the Figma frame.
+                            GestureDetector(
+                              onTap: onTap,
+                              child: Container(
+                                width: 94,
+                                height: 94,
+                                padding: const EdgeInsets.all(3.5),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFF3F4F6),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: _buildAvatarWidget(avatar),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            // Name text + tap-to-copy child code — parents
+                            // previously had to retype/screenshot the code by
+                            // hand to share it with a guardian or re-pair a
+                            // device; same Clipboard pattern already used in
+                            // child_code_screen.dart's onboarding flow.
+                            GestureDetector(
+                              onTap: () {
+                                Clipboard.setData(
+                                  ClipboardData(text: childCode),
+                                );
+                                AppSnackbar.showSuccess(
+                                  context,
+                                  'Child code copied: $childCode',
+                                );
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      '$name ($childCode)',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 24.0.sp,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.0,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Icon(
+                                    Icons.copy_rounded,
+                                    size: 16,
+                                    color: Colors.white.withValues(alpha: 0.8),
                                   ),
                                 ],
                               ),
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFF3F4F6),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: _buildAvatarWidget(avatar),
+                            ),
+                            // Status text
+                            Text(
+                              status,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14.0.sp,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withValues(alpha: 0.9),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          // Name text + tap-to-copy child code — parents
-                          // previously had to retype/screenshot the code by
-                          // hand to share it with a guardian or re-pair a
-                          // device; same Clipboard pattern already used in
-                          // child_code_screen.dart's onboarding flow.
-                          GestureDetector(
-                            onTap: () {
-                              Clipboard.setData(ClipboardData(text: childCode));
-                              AppSnackbar.showSuccess(
-                                context,
-                                'Child code copied: $childCode',
-                              );
-                            },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '$name ($childCode)',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 20.0.sp,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Icon(
-                                  Icons.copy_rounded,
-                                  size: 16,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          // Status text
-                          Text(
-                            status,
-                            style: GoogleFonts.poppins(
-                              fontSize: 13.0.sp,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withValues(alpha: 0.8),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -610,7 +554,7 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
             GestureDetector(
               onTap: onTap,
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: const BoxDecoration(color: Colors.white),
                 child: Row(
                   children: [
@@ -622,7 +566,7 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                       ),
                     ),
                     Container(
-                      height: 32,
+                      height: 25,
                       width: 1,
                       color: const Color(0xFFE2E8F0),
                     ),
@@ -634,7 +578,7 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                       ),
                     ),
                     Container(
-                      height: 32,
+                      height: 25,
                       width: 1,
                       color: const Color(0xFFE2E8F0),
                     ),
@@ -672,19 +616,18 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
               value,
               style: GoogleFonts.poppins(
                 fontSize: 14.0.sp,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF0C1D37),
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF16181A),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
         Text(
           label,
           style: GoogleFonts.poppins(
-            fontSize: 11.0.sp,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF64748B),
+            fontSize: 13.0.sp,
+            fontWeight: FontWeight.w400,
+            color: const Color(0xFF4A5267),
           ),
         ),
       ],

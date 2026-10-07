@@ -293,6 +293,7 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
           _mapBloc.add(
             UpdateChildLocation(
               LatLng(homeData.currentLocation.lat, homeData.currentLocation.lng),
+              zoom: 16.5,
             ),
           );
         }
@@ -630,7 +631,7 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
       }
 
       // Update MapBloc
-      _mapBloc.add(UpdateChildLocation(LatLng(lat, lng)));
+      _mapBloc.add(UpdateChildLocation(LatLng(lat, lng), zoom: 16.5));
 
       // Extract other fields using the payload keys provided
       final address = data['address'] as String? ?? 'Unknown Location';

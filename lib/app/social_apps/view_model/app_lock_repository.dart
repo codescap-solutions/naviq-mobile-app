@@ -105,12 +105,11 @@ class AppLockRepository extends BaseService {
       'durationMinutes': durationMinutes,
     };
 
-    final response = await post(
-      ApiEndpoints.lockApps,
-      data: body,
-    );
+    final response = await post(ApiEndpoints.lockApps, data: body);
 
-    AppLogger.info('lockApps response: ${response.isSuccess}, ${response.message}');
+    AppLogger.info(
+      'lockApps response: ${response.isSuccess}, ${response.message}',
+    );
     return response;
   }
 
@@ -120,18 +119,13 @@ class AppLockRepository extends BaseService {
     required List<String> tokens,
     required String platform,
   }) async {
-    final body = {
-      'childId': childId,
-      'tokens': tokens,
-      'platform': platform,
-    };
+    final body = {'childId': childId, 'tokens': tokens, 'platform': platform};
 
-    final response = await post(
-      ApiEndpoints.unlockApps,
-      data: body,
+    final response = await post(ApiEndpoints.unlockApps, data: body);
+
+    AppLogger.info(
+      'unlockApps response: ${response.isSuccess}, ${response.message}',
     );
-
-    AppLogger.info('unlockApps response: ${response.isSuccess}, ${response.message}');
     return response;
   }
 }

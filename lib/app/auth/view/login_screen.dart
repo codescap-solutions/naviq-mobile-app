@@ -4,11 +4,13 @@ import 'package:child_track/app/auth/view_model/bloc/auth_event.dart';
 import 'package:child_track/app/auth/view_model/bloc/auth_state.dart';
 import 'package:child_track/core/navigation/route_names.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_strings.dart';
 import 'package:child_track/core/widgets/common_textfield.dart';
@@ -122,40 +124,56 @@ class _LoginScreenState extends State<LoginScreen> {
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFFFBFCFE), Color(0xFFEDF4FE)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
             ),
           ),
-          child: SafeArea(
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.paddingL,
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: AppSizes.spacingS),
-                    _buildCustomAppBar(),
-                    const SizedBox(height: AppSizes.spacingL),
-                    _buildHeader(),
-                    const SizedBox(height: AppSizes.spacingXXL),
-                    _buildPhoneField(),
-                    const SizedBox(height: AppSizes.spacingS),
-                    _buildValidationTip(),
-                    _buildOtpField(),
-                    const SizedBox(height: AppSizes.spacingXL),
-                    _buildTermsCheckbox(),
-                    const SizedBox(height: AppSizes.spacingXXL),
-                    _buildActionButton(),
-                    _buildResendOtpLink(),
-                    const SizedBox(height: AppSizes.spacingXL),
-                  ],
+          child: Column(
+            children: [
+              _buildCustomAppBar(),
+              Expanded(
+                child: SafeArea(
+                  top: false,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.paddingL,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                        ),
+                        child: IntrinsicHeight(
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const SizedBox(height: 38),
+                                _buildHeader(),
+                                const SizedBox(height: 47),
+                                _buildPhoneField(),
+                                const SizedBox(height: 10),
+                                _buildValidationTip(),
+                                _buildOtpField(),
+                                const SizedBox(height: AppSizes.spacingL),
+                                const Spacer(),
+                                _buildTermsCheckbox(),
+                                const SizedBox(height: AppSizes.spacingL),
+                                _buildActionButton(),
+                                _buildResendOtpLink(),
+                                const SizedBox(height: 96),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -163,34 +181,60 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildCustomAppBar() {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            }
-          },
-          icon: const Icon(
-            Icons.chevron_left_rounded,
-            color: AppColors.textPrimary,
-            size: 32,
-          ),
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 4),
+      child: SizedBox(
+        height: 72,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 27),
+                child: GestureDetector(
+                  onTap: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 2,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      'assets/icons/auth_back.png',
+                      width: 24,
+                      height: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Text(
+              widget.isFromSignIn ? 'Sign In' : 'Sign Up',
+              style: GoogleFonts.poppins(
+                fontSize: 24.0.sp,
+                fontWeight: FontWeight.w600,
+                height: 36 / 24,
+                color: Colors.black,
+              ),
+            ),
+          ],
         ),
-        const Spacer(),
-        Text(
-          widget.isFromSignIn ? 'Sign In' : 'Sign Up',
-          style: GoogleFonts.poppins(
-            fontSize: 18.0.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const Spacer(),
-        const SizedBox(
-          width: 48,
-        ), // Align text to center by balancing the Back button size
-      ],
+      ),
     );
   }
 
@@ -199,165 +243,144 @@ class _LoginScreenState extends State<LoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Personalisation',
-          style: GoogleFonts.poppins(
-            fontSize: 10.0.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF0069F8),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
           'Verify and Proceed',
           style: GoogleFonts.poppins(
-            fontSize: 24.0.sp,
+            fontSize: 32.0.sp,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF1D293C),
+            height: 40 / 32,
+            color: const Color(0xFF16181A),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Text(
           'No Spams, Just Personalized Notification',
           style: GoogleFonts.poppins(
-            fontSize: 14.0.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF62748E),
+            fontSize: 12.0.sp,
+            fontWeight: FontWeight.w400,
+            height: 20 / 12,
+            letterSpacing: 0.2,
+            color: const Color(0xFF707784),
           ),
         ),
       ],
     );
   }
 
+  TextStyle get _fieldHintStyle => GoogleFonts.poppins(
+    fontSize: 16.0.sp,
+    fontWeight: FontWeight.w400,
+    height: 24 / 16,
+    color: const Color(0xFF4A5267),
+  );
+
   Widget _buildPhoneField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Phone Number',
-          style: GoogleFonts.poppins(
-            fontSize: 10.0.sp,
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFF7C8BA0),
-          ),
-        ),
-        const SizedBox(height: 8),
-        CommonTextField(
-          controller: _phoneController,
-          focusNode: _focusNode,
-          hintText: 'Enter device/child code',
-          keyboardType: TextInputType.phone,
-          textInputAction: TextInputAction.done,
-          prefixIcon: const Icon(
-            Icons.phone_android_rounded,
-            color: Color(0xFF7C8BA0),
-          ),
-          suffixIcon: _isPhoneValid
-              ? Container(
-                  margin: const EdgeInsets.all(12),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE8FAF6),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: Color(0xFF00C096),
-                    size: 16,
-                  ),
-                )
-              : null,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(10),
-          ],
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return AppStrings.phoneNumberRequired;
-            }
-            if (value.length != 10) {
-              return AppStrings.invalidPhoneNumber;
-            }
-            return null;
-          },
-          onSubmitted: (_) => _sendOtp(),
-        ),
+    return CommonTextField(
+      controller: _phoneController,
+      focusNode: _focusNode,
+      hintText: 'Phone Number',
+      hintStyle: _fieldHintStyle,
+      fillColor: Colors.white,
+      borderColor: Colors.black,
+      borderWidth: 0.75,
+      borderRadius: 14,
+      contentPadding: const EdgeInsets.fromLTRB(41, 18, 24, 18),
+      keyboardType: TextInputType.phone,
+      textInputAction: TextInputAction.done,
+      suffixIcon: _isPhoneValid
+          ? Padding(
+              padding: const EdgeInsets.only(right: 11),
+              child: SvgPicture.asset(
+                'assets/icons/auth_phone_valid_check.svg',
+                width: 25,
+                height: 25,
+              ),
+            )
+          : null,
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(10),
       ],
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return AppStrings.phoneNumberRequired;
+        }
+        if (value.length != 10) {
+          return AppStrings.invalidPhoneNumber;
+        }
+        return null;
+      },
+      onSubmitted: (_) => _sendOtp(),
     );
   }
 
   Widget _buildValidationTip() {
-    return Text(
-      'we will generate otp automatically',
-      style: GoogleFonts.poppins(
-        fontSize: 10.0.sp,
-        fontWeight: FontWeight.w600,
-        color: const Color(0xFF838383),
+    return Padding(
+      padding: const EdgeInsets.only(right: 15),
+      child: Text(
+        'we will generate otp automatically',
+        textAlign: TextAlign.right,
+        style: GoogleFonts.poppins(
+          fontSize: 10.0.sp,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+          color: const Color(0xFF9BA4B5),
+        ),
       ),
     );
   }
 
-
-
   Widget _buildTermsCheckbox() {
+    final base = GoogleFonts.poppins(
+      fontSize: 12.0.sp,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+    );
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(
-          width: 24,
-          height: 24,
-          child: Checkbox(
-            value: _agreeToTerms,
-            onChanged: (val) {
-              setState(() {
-                _agreeToTerms = val ?? false;
-              });
-            },
-            activeColor: const Color(0xFF0066FF),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-            ),
-            side: const BorderSide(color: Color(0xFFBDBDBD), width: 1.5),
-          ),
+        GestureDetector(
+          onTap: () => setState(() => _agreeToTerms = !_agreeToTerms),
+          child: _buildCheckboxBox(),
         ),
         const SizedBox(width: 12),
-        Expanded(
-          child: Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
+        SizedBox(
+          width: 207,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'I agree to the ',
-                style: GoogleFonts.poppins(
-                  fontSize: 12.0.sp,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF494949),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {},
-                child: Text(
-                  'Terms of Service',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.0.sp,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF0066FF),
+              Row(
+                children: [
+                  Text(
+                    'I agree to the',
+                    style: base.copyWith(color: const Color(0xFF4A5267)),
                   ),
-                ),
-              ),
-              Text(
-                ' & ',
-                style: GoogleFonts.poppins(
-                  fontSize: 12.0.sp,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF494949),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {},
-                child: Text(
-                  'Privacy Policy',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.0.sp,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF0066FF),
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () {},
+                    child: Text(
+                      'Terms of Service',
+                      style: base.copyWith(color: const Color(0xFF0069F9)),
+                    ),
                   ),
+                ],
+              ),
+              Text.rich(
+                TextSpan(
+                  text: '&',
+                  style: base.copyWith(color: const Color(0xFF4A4A4A)),
+                  children: [
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.baseline,
+                      baseline: TextBaseline.alphabetic,
+                      child: GestureDetector(
+                        onTap: () {},
+                        child: Text(
+                          ' Privacy Policy',
+                          style: base.copyWith(color: const Color(0xFF3461FD)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -367,45 +390,79 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  /// 24px white box (radius 8) with the Figma inset shadow when unchecked.
+  Widget _buildCheckboxBox() {
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: _agreeToTerms
+          ? Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF0069F9),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            )
+          : DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        width: 3,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+
   Widget _buildOtpField() {
     if (!_otpSent) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: AppSizes.spacingXL),
-        Text(
-          'OTP',
-          style: GoogleFonts.poppins(
-            fontSize: 10.0.sp,
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFF7C8BA0),
-          ),
-        ),
-        const SizedBox(height: 8),
-        CommonTextField(
-          controller: _otpController,
-          focusNode: _otpFocusNode,
-          hintText: AppStrings.otpHint,
-          keyboardType: TextInputType.number,
-          textInputAction: TextInputAction.done,
-          prefixIcon: const Icon(Icons.lock_rounded, color: Color(0xFF7C8BA0)),
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(4),
-          ],
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return AppStrings.otpRequired;
-            }
-            if (value.length != 4) {
-              return AppStrings.invalidOtp;
-            }
-            return null;
-          },
-          onSubmitted: (_) => _verifyOtp(),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 22),
+      child: CommonTextField(
+        controller: _otpController,
+        focusNode: _otpFocusNode,
+        hintText: AppStrings.otpHint,
+        hintStyle: _fieldHintStyle,
+        fillColor: Colors.white,
+        borderColor: Colors.black,
+        borderWidth: 0.75,
+        borderRadius: 14,
+        contentPadding: const EdgeInsets.fromLTRB(40, 18, 24, 18),
+        keyboardType: TextInputType.number,
+        textInputAction: TextInputAction.done,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(4),
+        ],
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return AppStrings.otpRequired;
+          }
+          if (value.length != 4) {
+            return AppStrings.invalidOtp;
+          }
+          return null;
+        },
+        onSubmitted: (_) => _verifyOtp(),
+      ),
     );
   }
 
@@ -451,40 +508,46 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final isLoading = state is AuthLoading;
-        final buttonText = _otpSent ? 'Verify and Proceed' : 'Create Account';
+        final buttonText = _otpSent ? 'Continue' : 'Generate OTP';
+        final disabled = isLoading || (!_agreeToTerms && !_otpSent);
 
-        return InkWell(
-          onTap: (isLoading || (!_agreeToTerms && !_otpSent))
-              ? null
-              : (_otpSent ? _verifyOtp : _sendOtp),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            height: 60,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: (isLoading || (!_agreeToTerms && !_otpSent))
-                  ? const Color(0xFF0066FF).withValues(alpha: 0.5)
-                  : const Color(0xFF0066FF),
-              borderRadius: BorderRadius.circular(16),
+        return Align(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 346),
+            child: InkWell(
+              onTap: disabled ? null : (_otpSent ? _verifyOtp : _sendOtp),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                height: 56,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: disabled
+                      ? const Color(0xFF0069F9).withValues(alpha: 0.5)
+                      : const Color(0xFF0069F9),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                alignment: Alignment.center,
+                child: isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    : Text(
+                        buttonText,
+                        style: GoogleFonts.poppins(
+                          fontSize: 20.0.sp,
+                          fontWeight: FontWeight.w400,
+                          height: 28 / 20,
+                          letterSpacing: 0.2,
+                          color: Colors.white,
+                        ),
+                      ),
+              ),
             ),
-            alignment: Alignment.center,
-            child: isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
-                    ),
-                  )
-                : Text(
-                    buttonText,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16.0.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
           ),
         );
       },

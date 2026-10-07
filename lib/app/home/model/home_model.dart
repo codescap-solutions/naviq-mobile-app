@@ -71,10 +71,17 @@ class TimelineNode {
   final String time;
   final bool isActive;
 
+  /// Coordinates of the stop (null on older servers). Used to resolve a name
+  /// on-device when [label] is the server's "Unknown Location" placeholder.
+  final double? lat;
+  final double? lng;
+
   TimelineNode({
     required this.label,
     required this.time,
     required this.isActive,
+    this.lat,
+    this.lng,
   });
 
   factory TimelineNode.fromJson(Map<String, dynamic> json) {
@@ -82,6 +89,8 @@ class TimelineNode {
       label: json['label'] ?? '',
       time: json['time'] ?? '',
       isActive: json['is_active'] ?? false,
+      lat: (json['lat'] as num?)?.toDouble(),
+      lng: (json['lng'] as num?)?.toDouble(),
     );
   }
 }
@@ -102,7 +111,9 @@ class RouteMapSummary {
     return RouteMapSummary(
       totalDistanceKm: safeToDouble(json['total_distance_km']),
       newLocationsCount: safeToInt(json['new_locations_count']),
-      timeline: list.map((e) => TimelineNode.fromJson(e as Map<String, dynamic>)).toList(),
+      timeline: list
+          .map((e) => TimelineNode.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -158,7 +169,9 @@ class ScreentimeTodaySummary {
       dailyLimitMinutes: safeToInt(json['daily_limit_minutes']),
       limitExceeded: json['limit_exceeded'] ?? false,
       limitMessage: json['limit_message'] ?? '',
-      appUsages: list.map((e) => AppUsage.fromJson(e as Map<String, dynamic>)).toList(),
+      appUsages: list
+          .map((e) => AppUsage.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -177,7 +190,7 @@ class HomeResponse {
   final FeatureSummary? features;
   final RouteMapSummary? todayRoute;
   final ScreentimeTodaySummary? screentimeToday;
-  
+
   final List<SharedChild>? sharedChildren;
 
   // Live trip currently in progress
@@ -208,7 +221,9 @@ class HomeResponse {
       childAvatar: (json['child_avatar'] ?? json['avatar']) as String?,
       webFilteringEnabled: json['web_filtering_enabled'] ?? false,
       deviceInfo: DeviceInfo.fromJson(json['device_info'] ?? {}),
-      currentLocation: LocationInfo.fromJson(json['current_location'] ?? json['location'] ?? {}),
+      currentLocation: LocationInfo.fromJson(
+        json['current_location'] ?? json['location'] ?? {},
+      ),
       yesterdayTripSummary: json['yesterday_trip_summary'] != null
           ? YesterdayTripSummary.fromJson(
               json['yesterday_trip_summary'] as Map<String, dynamic>,
@@ -230,10 +245,14 @@ class HomeResponse {
           ? FeatureSummary.fromJson(json['features'] as Map<String, dynamic>)
           : null,
       todayRoute: json['today_route'] != null
-          ? RouteMapSummary.fromJson(json['today_route'] as Map<String, dynamic>)
+          ? RouteMapSummary.fromJson(
+              json['today_route'] as Map<String, dynamic>,
+            )
           : null,
       screentimeToday: json['screentime_today'] != null
-          ? ScreentimeTodaySummary.fromJson(json['screentime_today'] as Map<String, dynamic>)
+          ? ScreentimeTodaySummary.fromJson(
+              json['screentime_today'] as Map<String, dynamic>,
+            )
           : null,
       sharedChildren: sharedList
           .map((e) => SharedChild.fromJson(e as Map<String, dynamic>))
@@ -275,10 +294,16 @@ class SharedChild {
       childName: json['child_name']?.toString() ?? '',
       latitude: safeToDouble(json['latitude'] ?? json['lat']),
       longitude: safeToDouble(json['longitude'] ?? json['lng']),
-      batteryPercentage: safeToInt(json['battery_percentage'] ?? json['battery']),
-      lastSyncAt: json['last_sync_at'] != null ? DateTime.tryParse(json['last_sync_at']) : null,
+      batteryPercentage: safeToInt(
+        json['battery_percentage'] ?? json['battery'],
+      ),
+      lastSyncAt: json['last_sync_at'] != null
+          ? DateTime.tryParse(json['last_sync_at'])
+          : null,
       avatar: (json['avatar'] ?? json['child_avatar'])?.toString(),
-      expiresAt: json['expires_at'] != null ? DateTime.tryParse(json['expires_at']) : null,
+      expiresAt: json['expires_at'] != null
+          ? DateTime.tryParse(json['expires_at'])
+          : null,
     );
   }
 }

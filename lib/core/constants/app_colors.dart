@@ -60,10 +60,10 @@ class AppColors {
 
   static const LinearGradient onboardingBackgroundGradient = LinearGradient(
     colors: [
-      Color(0xFFF3F7FD), // Soft light-blue tint at the top
-      Color(0xFFFFFFFF), // Clear white at the bottom
+      Color(0xFFFBFCFE),
+      Color(0xFFEDF4FE),
     ],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
   );
 }

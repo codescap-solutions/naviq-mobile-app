@@ -119,6 +119,7 @@ flutter:
     - assets/images/childavatar/
     - assets/icons/
     - assets/home/
+    - assets/help/
     - .env
 
 

@@ -7,6 +7,7 @@ import 'package:child_track/core/services/firebase_notification_service.dart';
 import 'package:child_track/core/models/child_profile.dart';
 import 'package:http/http.dart' as http;
 import 'package:child_track/core/navigation/route_names.dart';
+import 'package:flutter/physics.dart' show Simulation;
 import 'package:flutter/services.dart';
 import 'package:child_track/app/home/view_model/bloc/homepage_bloc.dart';
 import 'package:child_track/app/home/view_model/home_repo.dart';
@@ -24,6 +25,7 @@ import 'package:child_track/core/widgets/common_button.dart';
 import 'package:child_track/core/utils/app_logger.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../geofencing/view/geo_fencing_view.dart';
 import '../../geofencing/view_model/bloc/geofence_bloc.dart';
@@ -45,9 +47,18 @@ import '../../social_apps/view_model/time_limit_repository.dart';
 import '../../childapp/view_model/repository/logout_request_repository.dart';
 import 'package:child_track/core/services/subscription_feature_gate.dart';
 import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
-import 'package:child_track/app/subscription/widgets/subscription_popup_sheet.dart';
-import 'package:child_track/app/subscription/models/subscription_plan.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
+
+// Child map pin geometry (see _loadCustomMarker). Circle radius is 50 in
+// bitmap units; _kPinScale maps that to Figma's 42px avatar.
+const double _kPinMargin = 14;
+const double _kPinPointer = 40;
+const double _kPinCanvasWidth = 2 * 50 + 2 * _kPinMargin;
+const double _kPinCanvasHeight =
+    _kPinMargin + 2 * 50 + _kPinPointer + _kPinMargin;
+const double _kPinScale = 50 / 100;
+const double _kPinAnchorY =
+    (_kPinMargin + 2 * 50 + _kPinPointer) / _kPinCanvasHeight;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -66,6 +77,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // 0 = map fully visible, 1 = map fully washed out. Driven by the home scroll
   // offset; a ValueNotifier so only the overlay repaints per scroll frame.
   final ValueNotifier<double> _mapFadeAmount = ValueNotifier<double>(0);
+  // Sheet extent (fraction of the body) — drives the convex map-bottom curve.
+  final ValueNotifier<double?> _sheetExtent = ValueNotifier<double?>(null);
+  double? _sheetDragStart;
+  double? _sheetDragLast;
+  // While a drag that began below rest is in flight the sheet's max extent is
+  // pinned to rest, so the way back up stops there instead of at full height.
+  bool _capSheetAtRest = false;
   final GlobalKey<_HomeMapBackgroundState> _mapBackgroundKey = GlobalKey();
   double _mapHeightFraction =
       0.50; // Initial height (Expanded) — matches the Figma reference (~50% map on first load, with the location/Scroll/GeoGuard/Route-Map cards already visible underneath without scrolling)
@@ -1927,39 +1945,53 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ui.FrameInfo fi = await codec.getNextFrame();
       final ui.Image avatarImage = fi.image;
 
-      // Create a canvas to draw our custom pin marker
+      // Create a canvas to draw our custom pin marker. Figma pin: 42px
+      // avatar circle with a 4px green border, orange fill, drop shadow and
+      // a downward pointer (42x60 overall). Drawn at 100px-circle scale and
+      // shown at _kPinScale so it renders at the Figma size.
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
 
-      const double size = 130;
       const double radius = 50;
-      const double pointerHeight = 20;
-      const double pointerWidth = 16;
+      const double m = _kPinMargin;
+      const double cx = m + radius;
+      const double cy = m + radius;
+      const double pointerBaseHalf = 23;
+      const double tipY = cy + radius + _kPinPointer;
+      const double width = _kPinCanvasWidth;
+      const double height = _kPinCanvasHeight;
 
-      final borderPaint = Paint()
-        ..color = const Color(0xFF4ADE80)
-        ..style = PaintingStyle.fill;
+      const borderColor = Color(0xFF0DBF75);
 
-      final path = Path();
-      path.moveTo(size / 2 - pointerWidth / 2, size - pointerHeight);
-      path.lineTo(size / 2, size);
-      path.lineTo(size / 2 + pointerWidth / 2, size - pointerHeight);
-      path.close();
-      canvas.drawPath(path, borderPaint);
+      final pinPath = Path()
+        ..addOval(Rect.fromCircle(center: const Offset(cx, cy), radius: radius))
+        ..moveTo(cx - pointerBaseHalf, cy + radius - 10)
+        ..lineTo(cx, tipY)
+        ..lineTo(cx + pointerBaseHalf, cy + radius - 10)
+        ..close();
 
-      canvas.drawCircle(const Offset(size / 2, radius), radius, borderPaint);
+      // Drop shadow: 0 4 2.6 rgba(0,0,0,.4) at pin scale.
+      canvas.save();
+      canvas.translate(0, 9);
+      canvas.drawPath(
+        pinPath,
+        Paint()
+          ..color = Colors.black.withValues(alpha: 0.4)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+      );
+      canvas.restore();
 
-      final bgPaint = Paint()
-        ..color = const Color(0xFFF97316)
-        ..style = PaintingStyle.fill;
-      canvas.drawCircle(const Offset(size / 2, radius), radius - 6, bgPaint);
+      canvas.drawPath(pinPath, Paint()..color = borderColor);
+
+      canvas.drawCircle(
+        const Offset(cx, cy),
+        radius - 9,
+        Paint()..color = const Color(0xFFF5A623),
+      );
 
       final clipPath = Path()
         ..addOval(
-          Rect.fromCircle(
-            center: const Offset(size / 2, radius),
-            radius: radius - 6,
-          ),
+          Rect.fromCircle(center: const Offset(cx, cy), radius: radius - 9),
         );
       canvas.save();
       canvas.clipPath(clipPath);
@@ -1972,10 +2004,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           avatarImage.width.toDouble(),
           avatarImage.height.toDouble(),
         ),
-        Rect.fromCircle(
-          center: const Offset(size / 2, radius),
-          radius: radius - 6,
-        ),
+        Rect.fromCircle(center: const Offset(cx, cy), radius: radius - 9),
         Paint(),
       );
       canvas.restore();
@@ -1983,7 +2012,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       // Online/offline status dot — small badge at the top-right of the pin,
       // green when the child's device last reported active, grey otherwise.
       const double dotRadius = 12;
-      final dotCenter = Offset(size / 2 + radius * 0.62, radius * 0.28);
+      final dotCenter = Offset(cx + radius * 0.62, cy - radius * 0.72);
       canvas.drawCircle(
         dotCenter,
         dotRadius + 3,
@@ -1999,10 +2028,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
 
       final picture = recorder.endRecording();
-      final img = await picture.toImage(size.toInt(), size.toInt());
+      final img = await picture.toImage(width.toInt(), height.toInt());
       final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
 
-      return BitmapDescriptor.bytes(pngBytes!.buffer.asUint8List());
+      return BitmapDescriptor.bytes(
+        pngBytes!.buffer.asUint8List(),
+        width: width * _kPinScale,
+        height: height * _kPinScale,
+      );
     } catch (e) {
       return null;
     }
@@ -2175,7 +2208,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (diff.inHours < 24) return 'Location updated ${diff.inHours}h ago';
     if (diff.inDays == 1) return 'Location updated yesterday';
     if (diff.inDays < 7) return 'Location updated ${diff.inDays}d ago';
-    return 'Location updated ${deviceTimestamp.toLocal().toString().split('.').first}';
+    // A week or more old: a plain date ("29 Sep, 10:41 AM", with the year
+    // once it's not this year) instead of a raw DateTime string.
+    final local = deviceTimestamp.toLocal();
+    final sameYear = local.year == DateTime.now().year;
+    final formatted = DateFormat(
+      sameYear ? 'd MMM, h:mm a' : 'd MMM yyyy, h:mm a',
+    ).format(local);
+    return 'Location updated $formatted';
   }
 
   // Readable text for a JT808 tracker alarm type (see naviQ-server
@@ -2311,33 +2351,42 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return SafeArea(
       top: false,
       child: Container(
-        height: 76,
-        // Flat, borderless — no shadow/elevation and no rounded top corners,
-        // matching the flush reference nav bar instead of reading as a
-        // separate floating card sitting on top of the page content.
+        // Figma footer: white, 8px vertical padding, 24px between 56px items.
+        padding: const EdgeInsets.symmetric(vertical: 8),
         color: Colors.white,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildBottomNavItem(
               0,
               _currentIndex == 0 ? Icons.home_rounded : Icons.home_outlined,
               'Home',
+              svgAsset: 'assets/home/home_nav_home.svg',
             ),
+            const SizedBox(width: 24),
             _buildBottomNavItem(
               1,
               _currentIndex == 1
                   ? Icons.settings_rounded
                   : Icons.settings_outlined,
               'Settings',
+              svgAsset: 'assets/home/home_nav_settings.svg',
             ),
-            _buildBottomNavItem(2, Icons.menu_rounded, 'Explore'),
+            const SizedBox(width: 24),
+            _buildBottomNavItem(
+              2,
+              Icons.menu_rounded,
+              'Explore',
+              svgAsset: 'assets/home/home_nav_explore.svg',
+            ),
+            const SizedBox(width: 24),
             _buildBottomNavItem(
               3,
               _currentIndex == 3
                   ? Icons.person_rounded
                   : Icons.person_outline_rounded,
               'Profile',
+              svgAsset: 'assets/home/home_nav_profile.svg',
             ),
           ],
         ),
@@ -2345,7 +2394,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildBottomNavItem(int index, IconData icon, String label) {
+  Widget _buildBottomNavItem(
+    int index,
+    IconData icon,
+    String label, {
+    String? svgAsset,
+  }) {
     final isSelected = _currentIndex == index;
     return GestureDetector(
       onTap: () {
@@ -2355,43 +2409,58 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         });
       },
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: isSelected
-                  ? const LinearGradient(
-                      colors: [Color(0x003DB5E9), Color(0x2E2352BB)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+      child: SizedBox(
+        width: 56,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 53,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(44),
+                gradient: isSelected
+                    ? const LinearGradient(
+                        colors: [Color(0x003DB5E9), Color(0x2E2352BB)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      )
+                    : null,
+              ),
+              // The Figma stroke icons are tinted per state so the same glyph
+              // is used selected (dark) and unselected (grey).
+              child: svgAsset != null
+                  ? SvgPicture.asset(
+                      svgAsset,
+                      colorFilter: ColorFilter.mode(
+                        isSelected
+                            ? const Color(0xFF16181A)
+                            : const Color(0xFF9BA4B5),
+                        BlendMode.srcIn,
+                      ),
                     )
-                  : null,
+                  : Icon(
+                      icon,
+                      color: isSelected
+                          ? const Color(0xFF16181A)
+                          : const Color(0xFF9BA4B5),
+                      size: 24,
+                    ),
             ),
-            child: Icon(
-              icon,
-              color: isSelected
-                  ? const Color(0xFF0C1D37)
-                  : const Color(0xFF94A3B8),
-              size: 24,
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 12.0.sp,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                height: isSelected ? null : 20 / 12,
+                letterSpacing: 0.2,
+                color: isSelected ? Colors.black : const Color(0xFF9BA4B5),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 11.0.sp,
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              color: isSelected
-                  ? const Color(0xFF0C1D37)
-                  : const Color(0xFF94A3B8),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -2543,9 +2612,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         // the sheet slides up OVER a fixed map). Its full painted height is
         // half the screen, but the pinned header only reserves the part above
         // the location card — the card (its own sliver) overlaps the rest.
-        const double kLocationCardOverlap = 195;
-        final double mapFullHeight = screenHeight * 0.5;
-        final double mapHeaderExtent = mapFullHeight - kLocationCardOverlap;
+        const double kLocationCardOverlap = 167; // card (~155) + Figma's 12px
+        // Figma home: at rest the sheet shows the location card, Scroll /
+        // Geo Guard and the WHOLE Today's Route Map card above the nav bar
+        // (~575pt of content). The map gets whatever height is left above.
+        const double kRestSheetContent = 527;
+        final double navHeight =
+            MediaQueryData.fromView(View.of(context)).padding.bottom + 93;
+        final double mapHeaderExtent =
+            (screenHeight - navHeight - kRestSheetContent).clamp(
+              96.0,
+              screenHeight * 0.5 - kLocationCardOverlap,
+            );
+        final double mapFullHeight = mapHeaderExtent + kLocationCardOverlap;
 
         return NotificationListener<ScrollNotification>(
           onNotification: (notification) {
@@ -2586,491 +2665,684 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               final double minSheet =
                   (1.0 - (screenHeight * kMapExpandedFraction) / layoutHeight)
                       .clamp(0.1, restSheet);
-              return NotificationListener<DraggableScrollableNotification>(
+              return NotificationListener<ScrollNotification>(
+                // Two stable positions, one gesture each way: from rest, any
+                // downward drag goes all the way to the lowered (map) position;
+                // from the lowered position, any upward drag lands back on
+                // rest and stops there instead of running on to full height.
                 onNotification: (n) {
-                  // Map is only washed out when the sheet is raised ABOVE its
-                  // resting spot; lowering it just reveals more map.
-                  final range = n.maxExtent - restSheet;
-                  _mapFadeAmount.value = range <= 0
-                      ? 0.0
-                      : ((n.extent - restSheet) / range).clamp(0.0, 1.0);
+                  if (n is ScrollStartNotification && n.dragDetails != null) {
+                    _sheetDragStart = _sheetController.isAttached
+                        ? _sheetController.size
+                        : null;
+                    _sheetDragLast = _sheetDragStart;
+                    final s0 = _sheetDragStart;
+                    final cap = s0 != null && s0 < restSheet - 0.02;
+                    if (cap != _capSheetAtRest) {
+                      setState(() => _capSheetAtRest = cap);
+                    }
+                  } else if (n is ScrollEndNotification) {
+                    if (_capSheetAtRest) setState(() => _capSheetAtRest = false);
+                    final start = _sheetDragStart;
+                    final last = _sheetDragLast;
+                    _sheetDragStart = null;
+                    _sheetDragLast = null;
+                    if (start != null && last != null) {
+                      const eps = 0.005;
+                      double? target;
+                      if (last < start - eps) {
+                        // Dragged down: rest -> lowered, anything above rest
+                        // -> rest.
+                        target = start > restSheet + 0.02
+                            ? restSheet
+                            : minSheet;
+                      } else if (last > start + eps) {
+                        // Dragged up: lowered -> rest (and stop there), rest
+                        // -> full height.
+                        target = start < restSheet - 0.02
+                            ? restSheet
+                            : maxSheet;
+                      }
+                      if (target != null) {
+                        final t = target;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted || !_sheetController.isAttached) return;
+                          if ((_sheetController.size - t).abs() > 0.005) {
+                            _sheetController.animateTo(
+                              t,
+                              duration: const Duration(milliseconds: 260),
+                              curve: Curves.easeOutCubic,
+                            );
+                          }
+                        });
+                      }
+                    }
+                  }
                   return false;
                 },
-                child: Stack(
-                  children: [
-                    // Fixed map behind the sheet.
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: layoutHeight,
-                      child: Stack(
-                        children: [
-                          // Layer 1: Map Background with rounded bottom corners
-                          Positioned.fill(
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.only(
-                                bottomLeft: Radius.circular(36),
-                                bottomRight: Radius.circular(36),
-                              ),
-                              child: RepaintBoundary(
-                                child: _HomeMapBackground(
-                                  key: _mapBackgroundKey,
-                                  // Visible map (above the resting sheet) is the
-                                  // top half; pad the rest so the marker/camera
-                                  // centre lands in it, not behind the sheet.
-                                  mapPadding: EdgeInsets.only(
-                                    bottom: layoutHeight - mapFullHeight,
+                child: NotificationListener<DraggableScrollableNotification>(
+                  onNotification: (n) {
+                    _sheetExtent.value = n.extent;
+                    // The sheet moves without scroll-offset changes, so the
+                    // drag's latest extent comes from here, not ScrollUpdate.
+                    if (_sheetDragStart != null) _sheetDragLast = n.extent;
+                    // Map is only washed out when the sheet is raised ABOVE its
+                    // resting spot; lowering it just reveals more map.
+                    final range = n.maxExtent - restSheet;
+                    _mapFadeAmount.value = range <= 0
+                        ? 0.0
+                        : ((n.extent - restSheet) / range).clamp(0.0, 1.0);
+                    return false;
+                  },
+                  child: Stack(
+                    children: [
+                      // Fixed map behind the sheet.
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: layoutHeight,
+                        child: Stack(
+                          children: [
+                            // Layer 1: Map Background with rounded bottom corners
+                            Positioned.fill(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(36),
+                                  bottomRight: Radius.circular(36),
+                                ),
+                                child: RepaintBoundary(
+                                  child: _HomeMapBackground(
+                                    key: _mapBackgroundKey,
+                                    // Visible map (above the resting sheet) is the
+                                    // top half; pad the rest so the marker/camera
+                                    // centre lands in it, not behind the sheet.
+                                    // The pin's tip sits at the camera centre and the
+                                    // 60px pin rises above it; Figma puts the tip ~40px
+                                    // above the location card.
+                                    mapPadding: EdgeInsets.only(
+                                      bottom:
+                                          layoutHeight -
+                                          2 * (mapHeaderExtent - 40),
+                                    ),
+                                    loadCustomMarker: _loadCustomMarker,
+                                    activeSharedChildData:
+                                        _activeSharedChildData,
+                                    viewingSharedChild: _viewingSharedChild,
+                                    ownChildLocation:
+                                        state.currentLocation != null
+                                        ? LatLng(
+                                            state.currentLocation!.lat,
+                                            state.currentLocation!.lng,
+                                          )
+                                        : null,
                                   ),
-                                  loadCustomMarker: _loadCustomMarker,
-                                  activeSharedChildData: _activeSharedChildData,
-                                  viewingSharedChild: _viewingSharedChild,
-                                  ownChildLocation:
-                                      state.currentLocation != null
-                                      ? LatLng(
-                                          state.currentLocation!.lat,
-                                          state.currentLocation!.lng,
-                                        )
-                                      : null,
                                 ),
                               ),
                             ),
-                          ),
 
-                          // Layer 1.2: wash the map out to white as the parent
-                          // scrolls the cards up over it (Figma/reference
-                          // behaviour). Ignores pointers so map gestures and the
-                          // overlays above it are unaffected.
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: ValueListenableBuilder<double>(
-                                valueListenable: _mapFadeAmount,
-                                builder: (context, fade, _) => fade <= 0.01
-                                    ? const SizedBox.shrink()
-                                    : ClipRRect(
-                                        borderRadius: const BorderRadius.only(
-                                          bottomLeft: Radius.circular(36),
-                                          bottomRight: Radius.circular(36),
-                                        ),
-                                        child: ColoredBox(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.92 * fade,
+                            // Layer 1.2: wash the map out to white as the parent
+                            // scrolls the cards up over it (Figma/reference
+                            // behaviour). Ignores pointers so map gestures and the
+                            // overlays above it are unaffected.
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: ValueListenableBuilder<double>(
+                                  valueListenable: _mapFadeAmount,
+                                  builder: (context, fade, _) => fade <= 0.01
+                                      ? const SizedBox.shrink()
+                                      : ClipRRect(
+                                          borderRadius: const BorderRadius.only(
+                                            bottomLeft: Radius.circular(36),
+                                            bottomRight: Radius.circular(36),
+                                          ),
+                                          child: ColoredBox(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.92 * fade,
+                                            ),
                                           ),
                                         ),
-                                      ),
+                                ),
                               ),
                             ),
-                          ),
 
-                          // Layer 1.4: "Updating location..." overlay while a
-                          // fresh fetch is in flight (e.g. right after switching
-                          // the selected child). homepage_bloc.dart already
-                          // clears currentLocation on a child switch so the OLD
-                          // child's marker doesn't flash before the new one loads
-                          // — but with nothing shown in its place, that gap read
-                          // as unexplained/confusing (reported live: briefly
-                          // shows the old child's spot, then jumps 1-2s later).
-                          // This makes the gap legible instead of silent.
-                          if (state.isLoading)
-                            Positioned(
-                              top: 16,
-                              left: 0,
-                              right: 0,
-                              child: Center(
+                            // Layer 1.3: Figma map is a rounded card — its bottom
+                            // corners curve (radius 32) just under the location
+                            // card, with the page background showing in the
+                            // corners. Follows the sheet so it stays attached
+                            // while the sheet is dragged.
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: ValueListenableBuilder<double?>(
+                                  valueListenable: _sheetExtent,
+                                  builder: (context, extent, _) {
+                                    final e = extent ?? restSheet;
+                                    final mapBottom =
+                                        layoutHeight * (1 - e) +
+                                        kLocationCardOverlap;
+                                    return Stack(
+                                      children: [
+                                        // Figma: the map carries a transparent
+                                        // → rgba(0,0,0,.4) wash over its lower
+                                        // half, so the map around the location
+                                        // card reads darker.
+                                        Positioned(
+                                          top: 0,
+                                          left: 0,
+                                          right: 0,
+                                          height: mapBottom.clamp(
+                                            0.0,
+                                            layoutHeight,
+                                          ),
+                                          child: const DecoratedBox(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                                colors: [
+                                                  Color(0x00000000),
+                                                  Color(0x00000000),
+                                                  Color(0x66000000),
+                                                ],
+                                                stops: [0.0, 0.5, 1.0],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned.fill(
+                                          child: CustomPaint(
+                                            painter: _MapBottomCurvePainter(
+                                              mapBottom: mapBottom,
+                                              radius: 32,
+                                              color: const Color(0xFFF7F8FA),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+
+                            // Layer 1.4: "Updating location..." overlay while a
+                            // fresh fetch is in flight (e.g. right after switching
+                            // the selected child). homepage_bloc.dart already
+                            // clears currentLocation on a child switch so the OLD
+                            // child's marker doesn't flash before the new one loads
+                            // — but with nothing shown in its place, that gap read
+                            // as unexplained/confusing (reported live: briefly
+                            // shows the old child's spot, then jumps 1-2s later).
+                            // This makes the gap legible instead of silent.
+                            if (state.isLoading)
+                              Positioned(
+                                top: 16,
+                                left: 0,
+                                right: 0,
+                                child: Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.75,
+                                      ),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Updating location…',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12.5.sp,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                            // Layer 1.5: Floating Overlay Avatar for Shared Kid
+                            () {
+                              final floatingChildren =
+                                  state.sharedChildren.isNotEmpty
+                                  ? state.sharedChildren
+                                  : (_activeSharedChildData != null
+                                        ? [
+                                            SharedChild(
+                                              shareId:
+                                                  _activeSharedChildData!['child_id'],
+                                              childId:
+                                                  _activeSharedChildData!['child_id'],
+                                              childName:
+                                                  _activeSharedChildData!['child_name'],
+                                              latitude:
+                                                  _activeSharedChildData!['lat'],
+                                              longitude:
+                                                  _activeSharedChildData!['lng'],
+                                              batteryPercentage:
+                                                  _activeSharedChildData!['battery_percentage'] ??
+                                                  50,
+                                              avatar:
+                                                  _activeSharedChildData!['avatar'],
+                                              expiresAt:
+                                                  _activeSharedChildData!['expires_at'],
+                                              lastSyncAt:
+                                                  _activeSharedChildData!['last_sync_at'],
+                                            ),
+                                          ]
+                                        : <SharedChild>[]);
+
+                              if (floatingChildren.isEmpty)
+                                return const SizedBox.shrink();
+
+                              return Positioned(
+                                top: 80,
+                                right: 16,
+                                child: Column(
+                                  children: floatingChildren.map((child) {
+                                    final isSelected =
+                                        _viewingSharedChild &&
+                                        _activeSharedChildData != null &&
+                                        _activeSharedChildData!['child_id'] ==
+                                            child.childId;
+                                    final hasAvatar =
+                                        child.avatar != null &&
+                                        child.avatar!.isNotEmpty;
+                                    final String initials = child.childName
+                                        .substring(
+                                          0,
+                                          min(2, child.childName.length),
+                                        )
+                                        .toUpperCase();
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 12.0,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                _activeSharedChildData = {
+                                                  'child_id': child.childId,
+                                                  'child_name': child.childName,
+                                                  'avatar':
+                                                      child.avatar ??
+                                                      'Boy 03.png',
+                                                  'lat': child.latitude,
+                                                  'lng': child.longitude,
+                                                  'expires_at': child.expiresAt,
+                                                  'battery_percentage':
+                                                      child.batteryPercentage,
+                                                  'last_sync_at':
+                                                      child.lastSyncAt,
+                                                };
+                                                _viewingSharedChild = true;
+                                              });
+                                            },
+                                            child: Container(
+                                              width: 56,
+                                              height: 56,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Colors.white,
+                                                border: Border.all(
+                                                  color: isSelected
+                                                      ? const Color(0xFF0066FF)
+                                                      : const Color(0xFFCBD5E1),
+                                                  width: 2.5,
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.15),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 4),
+                                                  ),
+                                                ],
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Stack(
+                                                alignment: Alignment.center,
+                                                children: [
+                                                  if (hasAvatar)
+                                                    ClipOval(
+                                                      child: Image(
+                                                        image:
+                                                            (child.avatar!
+                                                                    .startsWith(
+                                                                      'http://',
+                                                                    ) ||
+                                                                child.avatar!
+                                                                    .startsWith(
+                                                                      'https://',
+                                                                    ))
+                                                            ? NetworkImage(
+                                                                child.avatar!,
+                                                              )
+                                                            : AssetImage(
+                                                                    child.avatar!.startsWith(
+                                                                          'assets/',
+                                                                        )
+                                                                        ? child
+                                                                              .avatar!
+                                                                        : 'assets/images/childavatar/${child.avatar!}',
+                                                                  )
+                                                                  as ImageProvider,
+                                                        width: 50,
+                                                        height: 50,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder:
+                                                            (
+                                                              context,
+                                                              error,
+                                                              stackTrace,
+                                                            ) {
+                                                              return Text(
+                                                                initials,
+                                                                style: GoogleFonts.poppins(
+                                                                  fontSize:
+                                                                      14.0.sp,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  color: const Color(
+                                                                    0xFF0066FF,
+                                                                  ),
+                                                                ),
+                                                              );
+                                                            },
+                                                      ),
+                                                    )
+                                                  else
+                                                    Text(
+                                                      initials,
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                            fontSize: 14.0.sp,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            color: const Color(
+                                                              0xFF0066FF,
+                                                            ),
+                                                          ),
+                                                    ),
+                                                  Positioned(
+                                                    top: 0,
+                                                    right: 0,
+                                                    child: Container(
+                                                      width: 12,
+                                                      height: 12,
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(
+                                                          0xFF10B981,
+                                                        ),
+                                                        shape: BoxShape.circle,
+                                                        border: Border.all(
+                                                          color: Colors.white,
+                                                          width: 1.5,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.9,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withValues(alpha: 0.05),
+                                                  blurRadius: 4,
+                                                ),
+                                              ],
+                                            ),
+                                            child: Text(
+                                              child.childName,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 10.0.sp,
+                                                fontWeight: FontWeight.bold,
+                                                color: const Color(0xFF0C1D37),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              );
+                            }(),
+
+                            // Layer 1.6: Overlay banner if viewing shared child
+                            if (_viewingSharedChild &&
+                                _activeSharedChildData != null)
+                              Positioned(
+                                top: 16,
+                                left: 16,
+                                right: 16,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
+                                    horizontal: 16,
+                                    vertical: 12,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.75),
-                                    borderRadius: BorderRadius.circular(20),
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
                                   child: Row(
-                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const SizedBox(
-                                        width: 14,
-                                        height: 14,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.share_location,
+                                            color: Color(0xFF0066FF),
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Viewing: ${_activeSharedChildData!['child_name']} (Shared)',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 13.0.sp,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: const Color(
+                                                    0xFF0C1D37,
+                                                  ),
+                                                ),
+                                              ),
+                                              Text(
+                                                _getRemainingTimeText(
+                                                  _activeSharedChildData!['expires_at'],
+                                                ),
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 11.0.sp,
+                                                  color: const Color(
+                                                    0xFF64748B,
+                                                  ),
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Updating location…',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 12.5.sp,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
+                                      TextButton(
+                                        style: TextButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFFF1F5F9,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _viewingSharedChild = false;
+                                          });
+                                        },
+                                        child: Text(
+                                          'Switch to Home',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12.0.sp,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF475569),
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
                               ),
-                            ),
 
-                          // Layer 1.5: Floating Overlay Avatar for Shared Kid
-                          () {
-                            final floatingChildren =
-                                state.sharedChildren.isNotEmpty
-                                ? state.sharedChildren
-                                : (_activeSharedChildData != null
-                                      ? [
-                                          SharedChild(
-                                            shareId:
-                                                _activeSharedChildData!['child_id'],
-                                            childId:
-                                                _activeSharedChildData!['child_id'],
-                                            childName:
-                                                _activeSharedChildData!['child_name'],
-                                            latitude:
-                                                _activeSharedChildData!['lat'],
-                                            longitude:
-                                                _activeSharedChildData!['lng'],
-                                            batteryPercentage:
-                                                _activeSharedChildData!['battery_percentage'] ??
-                                                50,
-                                            avatar:
-                                                _activeSharedChildData!['avatar'],
-                                            expiresAt:
-                                                _activeSharedChildData!['expires_at'],
-                                            lastSyncAt:
-                                                _activeSharedChildData!['last_sync_at'],
-                                          ),
-                                        ]
-                                      : <SharedChild>[]);
-
-                            if (floatingChildren.isEmpty)
-                              return const SizedBox.shrink();
-
-                            return Positioned(
-                              top: 80,
+                            // Layer FAB: floating "Map" FAB visible only when collapsed (20% height)
+                            AnimatedPositioned(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutCubic,
+                              bottom: (_mapHeightFraction == 0.20) ? 96 : -60,
                               right: 16,
-                              child: Column(
-                                children: floatingChildren.map((child) {
-                                  final isSelected =
-                                      _viewingSharedChild &&
-                                      _activeSharedChildData != null &&
-                                      _activeSharedChildData!['child_id'] ==
-                                          child.childId;
-                                  final hasAvatar =
-                                      child.avatar != null &&
-                                      child.avatar!.isNotEmpty;
-                                  final String initials = child.childName
-                                      .substring(
+                              child: AnimatedOpacity(
+                                opacity: (_mapHeightFraction == 0.20)
+                                    ? 1.0
+                                    : 0.0,
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeInOut,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _mapHeightFraction = 0.50;
+                                    });
+                                    if (_homeScrollController.hasClients) {
+                                      _homeScrollController.animateTo(
                                         0,
-                                        min(2, child.childName.length),
-                                      )
-                                      .toUpperCase();
-
-                                  return Padding(
-                                    padding: const EdgeInsets.only(
-                                      bottom: 12.0,
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _activeSharedChildData = {
-                                                'child_id': child.childId,
-                                                'child_name': child.childName,
-                                                'avatar':
-                                                    child.avatar ??
-                                                    'Boy 03.png',
-                                                'lat': child.latitude,
-                                                'lng': child.longitude,
-                                                'expires_at': child.expiresAt,
-                                                'battery_percentage':
-                                                    child.batteryPercentage,
-                                                'last_sync_at':
-                                                    child.lastSyncAt,
-                                              };
-                                              _viewingSharedChild = true;
-                                            });
-                                          },
-                                          child: Container(
-                                            width: 56,
-                                            height: 56,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: Colors.white,
-                                              border: Border.all(
-                                                color: isSelected
-                                                    ? const Color(0xFF0066FF)
-                                                    : const Color(0xFFCBD5E1),
-                                                width: 2.5,
-                                              ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black
-                                                      .withOpacity(0.15),
-                                                  blurRadius: 8,
-                                                  offset: const Offset(0, 4),
-                                                ),
-                                              ],
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Stack(
-                                              alignment: Alignment.center,
-                                              children: [
-                                                if (hasAvatar)
-                                                  ClipOval(
-                                                    child: Image(
-                                                      image:
-                                                          (child.avatar!
-                                                                  .startsWith(
-                                                                    'http://',
-                                                                  ) ||
-                                                              child.avatar!
-                                                                  .startsWith(
-                                                                    'https://',
-                                                                  ))
-                                                          ? NetworkImage(
-                                                              child.avatar!,
-                                                            )
-                                                          : AssetImage(
-                                                                  child.avatar!
-                                                                          .startsWith(
-                                                                            'assets/',
-                                                                          )
-                                                                      ? child
-                                                                            .avatar!
-                                                                      : 'assets/images/childavatar/${child.avatar!}',
-                                                                )
-                                                                as ImageProvider,
-                                                      width: 50,
-                                                      height: 50,
-                                                      fit: BoxFit.cover,
-                                                      errorBuilder:
-                                                          (
-                                                            context,
-                                                            error,
-                                                            stackTrace,
-                                                          ) {
-                                                            return Text(
-                                                              initials,
-                                                              style: GoogleFonts.poppins(
-                                                                fontSize:
-                                                                    14.0.sp,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                color:
-                                                                    const Color(
-                                                                      0xFF0066FF,
-                                                                    ),
-                                                              ),
-                                                            );
-                                                          },
-                                                    ),
-                                                  )
-                                                else
-                                                  Text(
-                                                    initials,
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: 14.0.sp,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: const Color(
-                                                        0xFF0066FF,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                Positioned(
-                                                  top: 0,
-                                                  right: 0,
-                                                  child: Container(
-                                                    width: 12,
-                                                    height: 12,
-                                                    decoration: BoxDecoration(
-                                                      color: const Color(
-                                                        0xFF10B981,
-                                                      ),
-                                                      shape: BoxShape.circle,
-                                                      border: Border.all(
-                                                        color: Colors.white,
-                                                        width: 1.5,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
+                                        duration: const Duration(
+                                          milliseconds: 300,
                                         ),
-                                        const SizedBox(height: 4),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.9,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(
-                                                  alpha: 0.05,
-                                                ),
-                                                blurRadius: 4,
-                                              ),
-                                            ],
-                                          ),
-                                          child: Text(
-                                            child.childName,
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 10.0.sp,
-                                              fontWeight: FontWeight.bold,
-                                              color: const Color(0xFF0C1D37),
-                                            ),
-                                          ),
+                                        curve: Curves.easeOutCubic,
+                                      );
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0066FF),
+                                      borderRadius: BorderRadius.circular(24),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.15),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
                                         ),
                                       ],
                                     ),
-                                  );
-                                }).toList(),
-                              ),
-                            );
-                          }(),
-
-                          // Layer 1.6: Overlay banner if viewing shared child
-                          if (_viewingSharedChild &&
-                              _activeSharedChildData != null)
-                            Positioned(
-                              top: 16,
-                              left: 16,
-                              right: 16,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(
-                                          Icons.share_location,
-                                          color: Color(0xFF0066FF),
-                                          size: 20,
+                                          Icons.map_rounded,
+                                          color: Colors.white,
+                                          size: 18,
                                         ),
-                                        const SizedBox(width: 10),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Viewing: ${_activeSharedChildData!['child_name']} (Shared)',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 13.0.sp,
-                                                fontWeight: FontWeight.bold,
-                                                color: const Color(0xFF0C1D37),
-                                              ),
-                                            ),
-                                            Text(
-                                              _getRemainingTimeText(
-                                                _activeSharedChildData!['expires_at'],
-                                              ),
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 11.0.sp,
-                                                color: const Color(0xFF64748B),
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Map',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 14.0.sp,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                       ],
                                     ),
-                                    TextButton(
-                                      style: TextButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFFF1F5F9,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 8,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _viewingSharedChild = false;
-                                        });
-                                      },
-                                      child: Text(
-                                        'Switch to Home',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 12.0.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF475569),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
 
-                          // Layer FAB: floating "Map" FAB visible only when collapsed (20% height)
-                          AnimatedPositioned(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOutCubic,
-                            bottom: (_mapHeightFraction == 0.20) ? 96 : -60,
-                            right: 16,
-                            child: AnimatedOpacity(
-                              opacity: (_mapHeightFraction == 0.20) ? 1.0 : 0.0,
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeInOut,
+                            // Layer FAB: Locate Me button
+                            Positioned(
+                              top: mapHeaderExtent - 60,
+                              right: 16,
                               child: GestureDetector(
                                 onTap: () {
-                                  setState(() {
-                                    _mapHeightFraction = 0.50;
-                                  });
-                                  if (_homeScrollController.hasClients) {
-                                    _homeScrollController.animateTo(
-                                      0,
-                                      duration: const Duration(
-                                        milliseconds: 300,
-                                      ),
-                                      curve: Curves.easeOutCubic,
+                                  final target =
+                                      _viewingSharedChild &&
+                                          _activeSharedChildData != null
+                                      ? LatLng(
+                                          _activeSharedChildData!['lat'],
+                                          _activeSharedChildData!['lng'],
+                                        )
+                                      : (state.currentLocation != null
+                                            ? LatLng(
+                                                state.currentLocation!.lat,
+                                                state.currentLocation!.lng,
+                                              )
+                                            : null);
+                                  if (target != null) {
+                                    _mapBackgroundKey.currentState?._animateTo(
+                                      target,
+                                      zoom: 16.5,
                                     );
                                   }
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
-                                  ),
+                                  width: 44,
+                                  height: 44,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF0066FF),
-                                    borderRadius: BorderRadius.circular(24),
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black.withOpacity(0.15),
@@ -3079,299 +3351,223 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                       ),
                                     ],
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.map_rounded,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Map',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14.0.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
+                                  child: const Icon(
+                                    Icons.my_location_rounded,
+                                    color: Color(0xFF0C1D37),
+                                    size: 22,
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-
-                          // Layer FAB: Locate Me button
-                          Positioned(
-                            top: mapHeaderExtent - 60,
-                            right: 16,
-                            child: GestureDetector(
-                              onTap: () {
-                                final target =
-                                    _viewingSharedChild &&
-                                        _activeSharedChildData != null
-                                    ? LatLng(
-                                        _activeSharedChildData!['lat'],
-                                        _activeSharedChildData!['lng'],
-                                      )
-                                    : (state.currentLocation != null
-                                          ? LatLng(
-                                              state.currentLocation!.lat,
-                                              state.currentLocation!.lng,
-                                            )
-                                          : null);
-                                if (target != null) {
-                                  _mapBackgroundKey.currentState?._animateTo(
-                                    target,
-                                    zoom: 15.0,
-                                  );
-                                }
-                              },
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.15),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.my_location_rounded,
-                                  color: Color(0xFF0C1D37),
-                                  size: 22,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Draggable sheet: slivers inside scroll once the sheet is
-                    // fully expanded; before that, dragging lifts the sheet
-                    // over the map (which fades to white).
-                    Positioned.fill(
-                      child: DraggableScrollableSheet(
-                        initialChildSize: restSheet,
-                        minChildSize: minSheet,
-                        maxChildSize: maxSheet,
-                        snap: true,
-                        snapSizes: [restSheet],
-                        builder: (context, scrollController) => CustomScrollView(
-                          controller: scrollController,
-                          physics: const ClampingScrollPhysics(),
-                          slivers: [
-                            // Sliver 1: location card — top of the sheet, floats over the map.
-                            SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  0,
-                                  16,
-                                  20,
-                                ),
-                                child: _buildLocationCardOnly(
-                                  context,
-                                  _viewingSharedChild &&
-                                          _activeSharedChildData != null
-                                      ? _activeSharedChildData!['child_name']
-                                      : childName,
-                                  _viewingSharedChild &&
-                                          _activeSharedChildData != null
-                                      ? 'Shared Location'
-                                      : placeName,
-                                  state,
-                                ),
-                              ),
-                            ),
-
-                            // Sliver 2: Scrollable content cards below the map
-                            if (!_viewingSharedChild)
-                              DecoratedSliver(
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFF8FAFC),
-                                ),
-                                sliver: SliverPadding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  sliver: SliverList(
-                                    delegate: SliverChildListDelegate([
-                                      // Live Trip Status Card — shown only when actively
-                                      // travelling. Hidden per request (kept here, not
-                                      // deleted, so it's a one-line flip back to `true`).
-                                      if (false)
-                                        _LiveTripCard(
-                                          activeTrip: state.activeTrip,
-                                          isDeviceOffline: _isDeviceOffline(
-                                            state,
-                                          ),
-                                        ),
-
-                                      // 2. Scroll & Geo Guard Feature Cards — greyed out and
-                                      // disabled until the child's device is actually paired
-                                      // (see isChildNotPaired above).
-                                      IgnorePointer(
-                                        ignoring: isChildNotPaired,
-                                        child: Opacity(
-                                          opacity: isChildNotPaired
-                                              ? 0.45
-                                              : 1.0,
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                child: _buildFeatureCard(
-                                                  title: 'Scroll',
-                                                  subtitle:
-                                                      'Social Media & Apps',
-                                                  statusText:
-                                                      state
-                                                          .features
-                                                          ?.scrollStatusText ??
-                                                      '0 Apps Locked',
-                                                  icon:
-                                                      Icons.smartphone_rounded,
-                                                  cardBg: const Color(
-                                                    0xFFEFF6FF,
-                                                  ),
-                                                  borderCol: const Color(
-                                                    0xFFDBEAFE,
-                                                  ),
-                                                  iconCol: const Color(
-                                                    0xFF3B82F6,
-                                                  ),
-                                                  statusBg: const Color(
-                                                    0xFFDBEAFE,
-                                                  ),
-                                                  statusTextCol: const Color(
-                                                    0xFF1D4ED8,
-                                                  ),
-                                                  onTap: () {
-                                                    Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder: (_) =>
-                                                            const SocialAppsView(),
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Expanded(
-                                                child: _buildFeatureCard(
-                                                  title: 'Geo Guard',
-                                                  subtitle:
-                                                      'Places & Geofencing',
-                                                  statusText:
-                                                      state
-                                                          .features
-                                                          ?.geoGuardStatusText ??
-                                                      '0 Fencing',
-                                                  icon: Icons
-                                                      .location_on_outlined,
-                                                  cardBg: const Color(
-                                                    0xFFFFF7ED,
-                                                  ),
-                                                  borderCol: const Color(
-                                                    0xFFFFEDD5,
-                                                  ),
-                                                  iconCol: const Color(
-                                                    0xFFF97316,
-                                                  ),
-                                                  statusBg: const Color(
-                                                    0xFFFFEDD5,
-                                                  ),
-                                                  statusTextCol: const Color(
-                                                    0xFFC2410C,
-                                                  ),
-                                                  onTap: () {
-                                                    final childId =
-                                                        _sharedPrefsService
-                                                            .getString(
-                                                              'child_id',
-                                                            );
-                                                    final parentId =
-                                                        _sharedPrefsService
-                                                            .getString(
-                                                              'parent_id',
-                                                            );
-                                                    Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder: (_) =>
-                                                            GeoFencingView(
-                                                              childId: childId,
-                                                              parentId:
-                                                                  parentId,
-                                                            ),
-                                                      ),
-                                                    ).then((_) {
-                                                      injector<HomepageBloc>().add(
-                                                        const GetHomepageData(),
-                                                      );
-                                                      _loadSavedPlaces();
-                                                    });
-                                                  },
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-
-                                      // 3. Today's Route Map Card — same disabled treatment.
-                                      IgnorePointer(
-                                        ignoring: isChildNotPaired,
-                                        child: Opacity(
-                                          opacity: isChildNotPaired
-                                              ? 0.45
-                                              : 1.0,
-                                          child: _buildRouteMapCard(context),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-
-                                      // 4. Upgrade to Pro Banner
-                                      _buildUpgradeProBanner(),
-                                      const SizedBox(height: 24),
-
-                                      // 5. Screentime Today Section — same disabled treatment.
-                                      IgnorePointer(
-                                        ignoring: isChildNotPaired,
-                                        child: Opacity(
-                                          opacity: isChildNotPaired
-                                              ? 0.45
-                                              : 1.0,
-                                          child: _buildScreentimeSection(
-                                            context,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 24),
-
-                                      // 6. Shortcuts Section
-                                      _buildShortcutsSection(context),
-                                      const SizedBox(height: 24),
-
-                                      // 7. Help Centre Section
-                                      _buildHelpCentreSection(context),
-                                    ]),
-                                  ),
-                                ),
-                              ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
+
+                      // Draggable sheet: slivers inside scroll once the sheet is
+                      // fully expanded; before that, dragging lifts the sheet
+                      // over the map (which fades to white).
+                      Positioned.fill(
+                        child: DraggableScrollableSheet(
+                          controller: _sheetController,
+                          initialChildSize: restSheet,
+                          minChildSize: minSheet,
+                          maxChildSize: _capSheetAtRest ? restSheet : maxSheet,
+                          // Snapping happens in the ScrollEnd handler above so one
+                          // drag moves exactly one step.
+                          snap: false,
+                          builder: (context, scrollController) => CustomScrollView(
+                            controller: scrollController,
+                            physics: _SheetCapPhysics(() => _capSheetAtRest),
+                            slivers: [
+                              // Sliver 1: location card — top of the sheet, floats over the map.
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    12,
+                                    0,
+                                    12,
+                                    20,
+                                  ),
+                                  child: _buildLocationCardOnly(
+                                    context,
+                                    _viewingSharedChild &&
+                                            _activeSharedChildData != null
+                                        ? _activeSharedChildData!['child_name']
+                                        : childName,
+                                    _viewingSharedChild &&
+                                            _activeSharedChildData != null
+                                        ? 'Shared Location'
+                                        : placeName,
+                                    state,
+                                  ),
+                                ),
+                              ),
+
+                              // Sliver 2: Scrollable content cards below the map
+                              if (!_viewingSharedChild)
+                                DecoratedSliver(
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFF7F8FA),
+                                  ),
+                                  sliver: SliverPadding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      14,
+                                      7,
+                                      14,
+                                      16,
+                                    ),
+                                    sliver: SliverList(
+                                      delegate: SliverChildListDelegate([
+                                        // Live Trip Status Card — shown only when actively
+                                        // travelling. Hidden per request (kept here, not
+                                        // deleted, so it's a one-line flip back to `true`).
+                                        if (false)
+                                          _LiveTripCard(
+                                            activeTrip: state.activeTrip,
+                                            isDeviceOffline: _isDeviceOffline(
+                                              state,
+                                            ),
+                                          ),
+
+                                        // 2. Scroll & Geo Guard Feature Cards — greyed out and
+                                        // disabled until the child's device is actually paired
+                                        // (see isChildNotPaired above).
+                                        IgnorePointer(
+                                          ignoring: isChildNotPaired,
+                                          child: Opacity(
+                                            opacity: isChildNotPaired
+                                                ? 0.45
+                                                : 1.0,
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: _buildFeatureCard(
+                                                    title: 'Scroll',
+                                                    subtitle:
+                                                        'Social Media & Apps',
+                                                    statusText:
+                                                        state
+                                                            .features
+                                                            ?.scrollStatusText ??
+                                                        '0 Apps Locked',
+                                                    iconAsset:
+                                                        'assets/home/home_scroll.svg',
+                                                    cardBg: const Color(
+                                                      0xFFEBF3FF,
+                                                    ),
+                                                    statusTextCol: const Color(
+                                                      0xFF3084F7,
+                                                    ),
+                                                    onTap: () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (_) =>
+                                                              const SocialAppsView(),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 16),
+                                                Expanded(
+                                                  child: _buildFeatureCard(
+                                                    title: 'Geo Guard',
+                                                    subtitle:
+                                                        'Places & Geofencing',
+                                                    statusText:
+                                                        state
+                                                            .features
+                                                            ?.geoGuardStatusText ??
+                                                        '0 Fencing',
+                                                    iconAsset:
+                                                        'assets/home/home_geoguard.svg',
+                                                    cardBg: const Color(
+                                                      0xFFFFF5E5,
+                                                    ),
+                                                    statusTextCol: const Color(
+                                                      0xFFF78635,
+                                                    ),
+                                                    onTap: () {
+                                                      final childId =
+                                                          _sharedPrefsService
+                                                              .getString(
+                                                                'child_id',
+                                                              );
+                                                      final parentId =
+                                                          _sharedPrefsService
+                                                              .getString(
+                                                                'parent_id',
+                                                              );
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (_) =>
+                                                              GeoFencingView(
+                                                                childId:
+                                                                    childId,
+                                                                parentId:
+                                                                    parentId,
+                                                              ),
+                                                        ),
+                                                      ).then((_) {
+                                                        injector<HomepageBloc>()
+                                                            .add(
+                                                              const GetHomepageData(),
+                                                            );
+                                                        _loadSavedPlaces();
+                                                      });
+                                                    },
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+
+                                        // 3. Today's Route Map Card — same disabled treatment.
+                                        IgnorePointer(
+                                          ignoring: isChildNotPaired,
+                                          child: Opacity(
+                                            opacity: isChildNotPaired
+                                                ? 0.45
+                                                : 1.0,
+                                            child: _buildRouteMapCard(context),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 15),
+
+                                        // 5. Screentime Today Section — same disabled treatment.
+                                        IgnorePointer(
+                                          ignoring: isChildNotPaired,
+                                          child: Opacity(
+                                            opacity: isChildNotPaired
+                                                ? 0.45
+                                                : 1.0,
+                                            child: _buildScreentimeSection(
+                                              context,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 24),
+
+                                        // 6. Shortcuts Section
+                                        _buildShortcutsSection(context),
+                                        const SizedBox(height: 12),
+
+                                        // 7. Help Centre Section
+                                        _buildHelpCentreSection(context),
+                                      ]),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
@@ -3641,246 +3837,272 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 28),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0C1D37).withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Kid's name — on the same line as the action icons, matching
-              // the Figma card header (name left, icons right). "is at
-              // <place>" now renders as its own line underneath instead of
-              // being joined into this same text block.
-              Expanded(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        childName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 18.0.sp,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0C1D37),
-                        ),
-                      ),
-                    ),
-                    // Data-source badge — tells the parent this location
-                    // came from the linked physical GPS tracker, not the
-                    // child's phone. Only ever shown when a tracker is
-                    // actually linked (device_imei set); confirmed real
-                    // case this was ambiguous to a parent otherwise.
-                    if (!_viewingSharedChild &&
-                        state.deviceInfo?.deviceImei != null) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFBFDBFE)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.gps_fixed_rounded,
-                              size: 10,
-                              color: Color(0xFF2563EB),
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              'GPS Tracker',
-                              style: GoogleFonts.poppins(
-                                fontSize: 9.0.sp,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF2563EB),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1F5F9),
-                  shape: BoxShape.circle,
-                ),
-                child: _isRefreshing
-                    ? Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox(
-                            width: 32,
-                            height: 32,
-                            child: CircularProgressIndicator(
-                              value: _refreshProgress / 100,
-                              strokeWidth: 2,
-                              color: const Color(0xFF10B981),
-                              backgroundColor: const Color(0xFFE2E8F0),
+          SizedBox(
+            height: 28,
+            child: OverflowBox(
+              maxHeight: 32,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Kid's name — on the same line as the action icons, matching
+                  // the Figma card header (name left, icons right). "is at
+                  // <place>" now renders as its own line underneath instead of
+                  // being joined into this same text block.
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            childName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 24.0.sp,
+                              fontWeight: FontWeight.w700,
+                              height: 1.0,
+                              color: const Color(0xFF707784),
                             ),
                           ),
-                          Text(
-                            '$_refreshProgress',
-                            style: GoogleFonts.poppins(
-                              fontSize: 10.0.sp,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF0C1D37),
+                        ),
+                        // Data-source badge — tells the parent this location
+                        // came from the linked physical GPS tracker, not the
+                        // child's phone. Only ever shown when a tracker is
+                        // actually linked (device_imei set); confirmed real
+                        // case this was ambiguous to a parent otherwise.
+                        if (!_viewingSharedChild &&
+                            state.deviceInfo?.deviceImei != null) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFFBFDBFE),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.gps_fixed_rounded,
+                                  size: 10,
+                                  color: Color(0xFF2563EB),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  'GPS Tracker',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 9.0.sp,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF2563EB),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      )
-                    : IconButton(
-                        padding: EdgeInsets.zero,
-                        icon: const Icon(
-                          Icons.refresh,
-                          size: 16,
-                          color: Color(0xFF0C1D37),
-                        ),
-                        onPressed: _startRefreshProgress,
-                      ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1F5F9),
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: const Icon(
-                    Icons.notifications_none_rounded,
-                    size: 16,
-                    color: Color(0xFF0C1D37),
+                      ],
+                    ),
                   ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const NotificationPage(),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1F5F9),
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: const Icon(
-                    Icons.share_outlined,
-                    size: 16,
-                    color: Color(0xFF0C1D37),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFDDE1EA),
+                      shape: BoxShape.circle,
+                    ),
+                    child: _isRefreshing
+                        ? Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: CircularProgressIndicator(
+                                  value: _refreshProgress / 100,
+                                  strokeWidth: 2,
+                                  color: const Color(0xFF10B981),
+                                  backgroundColor: const Color(0xFFE2E8F0),
+                                ),
+                              ),
+                              Text(
+                                '$_refreshProgress',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10.0.sp,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF0C1D37),
+                                ),
+                              ),
+                            ],
+                          )
+                        : IconButton(
+                            padding: EdgeInsets.zero,
+                            icon: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: Stack(
+                                children: [
+                                  Positioned(
+                                    left: 2.25,
+                                    top: 0.75,
+                                    child: SvgPicture.asset(
+                                      'assets/home/home_action_refresh.svg',
+                                      width: 13.5,
+                                      height: 15.75,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            onPressed: _startRefreshProgress,
+                          ),
                   ),
-                  onPressed: () async {
-                    final lat =
-                        _viewingSharedChild && _activeSharedChildData != null
-                        ? _activeSharedChildData!['lat'] as double?
-                        : state.currentLocation?.lat;
-                    final lng =
-                        _viewingSharedChild && _activeSharedChildData != null
-                        ? _activeSharedChildData!['lng'] as double?
-                        : state.currentLocation?.lng;
-                    // Both store links so whoever receives this (parent or
-                    // not already on NaviQ) can download it regardless of
-                    // which platform they're on — a share text can't detect
-                    // the recipient's device, so both are included labeled.
-                    const appDownloadLines =
-                        'Get NaviQ:\niOS: https://apps.apple.com/app/id6761759873\n'
-                        'Android: https://play.google.com/store/apps/details?id=com.truenyx.naviqandroid';
-                    // placeName (outer scope) is the raw backend/match
-                    // value, which can be one of the "Unknown" sentinels —
-                    // the card on screen never shows that bare word because
-                    // _DynamicLocationText resolves it client-side via
-                    // reverse geocoding before displaying it (same fix as
-                    // the "Unknown Place"/"Unknown Address" leaks fixed
-                    // earlier). The share text was bypassing that resolved
-                    // value entirely, confirmed real case: card showed a
-                    // real street address while Share's own preview showed
-                    // literally "device is at Unknown". Resolve the same
-                    // way here before sharing.
-                    String shareLocationLabel = placeName;
-                    const unresolvedSentinels = {
-                      'Unknown',
-                      'Unknown Location',
-                      'Shared Location',
-                      'Unknown Place',
-                    };
-                    if (unresolvedSentinels.contains(placeName) &&
-                        lat != null &&
-                        lng != null) {
-                      try {
-                        final placemarks = await placemarkFromCoordinates(
-                          lat,
-                          lng,
+                  const SizedBox(width: 12),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFDDE1EA),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: SvgPicture.asset(
+                        'assets/home/home_action_bell.svg',
+                        width: 18,
+                        height: 18,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const NotificationPage(),
+                          ),
                         );
-                        if (placemarks.isNotEmpty) {
-                          final p = placemarks.first;
-                          final resolved = [
-                            p.street,
-                            p.subLocality,
-                            p.locality,
-                            p.administrativeArea,
-                          ].where((e) => e != null && e.isNotEmpty).join(', ');
-                          if (resolved.isNotEmpty)
-                            shareLocationLabel = resolved;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFDDE1EA),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: SvgPicture.asset(
+                        'assets/home/home_action_share.svg',
+                        width: 16,
+                        height: 16,
+                      ),
+                      onPressed: () async {
+                        final lat =
+                            _viewingSharedChild &&
+                                _activeSharedChildData != null
+                            ? _activeSharedChildData!['lat'] as double?
+                            : state.currentLocation?.lat;
+                        final lng =
+                            _viewingSharedChild &&
+                                _activeSharedChildData != null
+                            ? _activeSharedChildData!['lng'] as double?
+                            : state.currentLocation?.lng;
+                        // Both store links so whoever receives this (parent or
+                        // not already on NaviQ) can download it regardless of
+                        // which platform they're on — a share text can't detect
+                        // the recipient's device, so both are included labeled.
+                        const appDownloadLines =
+                            'Get NaviQ:\niOS: https://apps.apple.com/app/id6761759873\n'
+                            'Android: https://play.google.com/store/apps/details?id=com.truenyx.naviqandroid';
+                        // placeName (outer scope) is the raw backend/match
+                        // value, which can be one of the "Unknown" sentinels —
+                        // the card on screen never shows that bare word because
+                        // _DynamicLocationText resolves it client-side via
+                        // reverse geocoding before displaying it (same fix as
+                        // the "Unknown Place"/"Unknown Address" leaks fixed
+                        // earlier). The share text was bypassing that resolved
+                        // value entirely, confirmed real case: card showed a
+                        // real street address while Share's own preview showed
+                        // literally "device is at Unknown". Resolve the same
+                        // way here before sharing.
+                        String shareLocationLabel = placeName;
+                        const unresolvedSentinels = {
+                          'Unknown',
+                          'Unknown Location',
+                          'Shared Location',
+                          'Unknown Place',
+                        };
+                        if (unresolvedSentinels.contains(placeName) &&
+                            lat != null &&
+                            lng != null) {
+                          try {
+                            final placemarks = await placemarkFromCoordinates(
+                              lat,
+                              lng,
+                            );
+                            if (placemarks.isNotEmpty) {
+                              final p = placemarks.first;
+                              final resolved =
+                                  [
+                                        p.street,
+                                        p.subLocality,
+                                        p.locality,
+                                        p.administrativeArea,
+                                      ]
+                                      .where((e) => e != null && e.isNotEmpty)
+                                      .join(', ');
+                              if (resolved.isNotEmpty)
+                                shareLocationLabel = resolved;
+                            }
+                          } catch (_) {
+                            // Keep the raw placeName fallback — a failed lookup
+                            // shouldn't block sharing entirely.
+                          }
                         }
-                      } catch (_) {
-                        // Keep the raw placeName fallback — a failed lookup
-                        // shouldn't block sharing entirely.
-                      }
-                    }
-                    if (lat != null && lng != null) {
-                      // Google's universal maps link — opens the native
-                      // Google Maps app when installed, otherwise falls
-                      // back to Google Maps in the browser. Works the same
-                      // on iOS and Android, unlike a bare geo: URI.
-                      final mapsLink =
-                          'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
-                      Share.share(
-                        '$childName is at $shareLocationLabel\n$mapsLink\n\n$appDownloadLines',
-                      );
-                    } else {
-                      Share.share(
-                        '$childName is at $shareLocationLabel\n\n$appDownloadLines',
-                      );
-                    }
-                  },
-                ),
+                        if (lat != null && lng != null) {
+                          // Google's universal maps link — opens the native
+                          // Google Maps app when installed, otherwise falls
+                          // back to Google Maps in the browser. Works the same
+                          // on iOS and Android, unlike a bare geo: URI.
+                          final mapsLink =
+                              'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+                          Share.share(
+                            '$childName is at $shareLocationLabel\n$mapsLink\n\n$appDownloadLines',
+                          );
+                        } else {
+                          Share.share(
+                            '$childName is at $shareLocationLabel\n\n$appDownloadLines',
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 8),
           _DynamicLocationText(
             key: ValueKey(childName),
             childName: childName,
@@ -3895,6 +4117,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     state.currentLocation?.lng ?? 0.0,
                   ),
           ),
+          /* "Location updated" line hidden for now (kept for later):
           // "Last updated" — moved below the name+address block per request,
           // instead of sitting above it next to the icon row. "Last moved"
           // used to sit alongside it but was dropped — the status pill's
@@ -3938,6 +4161,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               },
             ),
           ],
+          */
           // Physical tracker alarm banner (GEOFENCE/MAIN_POWER_OFF/etc —
           // see naviQ-server tcp/jt808.js's ALARM_BIT_NAMES). Only ever
           // populated for a JT808 tracker, never a phone. Capped at 24h old
@@ -3980,83 +4204,113 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             ),
           ],
-          const SizedBox(height: 16),
+          // Chips sit 19px under the "is at" line while the "Location
+          // updated" line above is hidden. (If that line is shown again, the
+          // Figma gap is 40 including the line, and kLocationCardOverlap /
+          // kRestSheetContent go back up by 21.)
+          const SizedBox(height: 19),
           // Horizontally scrollable instead of a fixed spaceAround Row —
           // a 4th pill (altitude, tracker-only) plus a 5th (alarm context)
           // down the line no longer has to fit a fixed card width; it was
           // overflowing by 12px on a real tracker-linked child the moment
           // the altitude pill had something to show (confirmed real case).
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildLocationStatusPill(
-                  isLocationOff
-                      ? Icons.location_off_rounded
-                      : (showUnreachableAlert
-                            ? Icons.wifi_off_rounded
-                            : Icons.access_time_rounded),
-                  isLocationOff
-                      ? 'Location off'
-                      : (showUnreachableAlert
-                            ? _unreachableDurationPill(
-                                trackingSnapshot
-                                    ?.latestLocation
-                                    ?.deviceTimestamp,
-                              )
-                            : (_viewingSharedChild &&
-                                      _activeSharedChildData != null
-                                  ? _formatSinceTime(
-                                      _activeSharedChildData!['last_sync_at']
-                                          ?.toString(),
-                                    )
-                                  : _formatDwellTime(
-                                      trackingSnapshot
-                                          ?.latestLocation
-                                          ?.stationarySince,
-                                    ))),
-                  backgroundColor: isLocationOff || showUnreachableAlert
-                      ? const Color(0xFFFEE2E2)
-                      : const Color(0xFFEEF0F5),
-                  contentColor: isLocationOff || showUnreachableAlert
-                      ? const Color(0xFFDC2626)
-                      : const Color(0xFF323C56),
-                ),
-                const SizedBox(width: 8),
-                _buildLocationStatusPill(
-                  _viewingSharedChild && _activeSharedChildData != null
-                      ? Icons.battery_std_rounded
-                      : (state.deviceInfo?.isCharging == true
-                            ? Icons.battery_charging_full_rounded
-                            : Icons.battery_std_rounded),
-                  _viewingSharedChild && _activeSharedChildData != null
-                      ? '${_activeSharedChildData!['battery_percentage'] ?? 0}%'
-                      : '${state.deviceInfo?.batteryPercentage ?? 0}%',
-                ),
-                if (!_viewingSharedChild) ...[
-                  const SizedBox(width: 8),
-                  _buildLocationStatusPill(
-                    state.deviceInfo?.soundProfile.toLowerCase() == 'silent'
-                        ? Icons.volume_off_rounded
-                        : (state.deviceInfo?.soundProfile.toLowerCase() ==
-                                  'vibrate'
-                              ? Icons.vibration_rounded
-                              : Icons.volume_up_rounded),
-                    state.deviceInfo?.soundProfile ?? 'Vibrate',
+          SizedBox(
+            height: 32,
+            child: LayoutBuilder(
+              builder: (context, box) => OverflowBox(
+                minWidth: box.maxWidth + 8,
+                maxWidth: box.maxWidth + 8,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: box.maxWidth + 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildLocationStatusPill(
+                          isLocationOff
+                              ? Icons.location_off_rounded
+                              : (showUnreachableAlert
+                                    ? Icons.wifi_off_rounded
+                                    : Icons.access_time_rounded),
+                          isLocationOff
+                              ? 'Location off'
+                              : (showUnreachableAlert
+                                    ? _unreachableDurationPill(
+                                        trackingSnapshot
+                                            ?.latestLocation
+                                            ?.deviceTimestamp,
+                                      )
+                                    : (_viewingSharedChild &&
+                                              _activeSharedChildData != null
+                                          ? _formatSinceTime(
+                                              _activeSharedChildData!['last_sync_at']
+                                                  ?.toString(),
+                                            )
+                                          : _formatDwellTime(
+                                              trackingSnapshot
+                                                  ?.latestLocation
+                                                  ?.stationarySince,
+                                            ))),
+                          backgroundColor: isLocationOff || showUnreachableAlert
+                              ? const Color(0xFFFEE2E2)
+                              : const Color(0xFFEEF0F4),
+                          contentColor: isLocationOff || showUnreachableAlert
+                              ? const Color(0xFFDC2626)
+                              : const Color(0xFF4A5267),
+                          svgAsset: isLocationOff || showUnreachableAlert
+                              ? null
+                              : 'assets/home/home_chip_clock.svg',
+                        ),
+                        _buildLocationStatusPill(
+                          _viewingSharedChild && _activeSharedChildData != null
+                              ? Icons.battery_std_rounded
+                              : (state.deviceInfo?.isCharging == true
+                                    ? Icons.battery_charging_full_rounded
+                                    : Icons.battery_std_rounded),
+                          _viewingSharedChild && _activeSharedChildData != null
+                              ? '${_activeSharedChildData!['battery_percentage'] ?? 0}%'
+                              : '${state.deviceInfo?.batteryPercentage ?? 0}%',
+                          svgAsset:
+                              (_viewingSharedChild &&
+                                      _activeSharedChildData != null) ||
+                                  state.deviceInfo?.isCharging != true
+                              ? 'assets/home/home_chip_battery.svg'
+                              : null,
+                        ),
+                        if (!_viewingSharedChild) ...[
+                          _buildLocationStatusPill(
+                            state.deviceInfo?.soundProfile.toLowerCase() ==
+                                    'silent'
+                                ? Icons.volume_off_rounded
+                                : (state.deviceInfo?.soundProfile
+                                              .toLowerCase() ==
+                                          'vibrate'
+                                      ? Icons.vibration_rounded
+                                      : Icons.volume_up_rounded),
+                            state.deviceInfo?.soundProfile ?? 'Vibrate',
+                            svgAsset:
+                                state.deviceInfo?.soundProfile.toLowerCase() ==
+                                    'silent'
+                                ? null
+                                : 'assets/home/home_chip_sound.svg',
+                          ),
+                        ],
+                        // Altitude — only present for a physical JT808 tracker
+                        // (naviQ-server tcp/server.js), never a phone, so this pill
+                        // simply doesn't render for a phone-only child.
+                        if (!_viewingSharedChild &&
+                            state.deviceInfo?.altitude != null) ...[
+                          _buildLocationStatusPill(
+                            Icons.terrain_rounded,
+                            '${state.deviceInfo!.altitude!.round()}m',
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ],
-                // Altitude — only present for a physical JT808 tracker
-                // (naviQ-server tcp/server.js), never a phone, so this pill
-                // simply doesn't render for a phone-only child.
-                if (!_viewingSharedChild &&
-                    state.deviceInfo?.altitude != null) ...[
-                  const SizedBox(width: 8),
-                  _buildLocationStatusPill(
-                    Icons.terrain_rounded,
-                    '${state.deviceInfo!.altitude!.round()}m',
-                  ),
-                ],
-              ],
+                ),
+              ),
             ),
           ),
         ],
@@ -4069,26 +4323,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     String text, {
     Color? backgroundColor,
     Color? contentColor,
+    String? svgAsset,
   }) {
-    final bg = backgroundColor ?? const Color(0xFFF1F5F9);
-    final content = contentColor ?? const Color(0xFF64748B);
+    final bg = backgroundColor ?? const Color(0xFFEEF0F4);
+    final content = contentColor ?? const Color(0xFF4A5267);
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      height: 32,
+      constraints: const BoxConstraints(minWidth: 100),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 14, color: content),
-          const SizedBox(width: 4),
+          svgAsset != null
+              ? SvgPicture.asset(svgAsset, width: 14, height: 14)
+              : Icon(icon, size: 14, color: content),
+          const SizedBox(width: 10),
           Text(
             text,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.poppins(
               fontSize: 12.0.sp,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
               color: content,
             ),
           ),
@@ -4101,97 +4362,96 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     required String title,
     required String subtitle,
     required String statusText,
-    required IconData icon,
+    required String iconAsset,
     required Color cardBg,
-    required Color borderCol,
-    required Color iconCol,
-    required Color statusBg,
     required Color statusTextCol,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: borderCol, width: 1.5),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFEEF0F4)),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0C1D37).withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 2,
+                spreadRadius: -1,
+                offset: const Offset(0, 1),
               ),
             ],
           ),
           child: Stack(
             children: [
-              // Circular background accent decoration matching Figma/Mockup
+              // Corner accent: 80x80 square, bottom-left fully rounded,
+              // flush with the card's top-right corner.
               Positioned(
-                right: -25,
-                top: -25,
+                right: 0,
+                top: 0,
                 child: Container(
-                  width: 96,
-                  height: 96,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
                     color: cardBg,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(80),
+                    ),
                   ),
                 ),
               ),
 
               // Main content column
               Padding(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: cardBg,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Icon(icon, color: iconCol, size: 22),
+                      alignment: Alignment.center,
+                      child: SvgPicture.asset(iconAsset, width: 24, height: 24),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 9),
                     Text(
                       title,
                       style: GoogleFonts.poppins(
-                        fontSize: 18.0.sp,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0C1D37),
+                        fontSize: 16.0.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF0F1320),
                       ),
                     ),
-                    const SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: GoogleFonts.poppins(
                         fontSize: 12.0.sp,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF64748B),
+                        fontWeight: FontWeight.w400,
+                        height: 20 / 12,
+                        letterSpacing: 0.2,
+                        color: const Color(0xFF2D3035),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusBg,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        statusText,
-                        style: GoogleFonts.poppins(
-                          fontSize: 11.0.sp,
-                          fontWeight: FontWeight.w800,
-                          color: statusTextCol,
-                        ),
+                    const SizedBox(height: 4),
+                    Text(
+                      statusText,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.0.sp,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
+                        color: statusTextCol,
                       ),
                     ),
                   ],
@@ -4216,73 +4476,107 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ? '${routeData.newLocationsCount.toString().padLeft(2, '0')} new location${routeData.newLocationsCount == 1 ? '' : 's'}'
             : '00 new locations';
 
+        final subStyle = GoogleFonts.poppins(
+          fontSize: 12.0.sp,
+          fontWeight: FontWeight.w400,
+          height: 20 / 12,
+          letterSpacing: 0.2,
+          color: const Color(0xFF2D3035),
+        );
+
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFDDE1EA)),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0C1D37).withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 3,
+                offset: const Offset(0, 1),
               ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Today's Route Map",
-                        style: GoogleFonts.poppins(
-                          fontSize: 15.0.sp,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0C1D37),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$distance  •  $newLoc',
-                        style: GoogleFonts.poppins(
-                          fontSize: 11.0.sp,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(
-                        context,
-                      ).pushNamed(RouteNames.childLocationDetail);
-                    },
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF0066FF),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        color: Colors.white,
-                        size: 12,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Today's Route Map",
+                            style: GoogleFonts.poppins(
+                              fontSize: 16.0.sp,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF16181A),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(distance, style: subStyle),
+                              const SizedBox(width: 6),
+                              SvgPicture.asset(
+                                'assets/home/home_route_separator.svg',
+                                width: 2,
+                                height: 17,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  newLoc,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: subStyle,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(
+                          context,
+                        ).pushNamed(RouteNames.childLocationDetail);
+                      },
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0069F9),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF0070F0,
+                              ).withValues(alpha: 0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: SvgPicture.asset(
+                          'assets/home/home_route_go.svg',
+                          width: 18,
+                          height: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 20),
-              _buildTimelineRow(routeData?.timeline),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                child: _buildTimelineRow(routeData?.timeline),
+              ),
             ],
           ),
         );
@@ -4328,21 +4622,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     children.add(
       Padding(
         padding: const EdgeInsets.only(
-          top: 9.5,
-        ), // (22 circle height / 2) - (3 line height / 2) = 11 - 1.5 = 9.5
+          top: 10,
+        ), // (22 circle height / 2) - (2 line height / 2) = 11 - 1 = 10
         child: SizedBox(
           width: 12,
-          height: 3,
+          height: 2,
           child: OverflowBox(
             alignment: Alignment.centerLeft,
             maxWidth: 12 + _kNodeDeadSpace,
             minWidth: 0,
             child: Container(
               width: 12 + _kNodeDeadSpace,
-              height: 3,
+              height: 2,
               color: firstActive
-                  ? const Color(0xFF0066FF)
-                  : const Color(0xFFE2E8F0),
+                  ? const Color(0xFF0069F9)
+                  : const Color(0xFFDDE1EA),
             ),
           ),
         ),
@@ -4357,6 +4651,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       children.add(
         _buildTimelineNode(
           label: node.label,
+          lat: node.lat,
+          lng: node.lng,
           time: node.time,
           isActive: node.isActive,
           isHighlighted: isHighlighted,
@@ -4375,20 +4671,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final bool lastActive = listNodes.isNotEmpty && listNodes.last.isActive;
     children.add(
       Padding(
-        padding: const EdgeInsets.only(top: 9.5),
+        padding: const EdgeInsets.only(top: 10),
         child: SizedBox(
           width: 12,
-          height: 3,
+          height: 2,
           child: OverflowBox(
             alignment: Alignment.centerRight,
             maxWidth: 12 + _kNodeDeadSpace,
             minWidth: 0,
             child: Container(
               width: 12 + _kNodeDeadSpace,
-              height: 3,
+              height: 2,
               color: lastActive
-                  ? const Color(0xFF0066FF)
-                  : const Color(0xFFE2E8F0),
+                  ? const Color(0xFF0069F9)
+                  : const Color(0xFFDDE1EA),
             ),
           ),
         ),
@@ -4397,10 +4693,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(14),
       ),
       // Was an unbounded, non-scrollable Row rendering every stop in the
       // route unconditionally — with more than a handful of stops the
@@ -4420,6 +4716,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Widget _buildTimelineNode({
     required String label,
+    double? lat,
+    double? lng,
     required String time,
     required bool isActive,
     required bool isHighlighted,
@@ -4436,11 +4734,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             width: 22,
             height: 22,
             decoration: BoxDecoration(
-              color: isActive ? const Color(0xFF0066FF) : Colors.white,
+              color: isActive ? const Color(0xFF0069F9) : Colors.white,
               shape: BoxShape.circle,
-              border: isActive
-                  ? null
-                  : Border.all(color: const Color(0xFFE2E8F0), width: 2),
+              border: isHighlighted
+                  ? Border.all(
+                      color: const Color(0xFF0069F9).withValues(alpha: 0.25),
+                      width: 3,
+                    )
+                  : (isActive
+                        ? null
+                        : Border.all(color: const Color(0xFFDDE1EA), width: 2)),
             ),
             child: isActive
                 ? Center(
@@ -4456,31 +4759,29 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 : null,
           ),
           const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          _TimelineStopLabel(
+            label: label,
+            lat: lat,
+            lng: lng,
             style: GoogleFonts.poppins(
-              fontSize: 12.0.sp,
-              fontWeight: isHighlighted ? FontWeight.w800 : FontWeight.w600,
+              fontSize: 10.0.sp,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
               color: isHighlighted
-                  ? const Color(0xFF0066FF)
-                  : const Color(0xFF64748B),
+                  ? const Color(0xFF0069F9)
+                  : const Color(0xFF4A5267),
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 0),
           Text(
             time.isNotEmpty ? time : ' ',
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.poppins(
-              fontSize: 10.0.sp,
-              fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.w500,
-              color: isHighlighted
-                  ? const Color(0xFF94A3B8)
-                  : const Color(0xFF94A3B8),
+              fontSize: 9.0.sp,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF9BA4B5),
             ),
           ),
         ],
@@ -4508,96 +4809,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // ("RenderFlex children have non-zero flex but incoming width
     // constraints are unbounded").
     return Padding(
-      padding: const EdgeInsets.only(top: 9.5),
+      padding: const EdgeInsets.only(top: 10),
       child: SizedBox(
         width: 32,
-        height: 3,
+        height: 2,
         child: OverflowBox(
           maxWidth: 32 + _kNodeDeadSpace * 2,
           minWidth: 0,
           child: Container(
             width: 32 + _kNodeDeadSpace * 2,
-            height: 3,
-            color: isActive ? const Color(0xFF0066FF) : const Color(0xFFE2E8F0),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUpgradeProBanner() {
-    // Was a bare Container — no GestureDetector/InkWell/onTap anywhere, so
-    // the trailing arrow icon implied navigation that never actually
-    // happened. Wrapped in InkWell (via Material, for the ripple to render
-    // over the gradient) to open the same subscription sheet the global
-    // upgrade banner uses elsewhere in the app.
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => SubscriptionPopup.show(context, SubscriptionTier.basic),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1D4ED8).withValues(alpha: 0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Upgrade to Pro",
-                    style: GoogleFonts.poppins(
-                      fontSize: 15.0.sp,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    "Unlock all premium features",
-                    style: GoogleFonts.poppins(
-                      fontSize: 11.5.sp,
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: Colors.white,
-                size: 14,
-              ),
-            ],
+            height: 2,
+            color: isActive ? const Color(0xFF0069F9) : const Color(0xFFDDE1EA),
           ),
         ),
       ),
@@ -4622,66 +4844,55 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "Screentime Today",
-              style: GoogleFonts.poppins(
-                fontSize: 20.0.sp,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF0C1D37),
-              ),
-            ),
-            const SizedBox(height: 12),
+            _buildSectionHeading("Screentime Today", color: Colors.black),
+            const SizedBox(height: 8),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(18),
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0C1D37).withValues(alpha: 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFDDE1EA)),
               ),
               child: Column(
                 children: [
-                  _buildAppUsagesGrid(screentimeData?.appUsages),
-                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: _buildAppUsagesGrid(screentimeData?.appUsages),
+                  ),
                   Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(16),
+                    color: const Color(0xFFEBF3FF),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
                     child: Row(
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              totalText,
-                              style: GoogleFonts.poppins(
-                                fontSize: 13.0.sp,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF1E40AF),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                totalText,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16.0.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF0069F9),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              limitText,
-                              style: GoogleFonts.poppins(
-                                fontSize: 10.5.sp,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(
-                                  0xFF1E40AF,
-                                ).withValues(alpha: 0.8),
+                              Text(
+                                limitText,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12.0.sp,
+                                  fontWeight: FontWeight.w400,
+                                  height: 20 / 12,
+                                  letterSpacing: 0.2,
+                                  color: const Color(0xFF2D3035),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        const Spacer(),
                         GestureDetector(
                           onTap: () {
                             Navigator.push(
@@ -4692,16 +4903,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             );
                           },
                           child: Container(
-                            width: 28,
-                            height: 28,
+                            width: 40,
+                            height: 40,
+                            alignment: Alignment.center,
                             decoration: const BoxDecoration(
-                              color: Color(0xFF0066FF),
+                              color: Color(0xFF0069F9),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: Colors.white,
-                              size: 12,
+                            child: SvgPicture.asset(
+                              'assets/home/home_go_arrow.svg',
+                              width: 18,
+                              height: 18,
                             ),
                           ),
                         ),
@@ -4714,6 +4926,32 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ],
         );
       },
+    );
+  }
+
+  /// Section title used by Screentime / Shortcuts / Help Centre — Figma:
+  /// 40px-high row, 10px inset from the card edge, Poppins Bold 20/20.
+  Widget _buildSectionHeading(
+    String text, {
+    Color color = const Color(0xFF16181A),
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 10),
+      child: SizedBox(
+        height: 40,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            text,
+            style: GoogleFonts.poppins(
+              fontSize: 20.0.sp,
+              fontWeight: FontWeight.w700,
+              height: 1.0,
+              color: color,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -4773,7 +5011,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
 
       if (i + 2 < displayUsages.length) {
-        rows.add(const SizedBox(height: 16));
+        rows.add(const SizedBox(height: 12));
       }
     }
 
@@ -4833,16 +5071,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return Row(
       children: [
         Container(
-          width: 34,
-          height: 34,
+          width: 32,
+          height: 32,
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: brandColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: iconWidget,
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -4852,9 +5090,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
-                  fontSize: 13.5.sp,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF0C1D37),
+                  fontSize: 16.0.sp,
+                  fontWeight: FontWeight.w400,
+                  height: 24 / 16,
+                  letterSpacing: 0.2,
+                  color: const Color(0xFF16181A),
                 ),
               ),
               Text(
@@ -4862,9 +5102,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
-                  fontSize: 10.5.sp,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF94A3B8),
+                  fontSize: 12.0.sp,
+                  fontWeight: FontWeight.w400,
+                  height: 20 / 12,
+                  letterSpacing: 0.2,
+                  color: const Color(0xFF2D3035),
                 ),
               ),
             ],
@@ -4878,99 +5120,109 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Shortcuts",
-          style: GoogleFonts.poppins(
-            fontSize: 20.0.sp,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF0C1D37),
+        _buildSectionHeading("Shortcuts"),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFDDE1EA)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildShortcutItem(
-              'Screen Time',
-              Icons.lock_outline_rounded,
-              const Color(0xFFFFF1F2),
-              const Color(0xFFF43F5E),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SocialAppsView()),
-                );
-              },
-            ),
-            _buildShortcutItem(
-              'Request Location',
-              Icons.monitor_heart,
-              const Color(0xFFECFDF5),
-              const Color(0xFF10B981),
-              onTap: () {
-                _showRequestLocationSheet();
-              },
-            ),
-            _buildShortcutItem(
-              'Notifications',
-              Icons.notifications_outlined,
-              const Color(0xFFFFF7ED),
-              const Color(0xFFF97316),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const NotificationPage()),
-                );
-              },
-            ),
-            _buildShortcutItem(
-              'Device',
-              Icons.smartphone_outlined,
-              const Color(0xFFFFF1F2),
-              const Color(0xFFE11D48),
-              onTap: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const DevicesView()));
-              },
-            ),
-          ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildShortcutItem(
+                'Screen Time',
+                svgAsset: 'assets/home/home_shortcut_screentime.svg',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SocialAppsView()),
+                  );
+                },
+              ),
+              _buildShortcutItem(
+                'Request Location',
+                svgAsset: 'assets/home/home_shortcut_location.svg',
+                onTap: () {
+                  _showRequestLocationSheet();
+                },
+              ),
+              _buildShortcutItem(
+                'Notifications',
+                icon: Icons.notifications_outlined,
+                iconColor: const Color(0xFFF78635),
+                tileColor: const Color(0xFFF7F8FA),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NotificationPage()),
+                  );
+                },
+              ),
+              _buildShortcutItem(
+                'Device',
+                svgAsset: 'assets/home/home_shortcut_device.svg',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DevicesView()),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
   Widget _buildShortcutItem(
-    String label,
-    IconData icon,
-    Color bg,
-    Color iconCol, {
+    String label, {
+    String? svgAsset,
+    IconData? icon,
+    Color iconColor = const Color(0xFF4A5267),
+    Color tileColor = const Color(0xFFEEF0F4),
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 74,
+        width: 77.5,
         child: Column(
           children: [
             Container(
-              width: 54,
-              height: 54,
+              width: 52,
+              height: 52,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(16),
+                color: tileColor,
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(icon, color: iconCol, size: 24),
+              child: svgAsset != null
+                  ? SvgPicture.asset(svgAsset, width: 22, height: 22)
+                  : Icon(icon, color: iconColor, size: 22),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               label,
               textAlign: TextAlign.center,
               maxLines: 2,
               style: GoogleFonts.poppins(
-                fontSize: 10.0.sp,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF64748B),
+                fontSize: 12.0.sp,
+                fontWeight: FontWeight.w400,
                 height: 1.2,
+                letterSpacing: 0.2,
+                color: const Color(0xFF4A5267),
               ),
             ),
           ],
@@ -4980,49 +5232,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Widget _buildHelpCentreSection(BuildContext context) {
+    final divider = Container(
+      height: 1,
+      color: Colors.black.withValues(alpha: 0.1),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Help Centre",
-          style: GoogleFonts.poppins(
-            fontSize: 20.0.sp,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF0C1D37),
-          ),
-        ),
-        const SizedBox(height: 12),
+        _buildSectionHeading("Help Centre"),
+        const SizedBox(height: 8),
         Container(
           width: double.infinity,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF0C1D37).withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFDDE1EA)),
           ),
           child: Column(
             children: [
               _buildHelpCentreItem(
-                Icons.play_circle_outline_rounded,
-                const Color(0xFFEFF6FF),
-                const Color(0xFF2563EB),
+                'assets/home/home_help_tutorial.svg',
                 'Watch Quick Tutorial',
                 'Quick answers to common questions',
               ),
-              Container(
-                height: 1,
-                color: const Color(0xFFF1F5F9),
-                margin: const EdgeInsets.symmetric(horizontal: 18),
-              ),
+              divider,
               _buildHelpCentreItem(
-                Icons.chat_bubble_outline_rounded,
-                const Color(0xFFECFDF5),
-                const Color(0xFF10B981),
+                'assets/home/home_help_support.svg',
                 'Contact Support',
                 'Chat with our team',
                 onTap: () {
@@ -5048,15 +5284,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   );
                 },
               ),
-              Container(
-                height: 1,
-                color: const Color(0xFFF1F5F9),
-                margin: const EdgeInsets.symmetric(horizontal: 18),
-              ),
+              divider,
               _buildHelpCentreItem(
-                Icons.shield_outlined,
-                const Color(0xFFFFF7ED),
-                const Color(0xFFF97316),
+                'assets/home/home_help_tips.svg',
                 'Safety Tips',
                 'Best practices for family safety',
               ),
@@ -5068,45 +5298,64 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   Widget _buildHelpCentreItem(
-    IconData icon,
-    Color bg,
-    Color iconCol,
+    String iconAsset,
     String title,
     String subtitle, {
     VoidCallback? onTap,
   }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: iconCol, size: 18),
-      ),
-      title: Text(
-        title,
-        style: GoogleFonts.poppins(
-          fontSize: 13.5.sp,
-          fontWeight: FontWeight.bold,
-          color: const Color(0xFF0C1D37),
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: GoogleFonts.poppins(
-          fontSize: 11.0.sp,
-          fontWeight: FontWeight.w500,
-          color: const Color(0xFF94A3B8),
-        ),
-      ),
-      trailing: const Icon(
-        Icons.chevron_right_rounded,
-        color: Color(0xFFCBD5E1),
-      ),
+    return InkWell(
       onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F8FA),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: SvgPicture.asset(iconAsset, width: 20, height: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16.0.sp,
+                      fontWeight: FontWeight.w400,
+                      height: 24 / 16,
+                      letterSpacing: 0.2,
+                      color: const Color(0xFF16181A),
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.0.sp,
+                      fontWeight: FontWeight.w400,
+                      height: 20 / 12,
+                      letterSpacing: 0.2,
+                      color: const Color(0xFF2D3035),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            SvgPicture.asset(
+              'assets/home/home_chevron.svg',
+              width: 16,
+              height: 16,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -5288,7 +5537,7 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
               if (mounted &&
                   _mapController != null &&
                   !widget.viewingSharedChild) {
-                _animateTo(loc, zoom: _isFirstLocationAfterLoad ? 15.0 : null);
+                _animateTo(loc, zoom: _isFirstLocationAfterLoad ? 16.5 : null);
                 _isFirstLocationAfterLoad = false;
               }
             });
@@ -5349,7 +5598,7 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
                   markerId: const MarkerId('child_location'),
                   position: location,
                   icon: _cachedMarkerIcon!,
-                  anchor: const Offset(0.5, 1.0),
+                  anchor: const Offset(0.5, _kPinAnchorY),
                 )
               else
                 Marker(
@@ -5395,6 +5644,7 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
               MapViewWidget(
                 key: const ValueKey('home_map_static'),
                 mapPadding: widget.mapPadding,
+                initialZoom: 16.5,
                 width: double.infinity,
                 height: double.infinity,
                 interactive: true,
@@ -5432,7 +5682,7 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
                   if (target != null) {
                     Future.delayed(const Duration(milliseconds: 300), () {
                       if (mounted && _mapController != null) {
-                        _animateTo(target);
+                        _animateTo(target, zoom: 16.5);
                       }
                     });
                   }
@@ -5550,17 +5800,16 @@ class _DynamicLocationTextState extends State<_DynamicLocationText> {
     // childName now renders separately, on the same row as the
     // refresh/notification/share icons (see _buildLocationCardOnly) — this
     // widget only owns the "is at <place>" line underneath it.
-    return Text(
+    // Poppins Bold 20, one line (trimmed down from Figma's 24). A long street address keeps that
+    // size and scrolls sideways (marquee) instead of shrinking or wrapping;
+    // a short place name like "Tuition Class" just sits still.
+    return _MarqueeText(
       'is at $displayText',
       style: GoogleFonts.poppins(
-        // Was 24 — the full street/area/city/district/state/PIN address now
-        // shown here (see _fetchAddress above) runs much longer than the
-        // short place names this size was originally tuned for; 14 keeps a
-        // multi-line full address readable without dominating the card.
-        fontSize: 14.0.sp,
-        fontWeight: FontWeight.w800,
-        color: const Color(0xFF0C1D37),
-        height: 1.2,
+        fontSize: 20.0.sp,
+        fontWeight: FontWeight.w700,
+        height: 1.0,
+        color: const Color(0xFF16181A),
       ),
     );
   }
@@ -5785,5 +6034,233 @@ class _LiveTripCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Paints the two corner slivers that turn the map's straight bottom edge
+/// into a rounded one (page-background colour outside the curve).
+class _MapBottomCurvePainter extends CustomPainter {
+  final double mapBottom;
+  final double radius;
+  final Color color;
+  const _MapBottomCurvePainter({
+    required this.mapBottom,
+    required this.radius,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strip = Rect.fromLTWH(0, mapBottom - radius, size.width, radius);
+    final rounded = RRect.fromRectAndCorners(
+      strip,
+      bottomLeft: Radius.circular(radius),
+      bottomRight: Radius.circular(radius),
+    );
+    final path = Path.combine(
+      PathOperation.difference,
+      Path()..addRect(strip),
+      Path()..addRRect(rounded),
+    );
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_MapBottomCurvePainter old) =>
+      old.mapBottom != mapBottom || old.radius != radius || old.color != color;
+}
+
+/// Single-line text that only scrolls (right-to-left, looping) when it does
+/// not fit its width; otherwise it renders as a plain [Text].
+class _MarqueeText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+  const _MarqueeText(this.text, {required this.style});
+
+  @override
+  State<_MarqueeText> createState() => _MarqueeTextState();
+}
+
+class _MarqueeTextState extends State<_MarqueeText>
+    with SingleTickerProviderStateMixin {
+  static const double _gap = 48;
+  static const double _pixelsPerSecond = 40;
+  late final AnimationController _controller = AnimationController(vsync: this);
+  double? _runningFor;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _run(double cycleWidth) {
+    if (_runningFor == cycleWidth) return;
+    _runningFor = cycleWidth;
+    _controller
+      ..duration = Duration(
+        milliseconds: (cycleWidth / _pixelsPerSecond * 1000).round(),
+      )
+      ..repeat();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        final painter = TextPainter(
+          text: TextSpan(text: widget.text, style: widget.style),
+          textDirection: TextDirection.ltr,
+          maxLines: 1,
+        )..layout();
+        final textWidth = painter.width;
+        final height = painter.height;
+        if (textWidth <= box.maxWidth) {
+          if (_controller.isAnimating) _controller.stop();
+          _runningFor = null;
+          return Text(widget.text, style: widget.style, maxLines: 1);
+        }
+        final cycle = textWidth + _gap;
+        _run(cycle);
+        return SizedBox(
+          height: height,
+          child: ClipRect(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) => OverflowBox(
+                alignment: Alignment.centerLeft,
+                minWidth: 0,
+                maxWidth: double.infinity,
+                child: Transform.translate(
+                  offset: Offset(-cycle * _controller.value, 0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(widget.text, style: widget.style, maxLines: 1),
+                      const SizedBox(width: _gap),
+                      Text(widget.text, style: widget.style, maxLines: 1),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Timeline stop name. Shows the server's label; when that is the
+/// "Unknown Location" placeholder and coordinates are available, resolves a
+/// short place name on-device (free, cached per coordinate) — the same
+/// fallback trips already use via ResolvedPlaceLabel.
+class _TimelineStopLabel extends StatefulWidget {
+  final String label;
+  final double? lat;
+  final double? lng;
+  final TextStyle style;
+  const _TimelineStopLabel({
+    required this.label,
+    required this.lat,
+    required this.lng,
+    required this.style,
+  });
+
+  static final Map<String, String> _cache = {};
+
+  @override
+  State<_TimelineStopLabel> createState() => _TimelineStopLabelState();
+}
+
+class _TimelineStopLabelState extends State<_TimelineStopLabel> {
+  String? _resolved;
+
+  bool get _needsResolve =>
+      widget.label.toLowerCase().startsWith('unknown') &&
+      widget.lat != null &&
+      widget.lng != null &&
+      !(widget.lat == 0 && widget.lng == 0);
+
+  String get _key =>
+      '${widget.lat!.toStringAsFixed(4)},${widget.lng!.toStringAsFixed(4)}';
+
+  @override
+  void initState() {
+    super.initState();
+    if (_needsResolve) _resolve();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TimelineStopLabel old) {
+    super.didUpdateWidget(old);
+    if (old.lat != widget.lat || old.lng != widget.lng) {
+      _resolved = null;
+      if (_needsResolve) _resolve();
+    }
+  }
+
+  Future<void> _resolve() async {
+    final cached = _TimelineStopLabel._cache[_key];
+    if (cached != null) {
+      setState(() => _resolved = cached);
+      return;
+    }
+    try {
+      final marks = await placemarkFromCoordinates(widget.lat!, widget.lng!);
+      if (marks.isEmpty) return;
+      final p = marks.first;
+      final name = [
+        p.subLocality,
+        p.locality,
+        p.name,
+      ].firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
+      if (name == null) return;
+      _TimelineStopLabel._cache[_key] = name;
+      if (mounted) setState(() => _resolved = name);
+    } catch (_) {
+      // Best effort — keep the server label.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _resolved ?? widget.label,
+      textAlign: TextAlign.center,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: widget.style,
+    );
+  }
+}
+
+/// Clamping physics that swallow upward scrolling while the sheet is capped at
+/// its rest height, so the leftover of a long drag from the lowered position
+/// doesn't scroll the content underneath.
+class _SheetCapPhysics extends ClampingScrollPhysics {
+  const _SheetCapPhysics(this.isCapped, {super.parent});
+
+  final bool Function() isCapped;
+
+  @override
+  _SheetCapPhysics applyTo(ScrollPhysics? ancestor) =>
+      _SheetCapPhysics(isCapped, parent: buildParent(ancestor));
+
+  @override
+  double applyBoundaryConditions(ScrollMetrics position, double value) {
+    if (isCapped() && value > position.pixels) {
+      return value - position.pixels;
+    }
+    return super.applyBoundaryConditions(position, value);
+  }
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    if (isCapped()) return null;
+    return super.createBallisticSimulation(position, velocity);
   }
 }

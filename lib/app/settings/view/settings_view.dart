@@ -28,6 +28,9 @@ import '../../chat/view/chat_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../chat/view_model/bloc/chat_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
+import 'package:child_track/core/widgets/figma_toggle.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -90,427 +93,358 @@ class _SettingsViewState extends State<SettingsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF8FAFC,
-      ), // Matching screenshot off-white bg
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        leadingWidth: 68,
-        leading: Center(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).maybePop(),
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 2,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  CupertinoIcons.chevron_left,
-                  color: Colors.black,
-                  size: 20,
-                ),
-              ),
-            ),
+      backgroundColor: const Color(0xFFF7F8FA),
+      appBar: figmaAppBar(
+        context,
+        title: 'Settings',
+        titleSize: 32,
+        trailing: FigmaCircleButton(
+          child: SvgPicture.asset(
+            'assets/help/help_search.svg',
+            width: 24,
+            height: 24,
           ),
         ),
-        title: Text(
-          'Settings',
-          style: GoogleFonts.poppins(
-            fontSize: 32.0.sp,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF0C1D37),
-          ),
-        ),
-        actions: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 2,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  CupertinoIcons.search,
-                  color: Colors.black,
-                  size: 22,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
           child: Column(
             children: [
               // 1. Premium Protection Banner
-              _buildPremiumBanner(),
-
-              // 2. PRIVACY & SECURITY
-              _buildSectionHeader("PRIVACY & SECURITY"),
-              _buildSectionCard(
-                children: [
-                  _buildSettingsTile(
-                    leading: Image.asset(
-                      'assets/icons/Image (Restrict from Deleting).png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    title: 'Restrict from Deleting',
-                    trailing: Transform.scale(
-                      alignment: Alignment.centerRight,
-                      scale: 0.8,
-                      child: CupertinoSwitch(
-                        activeTrackColor: const Color(0xFF22C55E),
-                        value: _restrictDeletion,
-                        onChanged: (value) async {
-                          if (!_isPrimaryParent) {
-                            AppSnackbar.showError(
-                              context,
-                              'Guardians have view-only access. Only primary parents can change this setting.',
-                            );
-                            return;
-                          }
-                          if (_currentChildId != null) {
-                            final response = await injector<HomeRepository>()
-                                .updateDeletionRestriction(
-                                  childId: _currentChildId!,
-                                  enabled: value,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: _buildPremiumBanner(),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    // 2. PRIVACY & SECURITY
+                    _buildSectionHeader("PRIVACY & SECURITY"),
+                    _buildSectionCard(
+                      children: [
+                        _buildSettingsTile(
+                          leading: Image.asset(
+                            'assets/icons/Image (Restrict from Deleting).png',
+                            width: 26,
+                            height: 26,
+                          ),
+                          title: 'Restrict from Deleting',
+                          trailing: FigmaToggle(
+                            value: _restrictDeletion,
+                            onChanged: (value) async {
+                              if (!_isPrimaryParent) {
+                                AppSnackbar.showError(
+                                  context,
+                                  'Guardians have view-only access. Only primary parents can change this setting.',
                                 );
-                            if (!response.isSuccess) {
-                              AppSnackbar.showError(
-                                context,
-                                'Failed to update restriction: ${response.message}',
+                                return;
+                              }
+                              if (_currentChildId != null) {
+                                final response =
+                                    await injector<HomeRepository>()
+                                        .updateDeletionRestriction(
+                                          childId: _currentChildId!,
+                                          enabled: value,
+                                        );
+                                if (!response.isSuccess) {
+                                  AppSnackbar.showError(
+                                    context,
+                                    'Failed to update restriction: ${response.message}',
+                                  );
+                                  return;
+                                }
+                              }
+                              await _sharedPrefsService.setBool(
+                                'restrict_deletion',
+                                value,
                               );
-                              return;
-                            }
-                          }
-                          await _sharedPrefsService.setBool(
-                            'restrict_deletion',
-                            value,
-                          );
-                          setState(() => _restrictDeletion = value);
-                        },
-                      ),
-                    ),
-                  ),
-                  const Divider(
-                    height: 1,
-                    color: Color(0xFFF1F5F9),
-                    indent: 56,
-                    endIndent: 16,
-                  ),
-                  _buildSettingsTile(
-                    leading: Image.asset(
-                      'assets/icons/Image (Block 18+ Websites).png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    title: 'Block 18+ Websites',
-                    trailing: Transform.scale(
-                      alignment: Alignment.centerRight,
-                      scale: 0.8,
-                      child: CupertinoSwitch(
-                        activeTrackColor: const Color(0xFF22C55E),
-                        value: _block18Plus,
-                        onChanged: (value) async {
-                          if (!_isPrimaryParent) {
-                            AppSnackbar.showError(
-                              context,
-                              'Guardians have view-only access. Only primary parents can change this setting.',
-                            );
-                            return;
-                          }
-                          if (_currentChildId != null) {
-                            final response = await injector<HomeRepository>()
-                                .updateWebFilter(
-                                  childId: _currentChildId!,
-                                  enabled: value,
-                                );
-                            if (!response.isSuccess) {
-                              AppSnackbar.showError(
-                                context,
-                                'Failed to update filter: ${response.message}',
-                              );
-                              return;
-                            }
-                          }
-                          await _sharedPrefsService.setBool(
-                            'block_18plus',
-                            value,
-                          );
-                          setState(() => _block18Plus = value);
-                        },
-                      ),
-                    ),
-                  ),
-                  const Divider(
-                    height: 1,
-                    color: Color(0xFFF1F5F9),
-                    indent: 56,
-                    endIndent: 16,
-                  ),
-                  _buildSettingsTile(
-                    leading: Image.asset(
-                      'assets/icons/Image (Family Management).png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    title: 'Family Management',
-                    trailing: const Icon(
-                      CupertinoIcons.chevron_right,
-                      color: Color(0xFF94A3B8),
-                      size: 16,
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const FamilyManagementView(),
+                              setState(() => _restrictDeletion = value);
+                            },
+                          ),
                         ),
-                      );
-                    },
-                  ),
-                  const Divider(
-                    height: 1,
-                    color: Color(0xFFF1F5F9),
-                    indent: 56,
-                    endIndent: 16,
-                  ),
-                  _buildSettingsTile(
-                    leading: const Icon(
-                      CupertinoIcons.person_crop_circle_fill_badge_plus,
-                      color: Color(0xFF0066FF),
-                      size: 24,
-                    ),
-                    title: 'Switch / Add Child',
-                    trailing: Icon(
-                      _isExpanded
-                          ? CupertinoIcons.chevron_up
-                          : CupertinoIcons.chevron_right,
-                      color: const Color(0xFF94A3B8),
-                      size: 16,
-                    ),
-                    onTap: () {
-                      setState(() {
-                        _isExpanded = !_isExpanded;
-                      });
-                    },
-                  ),
-                  if (_isExpanded) ...[
-                    const Divider(
-                      height: 1,
-                      color: Color(0xFFF1F5F9),
-                      indent: 56,
-                      endIndent: 16,
-                    ),
-                    Container(
-                      color: const Color(0xFFF8FAFC),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Column(
-                        children: [
-                          ..._buildInactiveChildTiles(),
-                          const SizedBox(height: 8),
-                          _buildAddChildTile(),
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Color(0xFFEEF0F4),
+                        ),
+                        _buildSettingsTile(
+                          leading: Image.asset(
+                            'assets/icons/Image (Block 18+ Websites).png',
+                            width: 26,
+                            height: 26,
+                          ),
+                          title: 'Block 18+ Websites',
+                          trailing: FigmaToggle(
+                            value: _block18Plus,
+                            onChanged: (value) async {
+                              if (!_isPrimaryParent) {
+                                AppSnackbar.showError(
+                                  context,
+                                  'Guardians have view-only access. Only primary parents can change this setting.',
+                                );
+                                return;
+                              }
+                              if (_currentChildId != null) {
+                                final response =
+                                    await injector<HomeRepository>()
+                                        .updateWebFilter(
+                                          childId: _currentChildId!,
+                                          enabled: value,
+                                        );
+                                if (!response.isSuccess) {
+                                  AppSnackbar.showError(
+                                    context,
+                                    'Failed to update filter: ${response.message}',
+                                  );
+                                  return;
+                                }
+                              }
+                              await _sharedPrefsService.setBool(
+                                'block_18plus',
+                                value,
+                              );
+                              setState(() => _block18Plus = value);
+                            },
+                          ),
+                        ),
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Color(0xFFEEF0F4),
+                        ),
+                        _buildSettingsTile(
+                          leading: Image.asset(
+                            'assets/icons/Image (Family Management).png',
+                            width: 26,
+                            height: 26,
+                          ),
+                          title: 'Family Management',
+                          trailing: SvgPicture.asset(
+                            'assets/icons/settings_chevron.svg',
+                            width: 18,
+                            height: 18,
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const FamilyManagementView(),
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Color(0xFFEEF0F4),
+                        ),
+                        _buildSettingsTile(
+                          leading: const Icon(
+                            CupertinoIcons.person_crop_circle_fill_badge_plus,
+                            color: Color(0xFF0066FF),
+                            size: 24,
+                          ),
+                          title: 'Switch / Add Child',
+                          trailing: RotatedBox(
+                            quarterTurns: _isExpanded ? 3 : 0,
+                            child: SvgPicture.asset(
+                              'assets/icons/settings_chevron.svg',
+                              width: 18,
+                              height: 18,
+                            ),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              _isExpanded = !_isExpanded;
+                            });
+                          },
+                        ),
+                        if (_isExpanded) ...[
+                          const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Color(0xFFEEF0F4),
+                          ),
+                          Container(
+                            color: const Color(0xFFF8FAFC),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            child: Column(
+                              children: [
+                                ..._buildInactiveChildTiles(),
+                                const SizedBox(height: 8),
+                                _buildAddChildTile(),
+                              ],
+                            ),
+                          ),
                         ],
-                      ),
+                      ],
+                    ),
+
+                    // 3. ACCOUNT & NOTIFICATIONS
+                    _buildSectionHeader("ACCOUNT & NOTIFICATIONS"),
+                    _buildSectionCard(
+                      children: [
+                        _buildSettingsTile(
+                          leading: Image.asset(
+                            'assets/icons/Image (Notification Settings).png',
+                            width: 26,
+                            height: 26,
+                          ),
+                          title: 'Notification Settings',
+                          trailing: SvgPicture.asset(
+                            'assets/icons/settings_chevron.svg',
+                            width: 18,
+                            height: 18,
+                          ),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationSettingsView(),
+                            ),
+                          ),
+                        ),
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Color(0xFFEEF0F4),
+                        ),
+                        _buildSettingsTile(
+                          leading: Image.asset(
+                            'assets/icons/Image (Login & Security).png',
+                            width: 26,
+                            height: 26,
+                          ),
+                          title: 'Login & Security',
+                          trailing: SvgPicture.asset(
+                            'assets/icons/settings_chevron.svg',
+                            width: 18,
+                            height: 18,
+                          ),
+                          onTap: () => _showLoginSecurityOptions(context),
+                        ),
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Color(0xFFEEF0F4),
+                        ),
+                        _buildSettingsTile(
+                          leading: Image.asset(
+                            'assets/icons/Image (Account).png',
+                            width: 26,
+                            height: 26,
+                          ),
+                          title: 'Account',
+                          trailing: SvgPicture.asset(
+                            'assets/icons/settings_chevron.svg',
+                            width: 18,
+                            height: 18,
+                          ),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AccountView(),
+                            ),
+                          ),
+                        ),
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Color(0xFFEEF0F4),
+                        ),
+                        _buildSettingsTile(
+                          leading: const Icon(
+                            Icons.workspace_premium,
+                            color: AppColors.primaryColor,
+                            size: 24,
+                          ),
+                          title: 'Subscriptions',
+                          trailing: SvgPicture.asset(
+                            'assets/icons/settings_chevron.svg',
+                            width: 18,
+                            height: 18,
+                          ),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CurrentPlanView(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // 4. MORE
+                    _buildSectionHeader("MORE"),
+                    _buildSectionCard(
+                      children: [
+                        _buildSettingsTile(
+                          leading: Image.asset(
+                            'assets/icons/Image (Devices).png',
+                            width: 26,
+                            height: 26,
+                          ),
+                          title: 'Devices',
+                          trailing: SvgPicture.asset(
+                            'assets/icons/settings_chevron.svg',
+                            width: 18,
+                            height: 18,
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const DevicesView(),
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Color(0xFFEEF0F4),
+                        ),
+                        _buildSettingsTile(
+                          leading: Image.asset(
+                            'assets/icons/Image (Help).png',
+                            width: 26,
+                            height: 26,
+                          ),
+                          title: 'Help',
+                          trailing: SvgPicture.asset(
+                            'assets/icons/settings_chevron.svg',
+                            width: 18,
+                            height: 18,
+                          ),
+                          onTap: () => _showHelpOptions(context),
+                        ),
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Color(0xFFEEF0F4),
+                        ),
+                        _buildSettingsTile(
+                          leading: Image.asset(
+                            'assets/icons/Image (About App).png',
+                            width: 26,
+                            height: 26,
+                          ),
+                          title: 'About App',
+                          trailing: SvgPicture.asset(
+                            'assets/icons/settings_chevron.svg',
+                            width: 18,
+                            height: 18,
+                          ),
+                          onTap: () => _showAboutAppDialog(context),
+                        ),
+                      ],
                     ),
                   ],
-                ],
-              ),
-
-              // 3. ACCOUNT & NOTIFICATIONS
-              _buildSectionHeader("ACCOUNT & NOTIFICATIONS"),
-              _buildSectionCard(
-                children: [
-                  _buildSettingsTile(
-                    leading: Image.asset(
-                      'assets/icons/Image (Notification Settings).png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    title: 'Notification Settings',
-                    trailing: const Icon(
-                      CupertinoIcons.chevron_right,
-                      color: Color(0xFF94A3B8),
-                      size: 16,
-                    ),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const NotificationSettingsView(),
-                      ),
-                    ),
-                  ),
-                  const Divider(
-                    height: 1,
-                    color: Color(0xFFF1F5F9),
-                    indent: 56,
-                    endIndent: 16,
-                  ),
-                  _buildSettingsTile(
-                    leading: Image.asset(
-                      'assets/icons/Image (Login & Security).png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    title: 'Login & Security',
-                    trailing: const Icon(
-                      CupertinoIcons.chevron_right,
-                      color: Color(0xFF94A3B8),
-                      size: 16,
-                    ),
-                    onTap: () => _showLoginSecurityOptions(context),
-                  ),
-                  const Divider(
-                    height: 1,
-                    color: Color(0xFFF1F5F9),
-                    indent: 56,
-                    endIndent: 16,
-                  ),
-                  _buildSettingsTile(
-                    leading: Image.asset(
-                      'assets/icons/Image (Account).png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    title: 'Account',
-                    trailing: const Icon(
-                      CupertinoIcons.chevron_right,
-                      color: Color(0xFF94A3B8),
-                      size: 16,
-                    ),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AccountView()),
-                    ),
-                  ),
-                  const Divider(
-                    height: 1,
-                    color: Color(0xFFF1F5F9),
-                    indent: 56,
-                    endIndent: 16,
-                  ),
-                  _buildSettingsTile(
-                    leading: const Icon(
-                      Icons.workspace_premium,
-                      color: AppColors.primaryColor,
-                      size: 24,
-                    ),
-                    title: 'Subscriptions',
-                    trailing: const Icon(
-                      CupertinoIcons.chevron_right,
-                      color: Color(0xFF94A3B8),
-                      size: 16,
-                    ),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CurrentPlanView(),
-                      ),
-                    ),
-                  ),
-                  const Divider(
-                    height: 1,
-                    color: Color(0xFFF1F5F9),
-                    indent: 56,
-                    endIndent: 16,
-                  ),
-                ],
-              ),
-
-              // 4. MORE
-              _buildSectionHeader("MORE"),
-              _buildSectionCard(
-                children: [
-                  _buildSettingsTile(
-                    leading: Image.asset(
-                      'assets/icons/Image (Devices).png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    title: 'Devices',
-                    trailing: const Icon(
-                      CupertinoIcons.chevron_right,
-                      color: Color(0xFF94A3B8),
-                      size: 16,
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const DevicesView()),
-                      );
-                    },
-                  ),
-                  const Divider(
-                    height: 1,
-                    color: Color(0xFFF1F5F9),
-                    indent: 56,
-                    endIndent: 16,
-                  ),
-                  _buildSettingsTile(
-                    leading: Image.asset(
-                      'assets/icons/Image (Help).png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    title: 'Help',
-                    trailing: const Icon(
-                      CupertinoIcons.chevron_right,
-                      color: Color(0xFF94A3B8),
-                      size: 16,
-                    ),
-                    onTap: () => _showHelpOptions(context),
-                  ),
-                  const Divider(
-                    height: 1,
-                    color: Color(0xFFF1F5F9),
-                    indent: 56,
-                    endIndent: 16,
-                  ),
-                  _buildSettingsTile(
-                    leading: Image.asset(
-                      'assets/icons/Image (About App).png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    title: 'About App',
-                    trailing: const Icon(
-                      CupertinoIcons.chevron_right,
-                      color: Color(0xFF94A3B8),
-                      size: 16,
-                    ),
-                    onTap: () => _showAboutAppDialog(context),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -523,22 +457,21 @@ class _SettingsViewState extends State<SettingsView> {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFFFFE8D6), Color(0xFFFFECD6)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Image.asset(
             'assets/icons/Image (Shield)Big.png',
-            width: 60,
-            height: 60,
+            width: 80,
+            height: 80,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -549,21 +482,32 @@ class _SettingsViewState extends State<SettingsView> {
                   "Ensure Better Protection",
                   style: GoogleFonts.poppins(
                     fontSize: 16.0.sp,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0C1D37),
+                    fontWeight: FontWeight.w700,
+                    height: 22 / 16,
+                    color: const Color(0xFF0F1320),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "at half price of a family meal\n60% of users prefer Premium",
+                  "at half price of a family meal",
                   style: GoogleFonts.poppins(
                     fontSize: 12.0.sp,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF64748B),
-                    height: 1.3,
+                    fontWeight: FontWeight.w400,
+                    height: 16.5 / 12,
+                    color: const Color(0xFF4A5267),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
+                Text(
+                  "60% of users prefer Premium",
+                  style: GoogleFonts.poppins(
+                    fontSize: 11.0.sp,
+                    fontWeight: FontWeight.w400,
+                    height: 16.5 / 11,
+                    color: const Color(0xFF4A5267),
+                  ),
+                ),
+                const SizedBox(height: 9),
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -575,18 +519,19 @@ class _SettingsViewState extends State<SettingsView> {
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
+                      horizontal: 12,
+                      vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0066FF), // Primary blue button
-                      borderRadius: BorderRadius.circular(10),
+                      color: const Color(0xFF0069F9),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       "Know More",
                       style: GoogleFonts.poppins(
-                        fontSize: 12.0.sp,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 11.0.sp,
+                        fontWeight: FontWeight.w600,
+                        height: 16.5 / 11,
                         color: Colors.white,
                       ),
                     ),
@@ -604,7 +549,7 @@ class _SettingsViewState extends State<SettingsView> {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(left: 0, bottom: 8, top: 18),
+        padding: const EdgeInsets.only(left: 4, bottom: 8, top: 20),
         child: Text(
           title,
           style: GoogleFonts.poppins(
@@ -645,7 +590,7 @@ class _SettingsViewState extends State<SettingsView> {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         child: Row(
           children: [
             leading,
@@ -656,6 +601,7 @@ class _SettingsViewState extends State<SettingsView> {
                 style: GoogleFonts.poppins(
                   fontSize: 15.0.sp,
                   fontWeight: FontWeight.w500,
+                  height: 22.5 / 15,
                   color: const Color(0xFF0F1320),
                   letterSpacing: 0.1,
                 ),
@@ -1098,7 +1044,7 @@ class _SettingsViewState extends State<SettingsView> {
     showAboutDialog(
       context: context,
       applicationName: 'NaviQ',
-      applicationVersion: 'Naviq Dev 1.0.4(Oct 2)',
+      applicationVersion: 'Naviq Dev 1.0.4(Oct 7)',
       applicationIcon: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(

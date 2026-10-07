@@ -19,7 +19,9 @@ class TimeLimitLoaded extends TimeLimitState {
   const TimeLimitLoaded({this.limitsByPackage = const {}});
 
   TimeLimitLoaded copyWith({Map<String, AppTimeLimitItem>? limitsByPackage}) {
-    return TimeLimitLoaded(limitsByPackage: limitsByPackage ?? this.limitsByPackage);
+    return TimeLimitLoaded(
+      limitsByPackage: limitsByPackage ?? this.limitsByPackage,
+    );
   }
 
   @override

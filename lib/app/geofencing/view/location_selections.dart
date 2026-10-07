@@ -1,10 +1,14 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' show CupertinoIcons, CupertinoSwitch;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
+import 'package:child_track/core/widgets/figma_toggle.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/services/subscription_feature_gate.dart';
 import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
@@ -48,12 +52,14 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
   bool _isMapReady = false;
   int _defaultRadius = 30;
   String? _selectedAddress;
+  BitmapDescriptor? _centerDotIcon;
 
   static const LatLng _initialPosition = LatLng(12.9716, 77.5946); // Bengaluru
 
   @override
   void initState() {
     super.initState();
+    _buildCenterDotIcon();
     // Load default radius from SharedPreferences
     _defaultRadius = SharedPrefsService().getInt('default_radius') ?? 30;
 
@@ -91,6 +97,57 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
     }
   }
 
+  /// Figma centre marker: a flat 14px #0069F9 dot.
+  Future<void> _buildCenterDotIcon() async {
+    const double size = 14;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    canvas.drawCircle(
+      const Offset(size / 2, size / 2),
+      size / 2,
+      Paint()..color = const Color(0xFF0069F9),
+    );
+    final img = await recorder.endRecording().toImage(
+      (size * 3).toInt(),
+      (size * 3).toInt(),
+    );
+    // Draw at 3x for crispness and ask the map to show it at 14 logical px.
+    final recorder3 = ui.PictureRecorder();
+    final canvas3 = Canvas(recorder3);
+    canvas3.scale(3);
+    canvas3.drawCircle(
+      const Offset(size / 2, size / 2),
+      size / 2,
+      Paint()..color = const Color(0xFF0069F9),
+    );
+    img.dispose();
+    final img3 = await recorder3.endRecording().toImage(
+      (size * 3).toInt(),
+      (size * 3).toInt(),
+    );
+    final bytes = await img3.toByteData(format: ui.ImageByteFormat.png);
+    if (bytes == null || !mounted) return;
+    setState(() {
+      _centerDotIcon = BitmapDescriptor.bytes(
+        bytes.buffer.asUint8List(),
+        width: size,
+        height: size,
+      );
+      // Markers added before the icon was ready (edit mode) pick it up too.
+      final restyled = _markers
+          .map(
+            (m) => m.copyWith(
+              iconParam: _centerDotIcon,
+              anchorParam: const Offset(0.5, 0.5),
+            ),
+          )
+          .toList();
+      _markers
+        ..clear()
+        ..addAll(restyled);
+    });
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -109,13 +166,17 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
       final double theta = 2.0 * math.pi * i / segments;
       final double pointLatRad = math.asin(
         math.sin(latRad) * math.cos(r) +
-        math.cos(latRad) * math.sin(r) * math.cos(theta)
+            math.cos(latRad) * math.sin(r) * math.cos(theta),
       );
-      final double pointLngRad = lngRad + math.atan2(
-        math.sin(theta) * math.sin(r) * math.cos(latRad),
-        math.cos(r) - math.sin(latRad) * math.sin(pointLatRad)
+      final double pointLngRad =
+          lngRad +
+          math.atan2(
+            math.sin(theta) * math.sin(r) * math.cos(latRad),
+            math.cos(r) - math.sin(latRad) * math.sin(pointLatRad),
+          );
+      points.add(
+        LatLng(pointLatRad * 180.0 / math.pi, pointLngRad * 180.0 / math.pi),
       );
-      points.add(LatLng(pointLatRad * 180.0 / math.pi, pointLngRad * 180.0 / math.pi));
     }
     return points;
   }
@@ -129,7 +190,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
           circleId: const CircleId('geofence_fill'),
           center: position,
           radius: radius,
-          fillColor: const Color(0xFF0066FF).withValues(alpha: 0.08),
+          fillColor: const Color(0xFF0069F9).withValues(alpha: 0.12),
           strokeColor: Colors.transparent,
         ),
       );
@@ -139,7 +200,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
         Polyline(
           polylineId: const PolylineId('geofence_dashed_border'),
           points: points,
-          color: const Color(0xFF0066FF),
+          color: const Color(0xFF0069F9),
           width: 2,
           patterns: [PatternItem.dash(12), PatternItem.gap(8)],
         ),
@@ -155,7 +216,10 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
           markerId: const MarkerId('selected_location'),
           position: position,
           infoWindow: const InfoWindow(title: 'Selected Location'),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          icon:
+              _centerDotIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          anchor: const Offset(0.5, 0.5),
           onTap: () => _openFormSheet(position),
         ),
       );
@@ -168,7 +232,9 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
       _showSuggestions = false;
     });
 
-    final currentRadius = _circles.isNotEmpty ? _circles.first.radius : _defaultRadius.toDouble();
+    final currentRadius = _circles.isNotEmpty
+        ? _circles.first.radius
+        : _defaultRadius.toDouble();
 
     final result = await showModalBottomSheet(
       context: context,
@@ -182,7 +248,10 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
         geofence: widget.geofence,
         category: widget.selectedCategory,
         customName: widget.customName,
-        address: _selectedAddress ?? widget.geofence?.address ?? "${widget.customName ?? 'Custom Place'} · Fenced Location",
+        address:
+            _selectedAddress ??
+            widget.geofence?.address ??
+            "${widget.customName ?? 'Custom Place'} · Fenced Location",
         initialRadius: currentRadius.toInt(),
         onRadiusChanged: (newRadius) {
           _updateCircle(position, newRadius);
@@ -200,6 +269,11 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFE2E8F0),
+      appBar: figmaAppBar(
+        context,
+        title: 'Geoguard',
+        titleColor: const Color(0xFF2D3035),
+      ),
       body: BlocListener<GeofenceBloc, GeofenceState>(
         listener: (context, state) {
           if (state is GeofenceError) {
@@ -287,169 +361,151 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
 
             /// Search Bar
             Positioned(
-              top: 15,
-              left: 17,
-              right: 17,
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF0C1D37).withValues(alpha: 0.06),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => Navigator.of(context).maybePop(),
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFF1F5F9), // soft background
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                CupertinoIcons.chevron_left,
-                                color: Color(0xFF475569), // slate grey
-                                size: 18,
-                              ),
+              top: 7,
+              left: 14,
+              right: 14,
+              child: Column(
+                children: [
+                  Container(
+                    height: 48,
+                    padding: const EdgeInsets.symmetric(horizontal: 19),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(44),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 2,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        SvgPicture.asset(
+                          'assets/icons/geo_search.svg',
+                          width: 15,
+                          height: 15,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.0.sp,
+                              fontWeight: FontWeight.w400,
+                              height: 20 / 12,
+                              letterSpacing: 0.2,
+                              color: const Color(0xFF2D3035),
                             ),
+                            decoration: InputDecoration(
+                              hintText: "search location",
+                              hintStyle: GoogleFonts.poppins(
+                                fontSize: 12.0.sp,
+                                fontWeight: FontWeight.w400,
+                                height: 20 / 12,
+                                letterSpacing: 0.2,
+                                color: const Color(0xFF9BA4B5),
+                              ),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                              focusedErrorBorder: InputBorder.none,
+                              isCollapsed: true,
+                              filled: false,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            onChanged: (value) {
+                              if (value.isNotEmpty) {
+                                context.read<GeofenceBloc>().add(
+                                  SearchLocationSuggestionsRequested(
+                                    query: value,
+                                  ),
+                                );
+                                setState(() {
+                                  _showSuggestions = true;
+                                });
+                              } else {
+                                setState(() {
+                                  _showSuggestions = false;
+                                });
+                              }
+                            },
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14.0.sp,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF0C1D37),
-                              ),
-                              decoration: InputDecoration(
-                                hintText: "search location",
-                                hintStyle: GoogleFonts.poppins(
-                                  fontSize: 14.0.sp,
-                                  fontWeight: FontWeight.w500,
-                                  color: const Color(0xFF94A3B8),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_showSuggestions)
+                    BlocBuilder<GeofenceBloc, GeofenceState>(
+                      builder: (context, state) {
+                        if (state is LocationSuggestionsLoaded) {
+                          return Container(
+                            margin: const EdgeInsets.only(top: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF0C1D37,
+                                  ).withValues(alpha: 0.08),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
                                 ),
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                errorBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                focusedErrorBorder: InputBorder.none,
-                                isCollapsed: true,
-                              ),
-                              onChanged: (value) {
-                                if (value.isNotEmpty) {
-                                  context.read<GeofenceBloc>().add(
-                                    SearchLocationSuggestionsRequested(
-                                      query: value,
+                              ],
+                            ),
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              itemCount: state.suggestions.length,
+                              itemBuilder: (context, index) {
+                                final suggestion = state.suggestions[index];
+                                return ListTile(
+                                  title: Text(
+                                    suggestion.mainText ?? "Unknown",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14.0.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF0C1D37),
                                     ),
-                                  );
-                                  setState(() {
-                                    _showSuggestions = true;
-                                  });
-                                } else {
-                                  setState(() {
-                                    _showSuggestions = false;
-                                  });
-                                }
+                                  ),
+                                  subtitle: Text(
+                                    suggestion.description ??
+                                        "Unknown location",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.0.sp,
+                                      color: const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    _searchController.text =
+                                        suggestion.mainText!;
+                                    _selectedAddress =
+                                        "${suggestion.mainText} · ${suggestion.description}";
+                                    setState(() {
+                                      _showSuggestions = false;
+                                    });
+
+                                    // Emit event to fetch place coordinates via BLoC
+                                    context.read<GeofenceBloc>().add(
+                                      GetPlaceCoordinatesRequested(
+                                        placeId: suggestion.placeId!,
+                                      ),
+                                    );
+                                  },
+                                );
                               },
                             ),
-                          ),
-                          Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            width: 36,
-                            height: 36,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF1F5F9),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.search,
-                              color: Color(0xFF475569),
-                              size: 18,
-                            ),
-                          ),
-                        ],
-                      ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
                     ),
-                    if (_showSuggestions)
-                      BlocBuilder<GeofenceBloc, GeofenceState>(
-                        builder: (context, state) {
-                          if (state is LocationSuggestionsLoaded) {
-                            return Container(
-                              margin: const EdgeInsets.only(top: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF0C1D37).withValues(alpha: 0.08),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              constraints: const BoxConstraints(maxHeight: 200),
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                itemCount: state.suggestions.length,
-                                itemBuilder: (context, index) {
-                                  final suggestion = state.suggestions[index];
-                                  return ListTile(
-                                    title: Text(
-                                      suggestion.mainText ?? "Unknown",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14.0.sp,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xFF0C1D37),
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      suggestion.description ??
-                                          "Unknown location",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12.0.sp,
-                                        color: const Color(0xFF64748B),
-                                      ),
-                                    ),
-                                    onTap: () {
-                                      _searchController.text =
-                                          suggestion.mainText!;
-                                      _selectedAddress = "${suggestion.mainText} · ${suggestion.description}";
-                                      setState(() {
-                                        _showSuggestions = false;
-                                      });
-
-                                      // Emit event to fetch place coordinates via BLoC
-                                      context.read<GeofenceBloc>().add(
-                                        GetPlaceCoordinatesRequested(
-                                          placeId: suggestion.placeId!,
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                  ],
-                ),
+                ],
               ),
             ),
           ],
@@ -585,9 +641,13 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
       return Icons.school_outlined;
     } else if (name.contains("grandma")) {
       return Icons.face_retouching_natural_rounded;
-    } else if (name.contains("temple") || name.contains("masjid") || name.contains("church")) {
+    } else if (name.contains("temple") ||
+        name.contains("masjid") ||
+        name.contains("church")) {
       return Icons.account_balance_rounded;
-    } else if (name.contains("sports") || name.contains("ground") || name.contains("play")) {
+    } else if (name.contains("sports") ||
+        name.contains("ground") ||
+        name.contains("play")) {
       return Icons.sports_cricket_rounded;
     } else if (name.contains("location") || name.contains("current")) {
       return Icons.location_on_rounded;
@@ -606,9 +666,13 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
       return const Color(0xFFF59E0B);
     } else if (name.contains("grandma")) {
       return const Color(0xFFEF4444);
-    } else if (name.contains("temple") || name.contains("masjid") || name.contains("church")) {
+    } else if (name.contains("temple") ||
+        name.contains("masjid") ||
+        name.contains("church")) {
       return const Color(0xFF8B5CF6);
-    } else if (name.contains("sports") || name.contains("ground") || name.contains("play")) {
+    } else if (name.contains("sports") ||
+        name.contains("ground") ||
+        name.contains("play")) {
       return const Color(0xFF0066FF);
     } else if (name.contains("location") || name.contains("current")) {
       return const Color(0xFF64748B);
@@ -623,23 +687,30 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontSize: 14.0.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF0C1D37),
+    return SizedBox(
+      height: 40,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 16.0.sp,
+              fontWeight: FontWeight.w400,
+              height: 24 / 16,
+              letterSpacing: 0.2,
+              color: const Color(0xFF0F1320),
+            ),
           ),
-        ),
-        CupertinoSwitch(
-          value: value,
-          activeTrackColor: const Color(0xFF0066FF),
-          onChanged: onChanged,
-        ),
-      ],
+          FigmaToggle(
+            value: value,
+            onChanged: onChanged,
+            width: 48,
+            height: 28,
+            knob: 22,
+          ),
+        ],
+      ),
     );
   }
 
@@ -666,10 +737,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
             "radius": state.geofence.radius,
           });
         } else if (state is GeofenceDeleted) {
-          Navigator.pop(context, {
-            "deleted": true,
-            "id": state.geofenceId,
-          });
+          Navigator.pop(context, {"deleted": true, "id": state.geofenceId});
         } else if (state is GeofenceError) {
           ScaffoldMessenger.of(
             context,
@@ -681,7 +749,12 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: Container(
-          padding: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 28),
+          padding: const EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 12,
+            bottom: 24,
+          ),
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -690,104 +763,85 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Drag Handle
+              // Drag Handle (Figma: 40x4 #9BA4B5)
               Align(
                 alignment: Alignment.center,
                 child: Container(
-                  width: 36,
+                  width: 40,
                   height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE2E8F0),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+                  color: const Color(0xFF9BA4B5),
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
 
-              // Title Header
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: _getCategoryColor(widget.category, _nameController.text).withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _getCategoryIcon(widget.category, _nameController.text),
-                      color: _getCategoryColor(widget.category, _nameController.text),
-                      size: 24,
-                    ),
+              // Title: Poppins Bold 24/28 — still editable, just styled as
+              // plain text like Figma (no underline, no icon badge).
+              TextField(
+                controller: _nameController,
+                style: GoogleFonts.poppins(
+                  fontSize: 24.0.sp,
+                  fontWeight: FontWeight.w700,
+                  height: 28 / 24,
+                  color: const Color(0xFF0F1320),
+                ),
+                decoration: InputDecoration(
+                  hintText: "Place Name",
+                  hintStyle: GoogleFonts.poppins(
+                    fontSize: 24.0.sp,
+                    fontWeight: FontWeight.w700,
+                    height: 28 / 24,
+                    color: const Color(0xFF9BA4B5),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          controller: _nameController,
-                          style: GoogleFonts.poppins(
-                            fontSize: 18.0.sp,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0C1D37),
-                          ),
-                          decoration: InputDecoration(
-                            hintText: "Place Name",
-                            hintStyle: GoogleFonts.poppins(
-                              color: const Color(0xFF94A3B8),
-                              fontWeight: FontWeight.w600,
-                            ),
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                            border: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFFE2E8F0)),
-                            ),
-                            focusedBorder: const UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF0066FF), width: 1.5),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.address ?? widget.geofence?.address ?? "Fenced Location",
-                          style: GoogleFonts.poppins(
-                            fontSize: 13.0.sp,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF64748B),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  isDense: true,
+                  filled: false,
+                  contentPadding: EdgeInsets.zero,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
               ),
-              const SizedBox(height: 24),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              const SizedBox(height: 20),
+              Text(
+                widget.address ?? widget.geofence?.address ?? "Fenced Location",
+                style: GoogleFonts.poppins(
+                  fontSize: 12.0.sp,
+                  fontWeight: FontWeight.w400,
+                  height: 20 / 12,
+                  letterSpacing: 0.2,
+                  color: const Color(0xFF9BA4B5),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 14),
 
               // Radius Slider Section
               Text(
                 "Fence Radius",
                 style: GoogleFonts.poppins(
                   fontSize: 14.0.sp,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0C1D37),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                  color: const Color(0xFF0F1320),
                 ),
               ),
-              const SizedBox(height: 10),
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
-                  trackHeight: 4,
-                  activeTrackColor: const Color(0xFF0066FF),
-                  inactiveTrackColor: const Color(0xFFE2E8F0),
-                  thumbColor: const Color(0xFF0066FF),
-                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                  overlayColor: const Color(0xFF0066FF).withValues(alpha: 0.12),
+                  trackHeight: 6,
+                  activeTrackColor: const Color(0xFF0069F9),
+                  inactiveTrackColor: const Color(0xFFDDE1EA),
+                  thumbColor: const Color(0xFF0069F9),
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 11,
+                    elevation: 0,
+                    pressedElevation: 0,
+                  ),
+                  overlayColor: const Color(0xFF0069F9).withValues(alpha: 0.12),
+                  overlayShape: const RoundSliderOverlayShape(
+                    overlayRadius: 16,
+                  ),
                   activeTickMarkColor: Colors.transparent,
                   inactiveTickMarkColor: Colors.transparent,
+                  trackShape: const RoundedRectSliderTrackShape(),
                 ),
                 child: Slider(
                   value: _sliderIndex.toDouble(),
@@ -804,38 +858,35 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: radiusSteps.map((step) {
-                    final label = step >= 1000 ? "${(step / 1000).toStringAsFixed(0)}km" : "${step}m";
+                    final label = step >= 1000
+                        ? "${(step / 1000).toStringAsFixed(0)}km"
+                        : "${step}m";
                     final index = radiusSteps.indexOf(step);
                     final isSelected = index == _sliderIndex;
                     return Text(
                       label,
                       style: GoogleFonts.poppins(
                         fontSize: 12.0.sp,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected ? const Color(0xFF0066FF) : const Color(0xFF94A3B8),
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        height: 20 / 12,
+                        letterSpacing: 0.2,
+                        color: isSelected
+                            ? Colors.black
+                            : const Color(0xFF9BA4B5),
                       ),
                     );
                   }).toList(),
                 ),
               ),
-              const SizedBox(height: 24),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
 
-              // Alerts Section
-              Text(
-                "Alerts",
-                style: GoogleFonts.poppins(
-                  fontSize: 14.0.sp,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0C1D37),
-                ),
-              ),
-              const SizedBox(height: 16),
+              // Alerts — three plain rows, no heading or dividers (Figma)
               _buildToggleRow(
                 title: "Alert on Entry",
                 value: _alertOnEntry,
@@ -845,7 +896,6 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                   });
                 },
               ),
-              const Divider(height: 24, color: Color(0xFFF1F5F9)),
               _buildToggleRow(
                 title: "Alert on Exit",
                 value: _alertOnExit,
@@ -855,7 +905,6 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                   });
                 },
               ),
-              const Divider(height: 24, color: Color(0xFFF1F5F9)),
               _buildToggleRow(
                 title: "Alert if Idle > 30 min",
                 value: _alertIfIdle,
@@ -876,11 +925,11 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                     height: 52,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0066FF),
+                        backgroundColor: const Color(0xFF0069F9),
                         elevation: 0,
                         shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(26),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                       onPressed: isLoading ? null : _handleSaveGeofence,
@@ -899,7 +948,9 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                               "Save Fence",
                               style: GoogleFonts.poppins(
                                 fontSize: 16.0.sp,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
+                                height: 1.4,
+                                letterSpacing: 0.2,
                                 color: Colors.white,
                               ),
                             ),
@@ -916,9 +967,12 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFEF4444),
-                      side: const BorderSide(color: Color(0xFFFCA5A5), width: 1.5),
+                      side: const BorderSide(
+                        color: Color(0xFFFCA5A5),
+                        width: 1.5,
+                      ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(26),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                     onPressed: () {
@@ -928,7 +982,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                       "Delete Geofence",
                       style: GoogleFonts.poppins(
                         fontSize: 16.0.sp,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: const Color(0xFFEF4444),
                       ),
                     ),
@@ -947,9 +1001,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
       context: context,
       builder: (dlgContext) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
           'Delete Geofence',
           style: GoogleFonts.poppins(

@@ -36,8 +36,9 @@ class MarkerTapped extends MapEvent {
 
 class UpdateChildLocation extends MapEvent {
   final LatLng currentLocation;
-  const UpdateChildLocation(this.currentLocation);
+  final double zoom;
+  const UpdateChildLocation(this.currentLocation, {this.zoom = 15.0});
 
   @override
-  List<Object> get props => [currentLocation];
+  List<Object> get props => [currentLocation, zoom];
 }

@@ -33,7 +33,10 @@ class GeoPlaceCard extends StatelessWidget {
     } else if (cat.contains('school')) {
       iconBgColor = const Color(0xFF10B981); // Solid green
       iconData = Icons.school_rounded;
-    } else if (cat.contains('cricket') || cat.contains('ground') || cat.contains('play') || cat.contains('sport')) {
+    } else if (cat.contains('cricket') ||
+        cat.contains('ground') ||
+        cat.contains('play') ||
+        cat.contains('sport')) {
       iconBgColor = const Color(0xFF6366F1); // Solid indigo/purple
       iconData = Icons.sports_cricket_rounded;
     } else {
@@ -65,13 +68,7 @@ class GeoPlaceCard extends StatelessWidget {
               color: iconBgColor,
               shape: BoxShape.circle,
             ),
-            child: Center(
-              child: Icon(
-                iconData,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
+            child: Center(child: Icon(iconData, color: Colors.white, size: 24)),
           ),
           const SizedBox(width: 16),
           Expanded(

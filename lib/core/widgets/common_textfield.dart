@@ -28,6 +28,8 @@ class CommonTextField extends StatefulWidget {
   final double? borderRadius;
   final Color? fillColor;
   final Color? borderColor;
+  final double? borderWidth;
+  final TextStyle? hintStyle;
   final Color? focusedBorderColor;
   final Color? errorBorderColor;
   final String? errorText;
@@ -58,6 +60,8 @@ class CommonTextField extends StatefulWidget {
     this.borderRadius,
     this.fillColor,
     this.borderColor,
+    this.borderWidth,
+    this.hintStyle,
     this.focusedBorderColor,
     this.errorBorderColor,
     this.errorText,
@@ -126,6 +130,7 @@ class _CommonTextFieldState extends State<CommonTextField> {
           ),
           borderSide: BorderSide(
             color: widget.borderColor ?? AppColors.borderColor,
+            width: widget.borderWidth ?? 1,
           ),
         ),
         enabledBorder: OutlineInputBorder(
@@ -134,6 +139,7 @@ class _CommonTextFieldState extends State<CommonTextField> {
           ),
           borderSide: BorderSide(
             color: widget.borderColor ?? AppColors.borderColor,
+            width: widget.borderWidth ?? 1,
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -170,7 +176,9 @@ class _CommonTextFieldState extends State<CommonTextField> {
             color: AppColors.borderColor.withValues(alpha: 0.5),
           ),
         ),
-        hintStyle: AppTextStyles.body2.copyWith(color: AppColors.textHint),
+        hintStyle:
+            widget.hintStyle ??
+            AppTextStyles.body2.copyWith(color: AppColors.textHint),
         labelStyle: AppTextStyles.body2.copyWith(
           color: AppColors.textSecondary,
         ),

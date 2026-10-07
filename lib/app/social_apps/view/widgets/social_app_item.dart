@@ -5,6 +5,7 @@ import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/core/widgets/common_button.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SocialAppItem extends StatelessWidget {
@@ -13,6 +14,10 @@ class SocialAppItem extends StatelessWidget {
   final String usage;
   final bool isLocked;
   final Function(bool, int)? onLockToggle;
+
+  /// This app's usage relative to the busiest app in the list (0..1); drives
+  /// the Figma blue-to-white row tint.
+  final double usageFraction;
 
   /// Configured daily budget in minutes for this app, or null if none set.
   final int? dailyLimitMinutes;
@@ -27,83 +32,87 @@ class SocialAppItem extends StatelessWidget {
     required this.usage,
     required this.isLocked,
     this.onLockToggle,
+    this.usageFraction = 0,
     this.dailyLimitMinutes,
     this.onSetDailyLimit,
   });
 
   @override
   Widget build(BuildContext context) {
+    final double f = usageFraction.clamp(0.0, 1.0);
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      height: 75,
+      margin: const EdgeInsets.fromLTRB(4, 0, 4, 8),
       decoration: BoxDecoration(
-        // Figma tints locked-app rows red — was flat white regardless of
-        // lock state.
-        color: isLocked ? const Color(0xFFFEF2F2) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isLocked ? const Color(0xFFFECACA) : const Color(0xFFF1F5F9),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0C1D37).withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: Colors.white,
+        // Figma: pale-blue wash fading to white; busier apps get more of it.
+        gradient: f < 0.02
+            ? null
+            : LinearGradient(
+                colors: const [Color(0xFFDEEFFE), Colors.white],
+                stops: [0.0, 0.25 + 0.75 * f],
+              ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEBF3FF), width: 0.8),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         onTap: () {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Usage details for $name')));
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12.8),
           child: Row(
             children: [
               _AppIcon(icon: icon),
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.poppins(
                         fontSize: 16.0.sp,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0C1D37),
+                        fontWeight: FontWeight.w400,
+                        height: 24 / 16,
+                        letterSpacing: 0.2,
+                        color: const Color(0xFF0F1320),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        usage,
-                        style: GoogleFonts.poppins(
-                          color: const Color(0xFF0066FF),
-                          fontSize: 12.0.sp,
-                          fontWeight: FontWeight.w700,
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        height: 24,
+                        constraints: const BoxConstraints(minWidth: 87),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEBF3FF),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          widthFactor: 1,
+                          child: Text(
+                            usage,
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF4A5267),
+                              fontSize: 11.0.sp,
+                              fontWeight: FontWeight.w400,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              _DailyLimitButton(
-                dailyLimitMinutes: dailyLimitMinutes,
-                onSetDailyLimit: onSetDailyLimit,
-              ),
-              const SizedBox(width: 8),
               _LockIconButton(isLocked: isLocked, onLockToggle: onLockToggle),
             ],
           ),
@@ -120,24 +129,20 @@ class _AppIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return SizedBox(
+      width: 50,
+      height: 50,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image(
           image: icon,
-          width: 44,
-          height: 44,
+          width: 50,
+          height: 50,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              width: 44,
-              height: 44,
+              width: 50,
+              height: 50,
               color: const Color(0xFFF1F5F9),
               child: const Icon(Icons.apps, size: 20, color: Color(0xFF94A3B8)),
             );
@@ -511,33 +516,19 @@ class _LockIconButton extends StatelessWidget {
           _showLockOptions(context);
         }
       },
-      child: isLocked
-          ? Container(
-              width: 36,
-              height: 36,
-              decoration: const BoxDecoration(
-                color: Colors.black,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.lock_rounded,
-                color: Colors.white,
-                size: 16,
-              ),
-            )
-          : Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
-              ),
-              child: const Icon(
-                Icons.lock_outline_rounded,
-                color: Color(0xFF94A3B8),
-                size: 16,
-              ),
-            ),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 35,
+        child: Center(
+          child: SvgPicture.asset(
+            isLocked
+                ? 'assets/icons/scroll_lock_on.svg'
+                : 'assets/icons/scroll_lock_off.svg',
+            width: 25,
+            height: isLocked ? 34 : 35,
+          ),
+        ),
+      ),
     );
   }
 

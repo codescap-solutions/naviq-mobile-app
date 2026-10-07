@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:child_track/core/constants/app_colors.dart';
-import 'package:child_track/core/constants/app_sizes.dart';
-import 'package:child_track/core/constants/app_text_styles.dart';
-import 'widgets/section_card.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'help_detail_view.dart';
 
 class HelpView extends StatelessWidget {
@@ -15,122 +15,219 @@ class HelpView extends StatelessWidget {
       'How do I cancel my subscription',
       'How do I add a new family member',
     ];
-    final tiles = [
-      'Troubleshooting',
-      'Subscription & Billing',
-      'Account & Data',
-      'How do I use the app',
-      'Getting Started',
-      'GPS Device',
-      'Privacy & Security',
-      'The App on a Computer',
+    // title is what HelpDetailView receives; label/icon are Figma's display.
+    final tiles = <_HelpTile>[
+      const _HelpTile(
+        'Troubleshooting',
+        'Troubleshooting',
+        'troubleshooting',
+        40,
+      ),
+      const _HelpTile(
+        'Subscription & Billing',
+        'Subscription',
+        'subscription',
+        40,
+      ),
+      const _HelpTile('Account & Data', 'Account & Data', 'account', 40),
+      const _HelpTile('How do I use the app', 'Using App', 'using_app', 40),
+      const _HelpTile(
+        'Getting Started',
+        'Getting Started',
+        'getting_started',
+        50,
+      ),
+      const _HelpTile('GPS Device', 'GPS Device', 'gps_device', 50),
+      const _HelpTile('Privacy & Security', 'Privacy', 'privacy', 40),
+      const _HelpTile('The App on a Computer', 'Desktop', 'desktop', 40),
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          onPressed: () => Navigator.of(context).maybePop(),
+      backgroundColor: const Color(0xFFF7F8FA),
+      appBar: figmaAppBar(
+        context,
+        title: 'Help',
+        trailing: FigmaCircleButton(
+          child: SvgPicture.asset(
+            'assets/help/help_search.svg',
+            width: 24,
+            height: 24,
+          ),
         ),
-        title: const Text('Help'),
-        backgroundColor: AppColors.surfaceColor,
-        elevation: 0,
-        foregroundColor: AppColors.textPrimary,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppSizes.paddingL),
+        padding: const EdgeInsets.fromLTRB(26, 18, 26, 32),
         children: [
-          SectionCard(
-            child: Column(
-              children: topics
-                  .map(
-                    (t) => Column(
-                      children: [
-                        _topicChip(t),
-                        if (t != topics.last)
-                          const SizedBox(height: AppSizes.spacingS),
-                      ],
+          for (final t in topics) _topicRow(t),
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.only(left: 10),
+            child: Text(
+              'All Articles',
+              style: GoogleFonts.poppins(
+                fontSize: 16.0.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          for (var i = 0; i < tiles.length; i += 2)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 13),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _articleTile(context, tiles[i]),
+                  const SizedBox(width: 11),
+                  _articleTile(context, tiles[i + 1]),
+                ],
+              ),
+            ),
+          const SizedBox(height: 13),
+          Center(
+            child: GestureDetector(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Chat support coming soon')),
+                );
+              },
+              child: Container(
+                width: 335,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 5.6,
+                      offset: const Offset(0, 4),
                     ),
-                  )
-                  .toList(),
+                  ],
+                ),
+                child: Text(
+                  'None of the above',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20.0.sp,
+                    fontWeight: FontWeight.w400,
+                    height: 28 / 20,
+                    letterSpacing: 0.2,
+                    color: const Color(0xFF0069F9),
+                  ),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: AppSizes.spacingM),
-          Text(
-            'All Articles',
-            style: AppTextStyles.subtitle1.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: AppSizes.spacingS),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: tiles.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.4,
-            ),
-            itemBuilder: (context, index) =>
-                _articleTile(context, tiles[index]),
-          ),
-          const SizedBox(height: AppSizes.spacingL),
-          TextButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Chat support coming soon')),
-              );
-            },
-            child: const Text('Chat With Us'),
           ),
         ],
       ),
     );
   }
 
-  Widget _topicChip(String label) {
+  Widget _topicRow(String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      constraints: const BoxConstraints(minHeight: 55),
+      margin: const EdgeInsets.only(bottom: 13),
+      padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFE6F0FF),
-        borderRadius: BorderRadius.circular(10),
+        color: const Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          const Icon(Icons.help_outline, color: AppColors.primaryColor),
-          const SizedBox(width: AppSizes.spacingM),
-          Expanded(child: Text(label)),
-          const Icon(Icons.chevron_right),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 40),
+              child: Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 16.0.sp,
+                  fontWeight: FontWeight.w400,
+                  height: 24 / 16,
+                  letterSpacing: 0.2,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ),
+          RotatedBox(
+            quarterTurns: 2,
+            child: Image.asset(
+              'assets/icons/auth_back.png',
+              width: 26,
+              height: 26,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _articleTile(BuildContext context, String label) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
+  Widget _articleTile(BuildContext context, _HelpTile tile) {
+    return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => HelpDetailView(title: label)),
+        MaterialPageRoute(builder: (_) => HelpDetailView(title: tile.title)),
       ),
       child: Container(
+        width: 159,
+        height: 159,
         decoration: BoxDecoration(
-          color: const Color(0xFFE6F0FF),
-          borderRadius: BorderRadius.circular(14),
+          color: const Color(0xFFF7F8FA),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 7.8,
+              spreadRadius: 2,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        padding: const EdgeInsets.all(AppSizes.paddingM),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.shield_outlined, color: AppColors.primaryColor),
+            const SizedBox(height: 17),
+            Container(
+              width: 73,
+              height: 73,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: Color(0xFFEBF3FF),
+                shape: BoxShape.circle,
+              ),
+              child: Image.asset(
+                'assets/help/help_${tile.icon}.png',
+                width: tile.iconSize,
+                height: tile.iconSize,
+              ),
+            ),
             const Spacer(),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 22),
+              child: Text(
+                tile.label,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 16.0.sp,
+                  fontWeight: FontWeight.w400,
+                  height: 24 / 16,
+                  letterSpacing: 0.2,
+                  color: Colors.black,
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+class _HelpTile {
+  final String title;
+  final String label;
+  final String icon;
+  final double iconSize;
+  const _HelpTile(this.title, this.label, this.icon, this.iconSize);
 }
