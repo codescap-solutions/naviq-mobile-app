@@ -3,37 +3,31 @@ import 'package:child_track/core/navigation/route_names.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/app/home/view_model/home_repo.dart';
 import 'package:child_track/core/services/firebase_notification_service.dart';
-import 'package:child_track/core/models/child_profile.dart';
-import 'package:child_track/core/services/background_location_service.dart';
 import 'package:child_track/core/utils/app_logger.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
-import 'package:flutter/cupertino.dart' show CupertinoSwitch, CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/app_colors.dart';
-import 'package:child_track/core/constants/app_sizes.dart';
-import 'package:child_track/core/constants/app_text_styles.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:child_track/core/services/csv_file_logger.dart';
-import 'package:child_track/core/services/subscription_feature_gate.dart';
-import 'package:child_track/app/subscription/widgets/upgrade_restriction_dialog.dart';
 import 'account_view.dart';
 import 'devices_view.dart';
 import 'notification_settings_view.dart';
 import '../../subscription/view/subscription_multi_plan_view.dart';
-import '../../subscription/view/current_plan_view.dart';
 import 'family_management_view.dart';
-import '../../chat/view/chat_screen.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../chat/view_model/bloc/chat_bloc.dart';
+import 'help_view.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:child_track/core/widgets/figma_toggle.dart';
 
 class SettingsView extends StatefulWidget {
-  const SettingsView({super.key});
+  /// Settings is a root tab, so its back button has nothing to pop — when
+  /// hosted in the Home tab bar this returns to the Home tab (same as Explore).
+  final VoidCallback? onNavigateToHome;
+
+  const SettingsView({super.key, this.onNavigateToHome});
 
   @override
   State<SettingsView> createState() => _SettingsViewState();
@@ -43,13 +37,10 @@ class _SettingsViewState extends State<SettingsView> {
   final _sharedPrefsService = SharedPrefsService();
 
   String? _currentChildId;
-  String? _childName;
   bool _restrictDeletion = false;
   bool _block18Plus = false;
 
-  bool _isExpanded = false;
   bool _isPrimaryParent = true;
-  List<ChildProfile> _children = [];
 
   @override
   void initState() {
@@ -60,10 +51,8 @@ class _SettingsViewState extends State<SettingsView> {
   void _loadChildData() {
     _isPrimaryParent = _sharedPrefsService.isPrimaryParent;
     _currentChildId = _sharedPrefsService.getString('child_id');
-    _childName = _sharedPrefsService.getString('child_name');
     _restrictDeletion = _sharedPrefsService.getBool('restrict_deletion');
     _block18Plus = _sharedPrefsService.getBool('block_18plus');
-    _children = _sharedPrefsService.getChildren();
     setState(() {});
     _fetchServerSettings();
   }
@@ -93,31 +82,31 @@ class _SettingsViewState extends State<SettingsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: Color(0xFFF7F8FA),
       appBar: figmaAppBar(
         context,
         title: 'Settings',
-        titleSize: 32,
+        onBack: widget.onNavigateToHome,
         trailing: FigmaCircleButton(
           child: SvgPicture.asset(
             'assets/help/help_search.svg',
-            width: 24,
-            height: 24,
+            width: 24.w,
+            height: 24.w,
           ),
         ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          padding: EdgeInsets.symmetric(vertical: 13.0.w),
           child: Column(
             children: [
               // 1. Premium Protection Banner
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: EdgeInsets.symmetric(horizontal: 10.w),
                 child: _buildPremiumBanner(),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
                 child: Column(
                   children: [
                     // 2. PRIVACY & SECURITY
@@ -127,8 +116,8 @@ class _SettingsViewState extends State<SettingsView> {
                         _buildSettingsTile(
                           leading: Image.asset(
                             'assets/icons/Image (Restrict from Deleting).png',
-                            width: 26,
-                            height: 26,
+                            width: 26.w,
+                            height: 26.w,
                           ),
                           title: 'Restrict from Deleting',
                           trailing: FigmaToggle(
@@ -164,7 +153,7 @@ class _SettingsViewState extends State<SettingsView> {
                             },
                           ),
                         ),
-                        const Divider(
+                        Divider(
                           height: 1,
                           thickness: 1,
                           color: Color(0xFFEEF0F4),
@@ -172,8 +161,8 @@ class _SettingsViewState extends State<SettingsView> {
                         _buildSettingsTile(
                           leading: Image.asset(
                             'assets/icons/Image (Block 18+ Websites).png',
-                            width: 26,
-                            height: 26,
+                            width: 26.w,
+                            height: 26.w,
                           ),
                           title: 'Block 18+ Websites',
                           trailing: FigmaToggle(
@@ -209,7 +198,7 @@ class _SettingsViewState extends State<SettingsView> {
                             },
                           ),
                         ),
-                        const Divider(
+                        Divider(
                           height: 1,
                           thickness: 1,
                           color: Color(0xFFEEF0F4),
@@ -217,71 +206,24 @@ class _SettingsViewState extends State<SettingsView> {
                         _buildSettingsTile(
                           leading: Image.asset(
                             'assets/icons/Image (Family Management).png',
-                            width: 26,
-                            height: 26,
+                            width: 26.w,
+                            height: 26.w,
                           ),
                           title: 'Family Management',
                           trailing: SvgPicture.asset(
                             'assets/icons/settings_chevron.svg',
-                            width: 18,
-                            height: 18,
+                            width: 18.w,
+                            height: 18.w,
                           ),
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const FamilyManagementView(),
+                                builder: (_) => FamilyManagementView(),
                               ),
                             );
                           },
                         ),
-                        const Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: Color(0xFFEEF0F4),
-                        ),
-                        _buildSettingsTile(
-                          leading: const Icon(
-                            CupertinoIcons.person_crop_circle_fill_badge_plus,
-                            color: Color(0xFF0066FF),
-                            size: 24,
-                          ),
-                          title: 'Switch / Add Child',
-                          trailing: RotatedBox(
-                            quarterTurns: _isExpanded ? 3 : 0,
-                            child: SvgPicture.asset(
-                              'assets/icons/settings_chevron.svg',
-                              width: 18,
-                              height: 18,
-                            ),
-                          ),
-                          onTap: () {
-                            setState(() {
-                              _isExpanded = !_isExpanded;
-                            });
-                          },
-                        ),
-                        if (_isExpanded) ...[
-                          const Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: Color(0xFFEEF0F4),
-                          ),
-                          Container(
-                            color: const Color(0xFFF8FAFC),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            child: Column(
-                              children: [
-                                ..._buildInactiveChildTiles(),
-                                const SizedBox(height: 8),
-                                _buildAddChildTile(),
-                              ],
-                            ),
-                          ),
-                        ],
                       ],
                     ),
 
@@ -292,23 +234,23 @@ class _SettingsViewState extends State<SettingsView> {
                         _buildSettingsTile(
                           leading: Image.asset(
                             'assets/icons/Image (Notification Settings).png',
-                            width: 26,
-                            height: 26,
+                            width: 26.w,
+                            height: 26.w,
                           ),
                           title: 'Notification Settings',
                           trailing: SvgPicture.asset(
                             'assets/icons/settings_chevron.svg',
-                            width: 18,
-                            height: 18,
+                            width: 18.w,
+                            height: 18.w,
                           ),
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const NotificationSettingsView(),
+                              builder: (_) => NotificationSettingsView(),
                             ),
                           ),
                         ),
-                        const Divider(
+                        Divider(
                           height: 1,
                           thickness: 1,
                           color: Color(0xFFEEF0F4),
@@ -316,18 +258,18 @@ class _SettingsViewState extends State<SettingsView> {
                         _buildSettingsTile(
                           leading: Image.asset(
                             'assets/icons/Image (Login & Security).png',
-                            width: 26,
-                            height: 26,
+                            width: 26.w,
+                            height: 26.w,
                           ),
                           title: 'Login & Security',
                           trailing: SvgPicture.asset(
                             'assets/icons/settings_chevron.svg',
-                            width: 18,
-                            height: 18,
+                            width: 18.w,
+                            height: 18.w,
                           ),
                           onTap: () => _showLoginSecurityOptions(context),
                         ),
-                        const Divider(
+                        Divider(
                           height: 1,
                           thickness: 1,
                           color: Color(0xFFEEF0F4),
@@ -335,44 +277,18 @@ class _SettingsViewState extends State<SettingsView> {
                         _buildSettingsTile(
                           leading: Image.asset(
                             'assets/icons/Image (Account).png',
-                            width: 26,
-                            height: 26,
+                            width: 26.w,
+                            height: 26.w,
                           ),
                           title: 'Account',
                           trailing: SvgPicture.asset(
                             'assets/icons/settings_chevron.svg',
-                            width: 18,
-                            height: 18,
+                            width: 18.w,
+                            height: 18.w,
                           ),
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => const AccountView(),
-                            ),
-                          ),
-                        ),
-                        const Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: Color(0xFFEEF0F4),
-                        ),
-                        _buildSettingsTile(
-                          leading: const Icon(
-                            Icons.workspace_premium,
-                            color: AppColors.primaryColor,
-                            size: 24,
-                          ),
-                          title: 'Subscriptions',
-                          trailing: SvgPicture.asset(
-                            'assets/icons/settings_chevron.svg',
-                            width: 18,
-                            height: 18,
-                          ),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const CurrentPlanView(),
-                            ),
+                            MaterialPageRoute(builder: (_) => AccountView()),
                           ),
                         ),
                       ],
@@ -385,25 +301,23 @@ class _SettingsViewState extends State<SettingsView> {
                         _buildSettingsTile(
                           leading: Image.asset(
                             'assets/icons/Image (Devices).png',
-                            width: 26,
-                            height: 26,
+                            width: 26.w,
+                            height: 26.w,
                           ),
                           title: 'Devices',
                           trailing: SvgPicture.asset(
                             'assets/icons/settings_chevron.svg',
-                            width: 18,
-                            height: 18,
+                            width: 18.w,
+                            height: 18.w,
                           ),
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) => const DevicesView(),
-                              ),
+                              MaterialPageRoute(builder: (_) => DevicesView()),
                             );
                           },
                         ),
-                        const Divider(
+                        Divider(
                           height: 1,
                           thickness: 1,
                           color: Color(0xFFEEF0F4),
@@ -411,18 +325,21 @@ class _SettingsViewState extends State<SettingsView> {
                         _buildSettingsTile(
                           leading: Image.asset(
                             'assets/icons/Image (Help).png',
-                            width: 26,
-                            height: 26,
+                            width: 26.w,
+                            height: 26.w,
                           ),
                           title: 'Help',
                           trailing: SvgPicture.asset(
                             'assets/icons/settings_chevron.svg',
-                            width: 18,
-                            height: 18,
+                            width: 18.w,
+                            height: 18.w,
                           ),
-                          onTap: () => _showHelpOptions(context),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => HelpView()),
+                          ),
                         ),
-                        const Divider(
+                        Divider(
                           height: 1,
                           thickness: 1,
                           color: Color(0xFFEEF0F4),
@@ -430,14 +347,14 @@ class _SettingsViewState extends State<SettingsView> {
                         _buildSettingsTile(
                           leading: Image.asset(
                             'assets/icons/Image (About App).png',
-                            width: 26,
-                            height: 26,
+                            width: 26.w,
+                            height: 26.w,
                           ),
                           title: 'About App',
                           trailing: SvgPicture.asset(
                             'assets/icons/settings_chevron.svg',
-                            width: 18,
-                            height: 18,
+                            width: 18.w,
+                            height: 18.w,
                           ),
                           onTap: () => _showAboutAppDialog(context),
                         ),
@@ -456,24 +373,24 @@ class _SettingsViewState extends State<SettingsView> {
   Widget _buildPremiumBanner() {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      margin: EdgeInsets.only(bottom: 5.w),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.w),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [Color(0xFFFFE8D6), Color(0xFFFFECD6)],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(14.w),
       ),
       child: Row(
         children: [
           Image.asset(
             'assets/icons/Image (Shield)Big.png',
-            width: 80,
-            height: 80,
+            width: 80.w,
+            height: 80.w,
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,47 +401,47 @@ class _SettingsViewState extends State<SettingsView> {
                     fontSize: 16.0.sp,
                     fontWeight: FontWeight.w700,
                     height: 22 / 16,
-                    color: const Color(0xFF0F1320),
+                    color: Color(0xFF0F1320),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.w),
                 Text(
                   "at half price of a family meal",
                   style: GoogleFonts.poppins(
                     fontSize: 12.0.sp,
                     fontWeight: FontWeight.w400,
                     height: 16.5 / 12,
-                    color: const Color(0xFF4A5267),
+                    color: Color(0xFF4A5267),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.w),
                 Text(
                   "60% of users prefer Premium",
                   style: GoogleFonts.poppins(
                     fontSize: 11.0.sp,
                     fontWeight: FontWeight.w400,
                     height: 16.5 / 11,
-                    color: const Color(0xFF4A5267),
+                    color: Color(0xFF4A5267),
                   ),
                 ),
-                const SizedBox(height: 9),
+                SizedBox(height: 9.w),
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const SubscriptionMultiPlanView(),
+                        builder: (_) => SubscriptionMultiPlanView(),
                       ),
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 5,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 5.w,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0069F9),
-                      borderRadius: BorderRadius.circular(8),
+                      color: Color(0xFF0069F9),
+                      borderRadius: BorderRadius.circular(8.w),
                     ),
                     child: Text(
                       "Know More",
@@ -549,13 +466,14 @@ class _SettingsViewState extends State<SettingsView> {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(left: 4, bottom: 8, top: 20),
+        padding: EdgeInsets.only(left: 4.w, bottom: 8.6.w, top: 20.6.w),
         child: Text(
           title,
           style: GoogleFonts.poppins(
             fontSize: 11.0.sp,
             fontWeight: FontWeight.w400,
-            color: const Color(0xFF9BA4B5),
+            height: 16.5 / 11,
+            color: Color(0xFF9BA4B5),
             letterSpacing: 0.6,
           ),
         ),
@@ -568,12 +486,12 @@ class _SettingsViewState extends State<SettingsView> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(14.w),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.07),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
+            blurRadius: 4.w,
+            offset: Offset(0.w, 1.w),
           ),
         ],
       ),
@@ -590,11 +508,11 @@ class _SettingsViewState extends State<SettingsView> {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.w),
         child: Row(
           children: [
             leading,
-            const SizedBox(width: 16),
+            SizedBox(width: 16.w),
             Expanded(
               child: Text(
                 title,
@@ -602,7 +520,7 @@ class _SettingsViewState extends State<SettingsView> {
                   fontSize: 15.0.sp,
                   fontWeight: FontWeight.w500,
                   height: 22.5 / 15,
-                  color: const Color(0xFF0F1320),
+                  color: Color(0xFF0F1320),
                   letterSpacing: 0.1,
                 ),
               ),
@@ -618,7 +536,7 @@ class _SettingsViewState extends State<SettingsView> {
     try {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Preparing logs…')));
+      ).showSnackBar(SnackBar(content: Text('Preparing logs…')));
 
       final paths = await CsvFileLogger.instance.getAllLogPaths();
       if (paths.isEmpty) {
@@ -649,15 +567,15 @@ class _SettingsViewState extends State<SettingsView> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Delete Account"),
-        content: const Text(
+        title: Text("Delete Account"),
+        content: Text(
           "This will permanently delete your account and associated data.\n\n"
           "You will be redirected to a deletion request form.",
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text("Cancel"),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -665,10 +583,7 @@ class _SettingsViewState extends State<SettingsView> {
               Navigator.pop(context);
               _openDeleteForm();
             },
-            child: const Text(
-              "Continue",
-              style: TextStyle(color: Colors.white),
-            ),
+            child: Text("Continue", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -689,152 +604,57 @@ class _SettingsViewState extends State<SettingsView> {
     }
   }
 
-  void _showHelpOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFFFF3E0),
-                  child: Icon(Icons.chat, color: Color(0xFFEF6C00)),
-                ),
-                title: const Text('Chat with Support'),
-                subtitle: const Text('Real-time assistance'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  if (!SubscriptionFeatureGate.helpChannels().chat) {
-                    UpgradeRestrictionDialog.showHelpChannelBlocked(
-                      context,
-                      'Chat',
-                    );
-                    return;
-                  }
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider.value(
-                        value: injector<ChatBloc>(),
-                        child: const ChatScreen(
-                          recipientId:
-                              '65b2a3f7e1b2c3d4e5f67890', // Placeholder Admin ID
-                          recipientName: 'NaviQ Support',
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE8F5E9),
-                  child: Icon(Icons.email, color: Color(0xFF2E7D32)),
-                ),
-                title: const Text('Email Support'),
-                subtitle: const Text('info.truenyx@gmail.com'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _launchContactUrl(
-                    Uri(scheme: 'mailto', path: 'info.truenyx@gmail.com'),
-                  );
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFE3F2FD),
-                  child: Icon(Icons.phone, color: Color(0xFF1565C0)),
-                ),
-                title: const Text('Call Support'),
-                subtitle: const Text('+91 90371 62751'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  if (!SubscriptionFeatureGate.helpChannels().call) {
-                    UpgradeRestrictionDialog.showHelpChannelBlocked(
-                      context,
-                      'Call',
-                    );
-                    return;
-                  }
-                  _launchContactUrl(Uri(scheme: 'tel', path: '+919037162751'));
-                },
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   void _showLoginSecurityOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.w)),
       ),
       builder: (sheetContext) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 10),
+              SizedBox(height: 10.w),
               Container(
-                width: 40,
-                height: 4,
+                width: 40.w,
+                height: 4.w,
                 decoration: BoxDecoration(
                   color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(2.w),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20.w),
               ListTile(
-                leading: const Icon(Icons.share, color: AppColors.primaryColor),
-                title: const Text('Share Background Logs'),
-                subtitle: const Text('Export CSV logs for debugging'),
+                leading: Icon(Icons.share, color: AppColors.primaryColor),
+                title: Text('Share Background Logs'),
+                subtitle: Text('Export CSV logs for debugging'),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _shareLogs(context);
                 },
               ),
-              const Divider(),
+              Divider(),
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('Delete Account'),
-                subtitle: const Text('Permanently delete your account'),
+                leading: Icon(Icons.delete_outline, color: Colors.red),
+                title: Text('Delete Account'),
+                subtitle: Text('Permanently delete your account'),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _showDeleteAccountDialog(context);
                 },
               ),
-              const Divider(),
+              Divider(),
               ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text('Logout'),
-                subtitle: const Text('Logout from the app'),
+                leading: Icon(Icons.logout, color: Colors.red),
+                title: Text('Logout'),
+                subtitle: Text('Logout from the app'),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _showPremiumLogoutDialog(context);
                 },
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20.w),
             ],
           ),
         );
@@ -849,20 +669,20 @@ class _SettingsViewState extends State<SettingsView> {
       builder: (BuildContext dialogContext) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(24.w),
           ),
           elevation: 0,
           backgroundColor: Colors.transparent,
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24.w),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(24.w),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+                  blurRadius: 20.w,
+                  offset: Offset(0.w, 8.w),
                 ),
               ],
             ),
@@ -871,9 +691,9 @@ class _SettingsViewState extends State<SettingsView> {
               children: [
                 // Premium Badge Icon with Gradient
                 Container(
-                  width: 64,
-                  height: 64,
-                  decoration: const BoxDecoration(
+                  width: 64.w,
+                  height: 64.w,
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
                       colors: [Color(0xFF0066FF), Color(0xFF6F9EFF)],
@@ -881,58 +701,58 @@ class _SettingsViewState extends State<SettingsView> {
                       end: Alignment.bottomRight,
                     ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.workspace_premium_rounded,
                     color: Colors.white,
-                    size: 32,
+                    size: 32.w,
                   ),
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: 18.w),
                 Text(
                   'Unlock Premium Protection',
                   style: GoogleFonts.poppins(
                     fontSize: 20.0.sp,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0C1D37),
+                    color: Color(0xFF0C1D37),
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.w),
                 Text(
                   'Logging out will disable real-time alerts and location updates. Upgrade to Premium to keep your child fully protected.',
                   style: GoogleFonts.poppins(
                     fontSize: 13.5.sp,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF64748B),
+                    color: Color(0xFF64748B),
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20.w),
 
                 // Bullet points of premium features
                 Column(
                   children: [
                     _buildDialogFeatureRow('Real-time location & geofencing'),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10.w),
                     _buildDialogFeatureRow('SOS emergency notification alerts'),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10.w),
                     _buildDialogFeatureRow(
                       'Advanced web filtering (Block 18+)',
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.w),
 
                 // Action Buttons
                 SizedBox(
                   width: double.infinity,
-                  height: 48,
+                  height: 48.w,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0066FF),
+                      backgroundColor: Color(0xFF0066FF),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(14.w),
                       ),
                       elevation: 0,
                     ),
@@ -941,7 +761,7 @@ class _SettingsViewState extends State<SettingsView> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const SubscriptionMultiPlanView(),
+                          builder: (_) => SubscriptionMultiPlanView(),
                         ),
                       );
                     },
@@ -955,14 +775,14 @@ class _SettingsViewState extends State<SettingsView> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.w),
                 SizedBox(
                   width: double.infinity,
-                  height: 48,
+                  height: 48.w,
                   child: TextButton(
                     style: TextButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(14.w),
                       ),
                     ),
                     onPressed: () async {
@@ -976,7 +796,7 @@ class _SettingsViewState extends State<SettingsView> {
                         await FirebaseNotificationService()
                             .removeTokenFromServer()
                             .timeout(
-                              const Duration(seconds: 4),
+                              Duration(seconds: 4),
                               onTimeout: () {
                                 AppLogger.warning(
                                   'removeTokenFromServer timed out',
@@ -1018,21 +838,21 @@ class _SettingsViewState extends State<SettingsView> {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(4),
-          decoration: const BoxDecoration(
+          padding: EdgeInsets.all(4.w),
+          decoration: BoxDecoration(
             color: Color(0xFFE0EDFF),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.check, color: Color(0xFF0066FF), size: 12),
+          child: Icon(Icons.check, color: Color(0xFF0066FF), size: 12.w),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10.w),
         Expanded(
           child: Text(
             text,
             style: GoogleFonts.poppins(
               fontSize: 13.0.sp,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF0C1D37),
+              color: Color(0xFF0C1D37),
             ),
           ),
         ),
@@ -1044,222 +864,27 @@ class _SettingsViewState extends State<SettingsView> {
     showAboutDialog(
       context: context,
       applicationName: 'NaviQ',
-      applicationVersion: 'Naviq Dev 1.0.4(Oct 7)',
+      applicationVersion: 'Naviq Dev 1.0.4(Oct 9)',
       applicationIcon: Container(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(8.w),
         decoration: BoxDecoration(
           color: AppColors.primaryColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(12.w),
         ),
-        child: const Icon(Icons.child_care, color: Colors.white, size: 32),
+        child: Icon(Icons.child_care, color: Colors.white, size: 32.w),
       ),
       children: [
-        const SizedBox(height: 16),
+        SizedBox(height: 16.w),
         Text(
           'Keeping children safe and parents connected.',
           style: TextStyle(fontSize: 14.0.sp, color: Colors.grey),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.w),
         Text(
           '© 2026 CodeScap Solutions',
           style: TextStyle(fontSize: 12.0.sp, color: Colors.grey),
         ),
       ],
     );
-  }
-
-  Future<void> _launchContactUrl(Uri url) async {
-    try {
-      if (!await launchUrl(url)) {
-        if (mounted) {
-          AppSnackbar.showError(context, 'Could not launch action');
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        AppSnackbar.showError(context, 'Error: $e');
-      }
-    }
-  }
-
-  List<Widget> _buildInactiveChildTiles() {
-    final inactiveChildren = _children
-        .where((e) => e.childId != _currentChildId)
-        .toList();
-
-    return inactiveChildren.map((child) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: InkWell(
-          onTap: () => _showSwitchConfirmation(child),
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.containerBackground.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
-              border: Border.all(color: Colors.white.withAlpha(50)),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppColors.primaryColor.withValues(
-                    alpha: 0.1,
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    size: 20,
-                    color: AppColors.primaryColor,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        child.childName,
-                        style: AppTextStyles.subtitle2.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        "Code: ${child.childCode}",
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.swap_horiz,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }).toList();
-  }
-
-  Widget _buildAddChildTile() {
-    return InkWell(
-      onTap: () async {
-        if (!_isPrimaryParent) {
-          AppSnackbar.showError(
-            context,
-            'Guardians have view-only access. Only primary parents can add a new child.',
-          );
-          return;
-        }
-        await Navigator.pushNamed(context, RouteNames.addChild);
-        _loadChildData();
-      },
-      borderRadius: BorderRadius.circular(AppSizes.radiusM),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.primaryColor.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          border: Border.all(
-            color: AppColors.primaryColor.withValues(alpha: 0.2),
-            style: BorderStyle.solid,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.add_circle_outline,
-              color: AppColors.primaryColor,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              "Add New Child",
-              style: AppTextStyles.subtitle2.copyWith(
-                color: AppColors.primaryColor,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showSwitchConfirmation(ChildProfile targetChild) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Switch Profile?'),
-        content: Text(
-          'Tracking will pause for $_childName and activate for ${targetChild.childName}.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Switch'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      _handleSwitch(targetChild);
-    }
-  }
-
-  Future<void> _handleSwitch(ChildProfile child) async {
-    try {
-      AppSnackbar.showLoading(context, 'Switching child identity...');
-
-      // 1. Stop background services if tracking on this device (child only)
-      if (!_sharedPrefsService.isParent) {
-        await BackgroundLocationService().stop();
-        AppLogger.info('Multi-Child: Stopped background services');
-      }
-
-      // 2. Perform switch in storage (Update token, IDs, last_active)
-      await _sharedPrefsService.switchChild(child.childId);
-      AppLogger.info('Multi-Child: Storage updated for ${child.childId}');
-
-      // 3. Re-initialize state
-      _loadChildData();
-
-      // 4. Restart services if tracking on this device (child only)
-      if (!_sharedPrefsService.isParent) {
-        await BackgroundLocationService().start();
-        AppLogger.info('Multi-Child: Restarted background services');
-      } else {
-        AppLogger.info(
-          'Multi-Child: Parent device, skipping background location service start',
-        );
-      }
-
-      if (mounted) {
-        // Clear loading snackbar
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          RouteNames.home,
-          (route) => false,
-        );
-      }
-    } catch (e) {
-      AppLogger.error('Switch failed: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        AppSnackbar.showError(context, 'Failed to switch profile');
-      }
-    }
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -57,9 +58,13 @@ class _ParentsContactViewState extends State<ParentsContactView> {
   }
 
   void _loadContacts() {
-    final String? contactsJson = _sharedPrefsService.getString('parents_contacts');
-    final String parentName = _sharedPrefsService.getString('parent_name') ?? 'Rahul Pandey';
-    final String parentPhone = _sharedPrefsService.getString('parent_phone') ?? '+91 87654 32109';
+    final String? contactsJson = _sharedPrefsService.getString(
+      'parents_contacts',
+    );
+    final String parentName =
+        _sharedPrefsService.getString('parent_name') ?? 'Rahul Pandey';
+    final String parentPhone =
+        _sharedPrefsService.getString('parent_phone') ?? '+91 87654 32109';
 
     if (contactsJson != null && contactsJson.isNotEmpty) {
       try {
@@ -69,7 +74,9 @@ class _ParentsContactViewState extends State<ParentsContactView> {
         });
 
         // Ensure the default parent matches the current user info
-        final defaultIndex = _contacts.indexWhere((e) => e['is_default'] == true);
+        final defaultIndex = _contacts.indexWhere(
+          (e) => e['is_default'] == true,
+        );
         if (defaultIndex != -1) {
           setState(() {
             _contacts[defaultIndex]['name'] = parentName;
@@ -92,7 +99,7 @@ class _ParentsContactViewState extends State<ParentsContactView> {
           'phone': parentPhone,
           'relation': 'Parent',
           'is_default': true,
-        }
+        },
       ];
     });
     _saveContactsToStorage();
@@ -108,7 +115,9 @@ class _ParentsContactViewState extends State<ParentsContactView> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.w),
+        ),
         title: Text(
           'Delete Contact',
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
@@ -119,23 +128,40 @@ class _ParentsContactViewState extends State<ParentsContactView> {
         ),
         actions: [
           TextButton(
-            child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(color: Colors.grey),
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
-            child: Text('Delete', style: GoogleFonts.poppins(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.poppins(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             onPressed: () async {
               final contactId = contact['id'];
               Navigator.pop(context);
-              
-              if (contactId != null && !contactId.toString().startsWith('contact_') && !contactId.toString().startsWith('default_')) {
-                final response = await injector<HomeRepository>().deleteParentContact(contactId);
+
+              if (contactId != null &&
+                  !contactId.toString().startsWith('contact_') &&
+                  !contactId.toString().startsWith('default_')) {
+                final response = await injector<HomeRepository>()
+                    .deleteParentContact(contactId);
                 if (!response.isSuccess) {
-                  AppSnackbar.showError(context, response.message.isNotEmpty ? response.message : 'Failed to delete contact from server');
+                  AppSnackbar.showError(
+                    context,
+                    response.message.isNotEmpty
+                        ? response.message
+                        : 'Failed to delete contact from server',
+                  );
                   return;
                 }
               }
-              
+
               setState(() {
                 _contacts.removeAt(index);
               });
@@ -153,65 +179,26 @@ class _ParentsContactViewState extends State<ParentsContactView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        leadingWidth: 56,
-        leading: Center(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).maybePop(),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  CupertinoIcons.chevron_left,
-                  color: Colors.black,
-                  size: 18,
-                ),
-              ),
-            ),
-          ),
-        ),
-        title: Text(
-          'Parents Contact',
-          style: GoogleFonts.poppins(
-            fontSize: 20.0.sp,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF0C1D37),
-          ),
-        ),
+      backgroundColor: Color(0xFFF8FAFC),
+      appBar: figmaAppBar(
+        context,
+        title: 'Parents Contact',
       ),
       body: SafeArea(
         child: _contacts.isEmpty
             ? Center(
                 child: _isLoadingBackend
-                    ? const CircularProgressIndicator()
+                    ? CircularProgressIndicator()
                     : Text(
                         'No contacts found.',
                         style: GoogleFonts.poppins(
                           fontSize: 16.0.sp,
-                          color: const Color(0xFF94A3B8),
+                          color: Color(0xFF94A3B8),
                         ),
                       ),
               )
             : ListView.builder(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(16.0.w),
                 itemCount: _contacts.length,
                 itemBuilder: (context, index) {
                   final contact = _contacts[index];
@@ -221,16 +208,16 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                       .toUpperCase();
 
                   return Container(
-                    margin: const EdgeInsets.only(bottom: 16.0),
-                    padding: const EdgeInsets.all(16.0),
+                    margin: EdgeInsets.only(bottom: 16.0.w),
+                    padding: EdgeInsets.all(16.0.w),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(24.w),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF0C1D37).withValues(alpha: 0.04),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
+                          color: Color(0xFF0C1D37).withValues(alpha: 0.04),
+                          blurRadius: 16.w,
+                          offset: Offset(0.w, 4.w),
                         ),
                       ],
                     ),
@@ -238,14 +225,14 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                       children: [
                         // Initials circle
                         Container(
-                          width: 56,
-                          height: 56,
+                          width: 56.w,
+                          height: 56.w,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
+                            color: Color(0xFFEFF6FF),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0xFF0066FF),
-                              width: 1.5,
+                              color: Color(0xFF0066FF),
+                              width: 1.5.w,
                             ),
                           ),
                           alignment: Alignment.center,
@@ -254,11 +241,11 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                             style: GoogleFonts.poppins(
                               fontSize: 16.0.sp,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFF0066FF),
+                              color: Color(0xFF0066FF),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: 16.w),
                         // Details
                         Expanded(
                           child: Column(
@@ -271,42 +258,45 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                                     style: GoogleFonts.poppins(
                                       fontSize: 16.0.sp,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF0C1D37),
+                                      color: Color(0xFF0C1D37),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 8.w),
                                   // Relation tag
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8.w,
+                                      vertical: 3.w,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFECFDF5),
-                                      borderRadius: BorderRadius.circular(8),
+                                      color: Color(0xFFECFDF5),
+                                      borderRadius: BorderRadius.circular(8.w),
                                     ),
                                     child: Text(
                                       contact['relation'] ?? 'Parent',
                                       style: GoogleFonts.poppins(
                                         fontSize: 10.0.sp,
                                         fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF059669),
+                                        color: Color(0xFF059669),
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
+                              SizedBox(height: 6.w),
                               Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     CupertinoIcons.phone,
-                                    size: 14,
+                                    size: 14.w,
                                     color: Color(0xFF94A3B8),
                                   ),
-                                  const SizedBox(width: 4),
+                                  SizedBox(width: 4.w),
                                   Text(
                                     contact['phone'] ?? '',
                                     style: GoogleFonts.poppins(
                                       fontSize: 13.0.sp,
-                                      color: const Color(0xFF64748B),
+                                      color: Color(0xFF64748B),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -315,8 +305,30 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                             ],
                           ),
                         ),
-                        // Edit / Delete buttons
+                        // Edit is always the right-most icon so it lines up on
+                        // every card; Delete (added contacts only) sits to its
+                        // left. The default contact has no delete, so its edit
+                        // icon sits at the card's edge with no empty slot.
                         if (_isPrimaryParent) ...[
+                          if (!isDefault) ...[
+                            GestureDetector(
+                              onTap: () => _confirmDeleteContact(index),
+                              child: Container(
+                                width: 36.w,
+                                height: 36.w,
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFFEF2F2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  CupertinoIcons.trash,
+                                  color: Color(0xFFEF4444),
+                                  size: 18.w,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                          ],
                           GestureDetector(
                             onTap: () {
                               Navigator.push(
@@ -334,39 +346,19 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                               });
                             },
                             child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: const BoxDecoration(
+                              width: 36.w,
+                              height: 36.w,
+                              decoration: BoxDecoration(
                                 color: Color(0xFFEFF6FF),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 CupertinoIcons.pencil,
                                 color: Color(0xFF0066FF),
-                                size: 18,
+                                size: 18.w,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          if (!isDefault)
-                            GestureDetector(
-                              onTap: () => _confirmDeleteContact(index),
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFFEF2F2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  CupertinoIcons.trash,
-                                  color: Color(0xFFEF4444),
-                                  size: 18,
-                                ),
-                              ),
-                            )
-                          else
-                            const SizedBox(width: 36),
                         ],
                       ],
                     ),
@@ -380,9 +372,7 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => AddContactView(
-                      contactsList: _contacts,
-                    ),
+                    builder: (_) => AddContactView(contactsList: _contacts),
                   ),
                 ).then((value) {
                   if (value == true) {
@@ -390,10 +380,10 @@ class _ParentsContactViewState extends State<ParentsContactView> {
                   }
                 });
               },
-              backgroundColor: const Color(0xFF0066FF),
-              shape: const CircleBorder(),
+              backgroundColor: Color(0xFF0066FF),
+              shape: CircleBorder(),
               elevation: 4,
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
+              child: Icon(Icons.add, color: Colors.white, size: 28.w),
             )
           : null,
     );

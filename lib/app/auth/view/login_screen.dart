@@ -10,11 +10,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_strings.dart';
 import 'package:child_track/core/widgets/common_textfield.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
+import 'package:child_track/core/widgets/figma_primary_button.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.isFromSignIn = false});
@@ -119,9 +120,9 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFEDF4FE),
+        backgroundColor: Color(0xFFEDF4FE),
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFFFBFCFE), Color(0xFFEDF4FE)],
               begin: Alignment.centerLeft,
@@ -136,9 +137,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   top: false,
                   child: LayoutBuilder(
                     builder: (context, constraints) => SingleChildScrollView(
-                      physics: const ClampingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSizes.paddingL,
+                      physics: ClampingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSizes.paddingL.w,
                       ),
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
@@ -150,20 +151,20 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                const SizedBox(height: 38),
+                                SizedBox(height: 38.w),
                                 _buildHeader(),
-                                const SizedBox(height: 47),
+                                SizedBox(height: 47.w),
                                 _buildPhoneField(),
-                                const SizedBox(height: 10),
+                                SizedBox(height: 10.w),
                                 _buildValidationTip(),
                                 _buildOtpField(),
-                                const SizedBox(height: AppSizes.spacingL),
-                                const Spacer(),
+                                SizedBox(height: AppSizes.spacingL.w),
+                                Spacer(),
                                 _buildTermsCheckbox(),
-                                const SizedBox(height: AppSizes.spacingL),
+                                SizedBox(height: AppSizes.spacingL.w),
                                 _buildActionButton(),
                                 _buildResendOtpLink(),
-                                const SizedBox(height: 96),
+                                SizedBox(height: 96.w),
                               ],
                             ),
                           ),
@@ -183,16 +184,16 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildCustomAppBar() {
     return Container(
       color: Colors.white,
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 4),
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 4.w),
       child: SizedBox(
-        height: 72,
+        height: 72.w,
         child: Stack(
           alignment: Alignment.center,
           children: [
             Align(
               alignment: Alignment.centerLeft,
               child: Padding(
-                padding: const EdgeInsets.only(left: 27),
+                padding: EdgeInsets.only(left: 27.w),
                 child: GestureDetector(
                   onTap: () {
                     if (Navigator.of(context).canPop()) {
@@ -200,8 +201,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     }
                   },
                   child: Container(
-                    width: 52,
-                    height: 52,
+                    width: 52.w,
+                    height: 52.w,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -209,15 +210,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 2,
-                          offset: const Offset(0, 4),
+                          blurRadius: 2.w,
+                          offset: Offset(0, 4.w),
                         ),
                       ],
                     ),
                     child: Image.asset(
                       'assets/icons/auth_back.png',
-                      width: 24,
-                      height: 24,
+                      width: 24.w,
+                      height: 24.w,
                     ),
                   ),
                 ),
@@ -225,10 +226,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             Text(
               widget.isFromSignIn ? 'Sign In' : 'Sign Up',
-              style: GoogleFonts.poppins(
-                fontSize: 24.0.sp,
-                fontWeight: FontWeight.w600,
-                height: 36 / 24,
+              style: FigmaText.poppins(
+                24,
+                weight: FontWeight.w600,
+                lineHeight: 36,
                 color: Colors.black,
               ),
             ),
@@ -244,20 +245,14 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Text(
           'Verify and Proceed',
-          style: GoogleFonts.poppins(
-            fontSize: 32.0.sp,
-            fontWeight: FontWeight.w700,
-            height: 40 / 32,
-            color: const Color(0xFF16181A),
-          ),
+          style: FigmaText.poppins(32, weight: FontWeight.w700, lineHeight: 40),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4.w),
         Text(
           'No Spams, Just Personalized Notification',
-          style: GoogleFonts.poppins(
-            fontSize: 12.0.sp,
-            fontWeight: FontWeight.w400,
-            height: 20 / 12,
+          style: FigmaText.poppins(
+            12,
+            lineHeight: 20,
             letterSpacing: 0.2,
             color: const Color(0xFF707784),
           ),
@@ -266,12 +261,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  TextStyle get _fieldHintStyle => GoogleFonts.poppins(
-    fontSize: 16.0.sp,
-    fontWeight: FontWeight.w400,
-    height: 24 / 16,
-    color: const Color(0xFF4A5267),
-  );
+  TextStyle get _fieldHintStyle =>
+      FigmaText.input.copyWith(color: FigmaColors.body);
 
   Widget _buildPhoneField() {
     return CommonTextField(
@@ -283,16 +274,16 @@ class _LoginScreenState extends State<LoginScreen> {
       borderColor: Colors.black,
       borderWidth: 0.75,
       borderRadius: 14,
-      contentPadding: const EdgeInsets.fromLTRB(41, 18, 24, 18),
+      contentPadding: EdgeInsets.fromLTRB(41.w, 18.w, 24.w, 18.w),
       keyboardType: TextInputType.phone,
       textInputAction: TextInputAction.done,
       suffixIcon: _isPhoneValid
           ? Padding(
-              padding: const EdgeInsets.only(right: 11),
+              padding: EdgeInsets.only(right: 11.w),
               child: SvgPicture.asset(
                 'assets/icons/auth_phone_valid_check.svg',
-                width: 25,
-                height: 25,
+                width: 25.w,
+                height: 25.w,
               ),
             )
           : null,
@@ -315,13 +306,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildValidationTip() {
     return Padding(
-      padding: const EdgeInsets.only(right: 15),
+      padding: EdgeInsets.only(right: 15.w),
       child: Text(
         'we will generate otp automatically',
         textAlign: TextAlign.right,
-        style: GoogleFonts.poppins(
-          fontSize: 10.0.sp,
-          fontWeight: FontWeight.w700,
+        style: FigmaText.poppins(
+          10,
+          weight: FontWeight.w700,
           letterSpacing: 0.2,
           color: const Color(0xFF9BA4B5),
         ),
@@ -330,9 +321,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildTermsCheckbox() {
-    final base = GoogleFonts.poppins(
-      fontSize: 12.0.sp,
-      fontWeight: FontWeight.w600,
+    final base = FigmaText.poppins(
+      12,
+      weight: FontWeight.w600,
       letterSpacing: 0.2,
     );
     return Row(
@@ -342,9 +333,9 @@ class _LoginScreenState extends State<LoginScreen> {
           onTap: () => setState(() => _agreeToTerms = !_agreeToTerms),
           child: _buildCheckboxBox(),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12.w),
         SizedBox(
-          width: 207,
+          width: 207.w,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -352,14 +343,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Text(
                     'I agree to the',
-                    style: base.copyWith(color: const Color(0xFF4A5267)),
+                    style: base.copyWith(color: FigmaColors.body),
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4.w),
                   GestureDetector(
                     onTap: () {},
                     child: Text(
                       'Terms of Service',
-                      style: base.copyWith(color: const Color(0xFF0069F9)),
+                      style: base.copyWith(color: FigmaColors.primary),
                     ),
                   ),
                 ],
@@ -367,7 +358,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text.rich(
                 TextSpan(
                   text: '&',
-                  style: base.copyWith(color: const Color(0xFF4A4A4A)),
+                  style: base.copyWith(color: Color(0xFF4A4A4A)),
                   children: [
                     WidgetSpan(
                       alignment: PlaceholderAlignment.baseline,
@@ -376,7 +367,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onTap: () {},
                         child: Text(
                           ' Privacy Policy',
-                          style: base.copyWith(color: const Color(0xFF3461FD)),
+                          style: base.copyWith(color: Color(0xFF3461FD)),
                         ),
                       ),
                     ),
@@ -393,35 +384,31 @@ class _LoginScreenState extends State<LoginScreen> {
   /// 24px white box (radius 8) with the Figma inset shadow when unchecked.
   Widget _buildCheckboxBox() {
     return SizedBox(
-      width: 24,
-      height: 24,
+      width: 24.w,
+      height: 24.w,
       child: _agreeToTerms
           ? Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF0069F9),
-                borderRadius: BorderRadius.circular(8),
+                color: FigmaColors.primary,
+                borderRadius: BorderRadius.circular(8.w),
               ),
-              child: const Icon(
-                Icons.check_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
+              child: Icon(Icons.check_rounded, color: Colors.white, size: 18.w),
             )
           : DecoratedBox(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.w),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.w),
                 child: ImageFiltered(
                   imageFilter: ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.w),
                       border: Border.all(
                         color: Colors.black.withValues(alpha: 0.1),
-                        width: 3,
+                        width: 3.w,
                       ),
                     ),
                   ),
@@ -432,10 +419,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildOtpField() {
-    if (!_otpSent) return const SizedBox.shrink();
+    if (!_otpSent) return SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(top: 22),
+      padding: EdgeInsets.only(top: 22.w),
       child: CommonTextField(
         controller: _otpController,
         focusNode: _otpFocusNode,
@@ -445,7 +432,7 @@ class _LoginScreenState extends State<LoginScreen> {
         borderColor: Colors.black,
         borderWidth: 0.75,
         borderRadius: 14,
-        contentPadding: const EdgeInsets.fromLTRB(40, 18, 24, 18),
+        contentPadding: EdgeInsets.fromLTRB(40.w, 18.w, 24.w, 18.w),
         keyboardType: TextInputType.number,
         textInputAction: TextInputAction.done,
         inputFormatters: [
@@ -467,21 +454,21 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildResendOtpLink() {
-    if (!_otpSent) return const SizedBox.shrink();
+    if (!_otpSent) return SizedBox.shrink();
 
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final isLoading = state is AuthLoading;
         return Padding(
-          padding: const EdgeInsets.only(top: AppSizes.spacingL),
+          padding: EdgeInsets.only(top: AppSizes.spacingL.w),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 "Didn't receive the OTP? ",
-                style: GoogleFonts.poppins(
-                  fontSize: 14.0.sp,
-                  fontWeight: FontWeight.w500,
+                style: FigmaText.poppins(
+                  14,
+                  weight: FontWeight.w500,
                   color: const Color(0xFF62748E),
                 ),
               ),
@@ -489,12 +476,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 onTap: isLoading ? null : _resendOtp,
                 child: Text(
                   'Resend OTP',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14.0.sp,
-                    fontWeight: FontWeight.w600,
+                  style: FigmaText.poppins(
+                    14,
+                    weight: FontWeight.w600,
                     color: const Color(0xFF0066FF),
-                    decoration: TextDecoration.underline,
-                  ),
+                  ).copyWith(decoration: TextDecoration.underline),
                 ),
               ),
             ],
@@ -513,40 +499,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
         return Align(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 346),
-            child: InkWell(
-              onTap: disabled ? null : (_otpSent ? _verifyOtp : _sendOtp),
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                height: 56,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: disabled
-                      ? const Color(0xFF0069F9).withValues(alpha: 0.5)
-                      : const Color(0xFF0069F9),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                alignment: Alignment.center,
-                child: isLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                    : Text(
-                        buttonText,
-                        style: GoogleFonts.poppins(
-                          fontSize: 20.0.sp,
-                          fontWeight: FontWeight.w400,
-                          height: 28 / 20,
-                          letterSpacing: 0.2,
-                          color: Colors.white,
-                        ),
-                      ),
-              ),
+            constraints: BoxConstraints(maxWidth: 346.w),
+            child: FigmaPrimaryButton(
+              label: buttonText,
+              height: 56,
+              radius: 14,
+              isLoading: isLoading,
+              onPressed: disabled ? null : (_otpSent ? _verifyOtp : _sendOtp),
             ),
           ),
         );

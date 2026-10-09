@@ -1,4 +1,5 @@
 import 'package:child_track/app/home/model/last_trip_model.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:child_track/app/home/model/trip_detail_model.dart';
 import 'package:child_track/app/home/view_model/bloc/homepage_bloc.dart';
 import 'package:child_track/app/home/view_model/bloc/homepage_state.dart';
@@ -812,15 +813,9 @@ class _TripDetailViewState extends State<TripDetailView> {
   Widget _buildPlaybackPromoScreen(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: Text(
-          'Trip Playback',
-          style: AppTextStyles.headline5.copyWith(fontWeight: FontWeight.w600),
-        ),
+      appBar: figmaAppBar(
+        context,
+        title: 'Trip Playback',
       ),
       body: Center(
         child: Padding(

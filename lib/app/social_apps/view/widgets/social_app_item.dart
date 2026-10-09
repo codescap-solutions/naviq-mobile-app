@@ -41,33 +41,33 @@ class SocialAppItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final double f = usageFraction.clamp(0.0, 1.0);
     return Container(
-      height: 75,
-      margin: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+      height: 75.w,
+      margin: EdgeInsets.fromLTRB(4.w, 0.w, 4.w, 8.w),
       decoration: BoxDecoration(
         color: Colors.white,
         // Figma: pale-blue wash fading to white; busier apps get more of it.
         gradient: f < 0.02
             ? null
             : LinearGradient(
-                colors: const [Color(0xFFDEEFFE), Colors.white],
+                colors: [Color(0xFFDEEFFE), Colors.white],
                 stops: [0.0, 0.25 + 0.75 * f],
               ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEBF3FF), width: 0.8),
+        borderRadius: BorderRadius.circular(14.w),
+        border: Border.all(color: Color(0xFFEBF3FF), width: 0.8),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(14.w),
         onTap: () {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Usage details for $name')));
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.8),
+          padding: EdgeInsets.symmetric(horizontal: 12.8.w),
           child: Row(
             children: [
               _AppIcon(icon: icon),
-              const SizedBox(width: 16),
+              SizedBox(width: 16.w),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -82,26 +82,26 @@ class SocialAppItem extends StatelessWidget {
                         fontWeight: FontWeight.w400,
                         height: 24 / 16,
                         letterSpacing: 0.2,
-                        color: const Color(0xFF0F1320),
+                        color: Color(0xFF0F1320),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4.w),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Container(
-                        height: 24,
-                        constraints: const BoxConstraints(minWidth: 87),
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        height: 24.w,
+                        constraints: BoxConstraints(minWidth: 87.w),
+                        padding: EdgeInsets.symmetric(horizontal: 8.w),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEBF3FF),
-                          borderRadius: BorderRadius.circular(8),
+                          color: Color(0xFFEBF3FF),
+                          borderRadius: BorderRadius.circular(8.w),
                         ),
                         child: Center(
                           widthFactor: 1,
                           child: Text(
                             usage,
                             style: GoogleFonts.poppins(
-                              color: const Color(0xFF4A5267),
+                              color: Color(0xFF4A5267),
                               fontSize: 11.0.sp,
                               fontWeight: FontWeight.w400,
                               letterSpacing: 0.2,
@@ -130,21 +130,21 @@ class _AppIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 50,
-      height: 50,
+      width: 50.w,
+      height: 50.w,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.w),
         child: Image(
           image: icon,
-          width: 50,
-          height: 50,
+          width: 50.w,
+          height: 50.w,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return Container(
-              width: 50,
-              height: 50,
-              color: const Color(0xFFF1F5F9),
-              child: const Icon(Icons.apps, size: 20, color: Color(0xFF94A3B8)),
+              width: 50.w,
+              height: 50.w,
+              color: Color(0xFFF1F5F9),
+              child: Icon(Icons.apps, size: 20.w, color: Color(0xFF94A3B8)),
             );
           },
         ),
@@ -177,16 +177,16 @@ class _DailyLimitButton extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showDialog(context),
       child: Container(
-        height: 40,
-        padding: EdgeInsets.symmetric(horizontal: hasLimit ? 10 : 8),
+        height: 40.w,
+        padding: EdgeInsets.symmetric(horizontal: hasLimit ? 10.w : 8.w),
         width: hasLimit ? null : 36,
         decoration: BoxDecoration(
-          color: hasLimit ? const Color(0xFFEFF6FF) : Colors.transparent,
+          color: hasLimit ? Color(0xFFEFF6FF) : Colors.transparent,
           shape: hasLimit ? BoxShape.rectangle : BoxShape.circle,
-          borderRadius: hasLimit ? BorderRadius.circular(18) : null,
+          borderRadius: hasLimit ? BorderRadius.circular(18.w) : null,
           border: hasLimit
               ? null
-              : Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
+              : Border.all(color: Color(0xFFCBD5E1), width: 1.5),
         ),
         child: hasLimit
             ? Text(
@@ -194,10 +194,10 @@ class _DailyLimitButton extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 12.0.sp,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0066FF),
+                  color: Color(0xFF0066FF),
                 ),
               )
-            : const Icon(Icons.add_rounded, size: 18, color: Color(0xFF94A3B8)),
+            : Icon(Icons.add_rounded, size: 18.w, color: Color(0xFF94A3B8)),
       ),
     );
   }
@@ -262,16 +262,16 @@ class _DailyLimitPickerDialogState extends State<_DailyLimitPickerDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+      insetPadding: EdgeInsets.symmetric(horizontal: 32.w),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceColor,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(24.w),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
+              blurRadius: 24.w,
+              offset: Offset(0, 8.w),
             ),
           ],
         ),
@@ -280,7 +280,7 @@ class _DailyLimitPickerDialogState extends State<_DailyLimitPickerDialog> {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+              padding: EdgeInsets.symmetric(vertical: 18.w, horizontal: 20.w),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -290,19 +290,19 @@ class _DailyLimitPickerDialogState extends State<_DailyLimitPickerDialog> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24.w),
+                  topRight: Radius.circular(24.w),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.hourglass_bottom_rounded,
                     color: Colors.white,
-                    size: 22,
+                    size: 22.w,
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10.w),
                   Text(
                     'Daily Time Limit',
                     style: AppTextStyles.headline6.copyWith(
@@ -313,17 +313,17 @@ class _DailyLimitPickerDialogState extends State<_DailyLimitPickerDialog> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+              padding: EdgeInsets.fromLTRB(20.w, 20.w, 20.w, 20.w),
               child: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 10.w,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.w),
                       border: Border.all(
                         color: AppColors.primaryColor.withValues(alpha: 0.25),
                       ),
@@ -333,10 +333,10 @@ class _DailyLimitPickerDialogState extends State<_DailyLimitPickerDialog> {
                       children: [
                         Icon(
                           Icons.info_outline_rounded,
-                          size: 16,
+                          size: 16.w,
                           color: AppColors.primaryColor,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6.w),
                         Flexible(
                           child: Text(
                             _description,
@@ -350,7 +350,7 @@ class _DailyLimitPickerDialogState extends State<_DailyLimitPickerDialog> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.w),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -362,7 +362,7 @@ class _DailyLimitPickerDialogState extends State<_DailyLimitPickerDialog> {
                         onChanged: (i) => setState(() => _hours = i),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
+                        padding: EdgeInsets.only(bottom: 20.w),
                         child: Text(
                           ' : ',
                           style: AppTextStyles.headline4.copyWith(
@@ -380,23 +380,23 @@ class _DailyLimitPickerDialogState extends State<_DailyLimitPickerDialog> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.w),
                   CommonButton(
                     text: 'Set Daily Limit',
                     onPressed: (_hours == 0 && _minutes == 0)
                         ? null
                         : () => Navigator.pop(context, _hours * 60 + _minutes),
                     width: double.infinity,
-                    height: 50,
+                    height: 50.w,
                   ),
                   if (widget.initialMinutes != null) ...[
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10.w),
                     TextButton(
                       onPressed: () => Navigator.pop(context, -1),
                       child: Text(
                         'Remove Limit',
                         style: AppTextStyles.body2.copyWith(
-                          color: const Color(0xFFEF4444),
+                          color: Color(0xFFEF4444),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -431,24 +431,24 @@ class _DailyLimitPickerDialogState extends State<_DailyLimitPickerDialog> {
             letterSpacing: 1.5,
           ),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6.w),
         Container(
-          width: 90,
+          width: 90.w,
           height: itemH * 3,
           decoration: BoxDecoration(
             color: AppColors.backgroundColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.w),
             border: Border.all(color: AppColors.borderColor),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(15.w),
             child: Stack(
               alignment: Alignment.center,
               children: [
                 Positioned(
                   top: itemH,
-                  left: 0,
-                  right: 0,
+                  left: 0.w,
+                  right: 0.w,
                   child: Container(
                     height: itemH,
                     decoration: BoxDecoration(
@@ -465,7 +465,7 @@ class _DailyLimitPickerDialogState extends State<_DailyLimitPickerDialog> {
                   controller: controller,
                   itemExtent: itemH,
                   diameterRatio: 1.4,
-                  physics: const FixedExtentScrollPhysics(),
+                  physics: FixedExtentScrollPhysics(),
                   onSelectedItemChanged: onChanged,
                   childDelegate: ListWheelChildBuilderDelegate(
                     builder: (ctx, i) {
@@ -518,13 +518,13 @@ class _LockIconButton extends StatelessWidget {
       },
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 35,
+        width: 35.w,
         child: Center(
           child: SvgPicture.asset(
             isLocked
                 ? 'assets/icons/scroll_lock_on.svg'
                 : 'assets/icons/scroll_lock_off.svg',
-            width: 25,
+            width: 25.w,
             height: isLocked ? 34 : 35,
           ),
         ),
@@ -565,47 +565,47 @@ class _LockOptionsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSizes.paddingL),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.all(AppSizes.paddingL.w),
+      decoration: BoxDecoration(
         color: AppColors.surfaceColor,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppSizes.radiusL),
-          topRight: Radius.circular(AppSizes.radiusL),
+          topLeft: Radius.circular(AppSizes.radiusL.w),
+          topRight: Radius.circular(AppSizes.radiusL.w),
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 40,
-            height: 4,
+            width: 40.w,
+            height: 4.w,
             decoration: BoxDecoration(
               color: AppColors.borderColor,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(2.w),
             ),
           ),
-          const SizedBox(height: AppSizes.spacingL),
+          SizedBox(height: AppSizes.spacingL.w),
           Text(
             'Select Lock Type',
             style: AppTextStyles.headline6.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: AppSizes.spacingXL),
+          SizedBox(height: AppSizes.spacingXL.w),
           _OptionTile(
             icon: Icons.lock_outline_rounded,
             title: 'Lock Always',
             subtitle: 'App will be locked until you manually unlock it',
             onTap: () => Navigator.pop(context, 'always'),
           ),
-          const SizedBox(height: AppSizes.spacingM),
+          SizedBox(height: AppSizes.spacingM.w),
           _OptionTile(
             icon: Icons.timer_outlined,
             title: 'Time-Based Lock',
             subtitle: 'Set a specific duration for the lock',
             onTap: () => Navigator.pop(context, 'time'),
           ),
-          const SizedBox(height: AppSizes.spacingXXL),
+          SizedBox(height: AppSizes.spacingXXL.w),
         ],
       ),
     );
@@ -630,23 +630,23 @@ class _OptionTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        borderRadius: BorderRadius.circular(AppSizes.radiusM.w),
         side: BorderSide(color: AppColors.borderColor),
       ),
       leading: Container(
-        padding: const EdgeInsets.all(10),
+        padding: EdgeInsets.all(10.w),
         decoration: BoxDecoration(
           color: AppColors.primaryColor.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: AppColors.primaryColor, size: 24),
+        child: Icon(icon, color: AppColors.primaryColor, size: 24.w),
       ),
       title: Text(title, style: AppTextStyles.subtitle1),
       subtitle: Text(
         subtitle,
         style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
       ),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      trailing: Icon(Icons.arrow_forward_ios, size: 16.w),
     );
   }
 }
@@ -737,16 +737,16 @@ class _LockDurationDialogState extends State<_LockDurationDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+      insetPadding: EdgeInsets.symmetric(horizontal: 32.w),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceColor,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(24.w),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
+              blurRadius: 24.w,
+              offset: Offset(0, 8.w),
             ),
           ],
         ),
@@ -756,7 +756,7 @@ class _LockDurationDialogState extends State<_LockDurationDialog> {
             // ── Header ──
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+              padding: EdgeInsets.symmetric(vertical: 18.w, horizontal: 20.w),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -766,19 +766,19 @@ class _LockDurationDialogState extends State<_LockDurationDialog> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24.w),
+                  topRight: Radius.circular(24.w),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.lock_outline_rounded,
                     color: Colors.white,
-                    size: 22,
+                    size: 22.w,
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10.w),
                   Text(
                     'Set Lock Duration',
                     style: AppTextStyles.headline6.copyWith(
@@ -790,19 +790,19 @@ class _LockDurationDialogState extends State<_LockDurationDialog> {
             ),
 
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+              padding: EdgeInsets.fromLTRB(20.w, 20.w, 20.w, 20.w),
               child: Column(
                 children: [
                   // ── Description chip ──
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+                    duration: Duration(milliseconds: 200),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 10.w,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.w),
                       border: Border.all(
                         color: AppColors.primaryColor.withValues(alpha: 0.25),
                       ),
@@ -812,10 +812,10 @@ class _LockDurationDialogState extends State<_LockDurationDialog> {
                       children: [
                         Icon(
                           Icons.info_outline_rounded,
-                          size: 16,
+                          size: 16.w,
                           color: AppColors.primaryColor,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6.w),
                         Flexible(
                           child: Text(
                             _lockDescription,
@@ -830,7 +830,7 @@ class _LockDurationDialogState extends State<_LockDurationDialog> {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.w),
 
                   // ── Scroll pickers ──
                   Row(
@@ -867,7 +867,7 @@ class _LockDurationDialogState extends State<_LockDurationDialog> {
                       ),
 
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
+                        padding: EdgeInsets.only(bottom: 20.w),
                         child: Text(
                           ' : ',
                           style: AppTextStyles.headline4.copyWith(
@@ -910,7 +910,7 @@ class _LockDurationDialogState extends State<_LockDurationDialog> {
                     ],
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.w),
 
                   // ── Lock button ──
                   CommonButton(
@@ -922,7 +922,7 @@ class _LockDurationDialogState extends State<_LockDurationDialog> {
                             Duration(hours: _hours, minutes: _minutes),
                           ),
                     width: double.infinity,
-                    height: 50,
+                    height: 50.w,
                   ),
                 ],
               ),
@@ -983,28 +983,28 @@ class _WheelPicker extends StatelessWidget {
             letterSpacing: 1.5,
           ),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6.w),
         Container(
-          width: 90,
+          width: 90.w,
           height: itemHeight * visibleCount,
           decoration: BoxDecoration(
             color: AppColors.backgroundColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.w),
             border: Border.all(
               color: isEditing ? AppColors.primaryColor : AppColors.borderColor,
               width: isEditing ? 2 : 1,
             ),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(15.w),
             child: Stack(
               alignment: Alignment.center,
               children: [
                 // Highlight band behind center item
                 Positioned(
                   top: itemHeight,
-                  left: 0,
-                  right: 0,
+                  left: 0.w,
+                  right: 0.w,
                   child: Container(
                     height: itemHeight,
                     decoration: BoxDecoration(
@@ -1012,7 +1012,7 @@ class _WheelPicker extends StatelessWidget {
                       border: Border.symmetric(
                         horizontal: BorderSide(
                           color: AppColors.primaryColor.withValues(alpha: 0.25),
-                          width: 1,
+                          width: 1.w,
                         ),
                       ),
                     ),
@@ -1023,7 +1023,7 @@ class _WheelPicker extends StatelessWidget {
                 if (isEditing)
                   Center(
                     child: SizedBox(
-                      width: 60,
+                      width: 60.w,
                       child: TextField(
                         controller: textController,
                         focusNode: focusNode,
@@ -1037,7 +1037,7 @@ class _WheelPicker extends StatelessWidget {
                           color: AppColors.primaryColor,
                           fontWeight: FontWeight.w700,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
                           isDense: true,
@@ -1051,7 +1051,7 @@ class _WheelPicker extends StatelessWidget {
                     controller: controller,
                     itemExtent: itemHeight,
                     diameterRatio: 1.4,
-                    physics: const FixedExtentScrollPhysics(),
+                    physics: FixedExtentScrollPhysics(),
                     onSelectedItemChanged: onScrollChanged,
                     childDelegate: ListWheelChildBuilderDelegate(
                       builder: (ctx, index) {

@@ -18,7 +18,8 @@ class DeletionRestrictionConfigScreen extends StatefulWidget {
 }
 
 class _DeletionRestrictionConfigScreenState
-    extends State<DeletionRestrictionConfigScreen> with WidgetsBindingObserver {
+    extends State<DeletionRestrictionConfigScreen>
+    with WidgetsBindingObserver {
   bool _isChecking = false;
 
   @override
@@ -41,7 +42,8 @@ class _DeletionRestrictionConfigScreenState
   }
 
   Future<void> _checkAndroidPermissionSilently() async {
-    final enabled = await injector<DeviceInfoService>().checkAccessibilityPermission();
+    final enabled = await injector<DeviceInfoService>()
+        .checkAccessibilityPermission();
     if (enabled && mounted) {
       _navigateToNextScreen();
     }
@@ -49,9 +51,7 @@ class _DeletionRestrictionConfigScreenState
 
   void _navigateToNextScreen() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const PermissionSequenceScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => PermissionSequenceScreen()),
     );
   }
 
@@ -63,7 +63,10 @@ class _DeletionRestrictionConfigScreenState
       try {
         if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
           if (mounted) {
-            AppSnackbar.showError(context, 'Could not open Screen Time settings. Please open Settings manually.');
+            AppSnackbar.showError(
+              context,
+              'Could not open Screen Time settings. Please open Settings manually.',
+            );
           }
         }
       } catch (e) {
@@ -77,7 +80,8 @@ class _DeletionRestrictionConfigScreenState
   Future<void> _handleProceed() async {
     if (Platform.isAndroid) {
       setState(() => _isChecking = true);
-      final hasPermission = await injector<DeviceInfoService>().checkAccessibilityPermission();
+      final hasPermission = await injector<DeviceInfoService>()
+          .checkAccessibilityPermission();
       setState(() => _isChecking = false);
 
       if (hasPermission) {
@@ -99,23 +103,23 @@ class _DeletionRestrictionConfigScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Color(0xFFF8FAFC),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          padding: EdgeInsets.symmetric(horizontal: 24.0.w, vertical: 16.0.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 20),
+              SizedBox(height: 20.w),
               _buildHeader(),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.w),
               Expanded(
                 child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
+                  physics: BouncingScrollPhysics(),
                   child: _buildInstructionsCard(),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20.w),
               _buildActionButtons(),
             ],
           ),
@@ -128,36 +132,38 @@ class _DeletionRestrictionConfigScreenState
     return Column(
       children: [
         Container(
-          width: 72,
-          height: 72,
+          width: 72.w,
+          height: 72.w,
           decoration: BoxDecoration(
-            color: const Color(0xFFFFECE0),
+            color: Color(0xFFFFECE0),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFF6600).withValues(alpha: 0.1),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+                color: Color(0xFFFF6600).withValues(alpha: 0.1),
+                blurRadius: 16.w,
+                offset: Offset(0, 6.w),
               ),
             ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.security_rounded,
-            size: 36,
+            size: 36.w,
             color: Color(0xFFFF6600),
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.w),
         Text(
-          Platform.isAndroid ? 'Enable Deletion Protection' : 'Protect App from Deleting',
+          Platform.isAndroid
+              ? 'Enable Deletion Protection'
+              : 'Protect App from Deleting',
           style: GoogleFonts.poppins(
             fontSize: 24.0.sp,
             fontWeight: FontWeight.w800,
-            color: const Color(0xFF0F172A),
+            color: Color(0xFF0F172A),
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.w),
         Text(
           Platform.isAndroid
               ? 'Your parent has requested to prevent this app from being uninstalled.'
@@ -165,7 +171,7 @@ class _DeletionRestrictionConfigScreenState
           style: GoogleFonts.poppins(
             fontSize: 14.0.sp,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF64748B),
+            color: Color(0xFF64748B),
             height: 1.4,
           ),
           textAlign: TextAlign.center,
@@ -176,16 +182,16 @@ class _DeletionRestrictionConfigScreenState
 
   Widget _buildInstructionsCard() {
     return Container(
-      padding: const EdgeInsets.all(24.0),
+      padding: EdgeInsets.all(24.0.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFEFF2F6), width: 1.5),
+        borderRadius: BorderRadius.circular(24.w),
+        border: Border.all(color: Color(0xFFEFF2F6), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.02),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: Color(0xFF0F172A).withValues(alpha: 0.02),
+            blurRadius: 16.w,
+            offset: Offset(0, 8.w),
           ),
         ],
       ),
@@ -203,10 +209,10 @@ class _DeletionRestrictionConfigScreenState
         style: GoogleFonts.poppins(
           fontSize: 16.0.sp,
           fontWeight: FontWeight.w700,
-          color: const Color(0xFF0F172A),
+          color: Color(0xFF0F172A),
         ),
       ),
-      const SizedBox(height: 16),
+      SizedBox(height: 16.w),
       _buildStepRow(
         stepNumber: '1',
         text: 'Tap the "Open Accessibility Settings" shortcut button below.',
@@ -219,7 +225,8 @@ class _DeletionRestrictionConfigScreenState
       _buildStepDivider(),
       _buildStepRow(
         stepNumber: '3',
-        text: 'Toggle the service to "On" to activate uninstallation protection.',
+        text:
+            'Toggle the service to "On" to activate uninstallation protection.',
       ),
     ];
   }
@@ -231,10 +238,10 @@ class _DeletionRestrictionConfigScreenState
         style: GoogleFonts.poppins(
           fontSize: 16.0.sp,
           fontWeight: FontWeight.w700,
-          color: const Color(0xFF0F172A),
+          color: Color(0xFF0F172A),
         ),
       ),
-      const SizedBox(height: 16),
+      SizedBox(height: 16.w),
       _buildStepRow(
         stepNumber: '1',
         text: 'Tap the "Open Screen Time Settings" shortcut button below.',
@@ -262,9 +269,9 @@ class _DeletionRestrictionConfigScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 28,
-          height: 28,
-          decoration: const BoxDecoration(
+          width: 28.w,
+          height: 28.w,
+          decoration: BoxDecoration(
             color: Color(0xFFEFF6FF),
             shape: BoxShape.circle,
           ),
@@ -274,19 +281,19 @@ class _DeletionRestrictionConfigScreenState
               style: GoogleFonts.poppins(
                 fontSize: 14.0.sp,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF0066FF),
+                color: Color(0xFF0066FF),
               ),
             ),
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: 16.w),
         Expanded(
           child: Text(
             text,
             style: GoogleFonts.poppins(
               fontSize: 14.0.sp,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF334155),
+              color: Color(0xFF334155),
               height: 1.45,
             ),
           ),
@@ -297,12 +304,8 @@ class _DeletionRestrictionConfigScreenState
 
   Widget _buildStepDivider() {
     return Padding(
-      padding: const EdgeInsets.only(left: 13, top: 4, bottom: 4),
-      child: Container(
-        width: 2,
-        height: 20,
-        color: const Color(0xFFEFF6FF),
-      ),
+      padding: EdgeInsets.only(left: 13.w, top: 4.w, bottom: 4.w),
+      child: Container(width: 2.w, height: 20.w, color: Color(0xFFEFF6FF)),
     );
   }
 
@@ -311,54 +314,60 @@ class _DeletionRestrictionConfigScreenState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          height: 52,
+          height: 52.w,
           child: OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF0066FF), width: 1.5),
+              side: BorderSide(color: Color(0xFF0066FF), width: 1.5.w),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.w),
               ),
               backgroundColor: Colors.white,
             ),
             onPressed: _handleAction,
             icon: Icon(
-              Platform.isAndroid ? Icons.settings_accessibility : Icons.open_in_new_rounded,
-              color: const Color(0xFF0066FF),
-              size: 20,
+              Platform.isAndroid
+                  ? Icons.settings_accessibility
+                  : Icons.open_in_new_rounded,
+              color: Color(0xFF0066FF),
+              size: 20.w,
             ),
             label: Text(
-              Platform.isAndroid ? 'Open Accessibility Settings' : 'Open Screen Time Settings',
+              Platform.isAndroid
+                  ? 'Open Accessibility Settings'
+                  : 'Open Screen Time Settings',
               style: GoogleFonts.poppins(
                 fontSize: 15.0.sp,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF0066FF),
+                color: Color(0xFF0066FF),
               ),
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.w),
         SizedBox(
-          height: 52,
+          height: 52.w,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0066FF),
+              backgroundColor: Color(0xFF0066FF),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.w),
               ),
               elevation: 0,
             ),
             onPressed: _isChecking ? null : _handleProceed,
             child: _isChecking
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
+                ? SizedBox(
+                    width: 20.w,
+                    height: 20.w,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
                       valueColor: AlwaysStoppedAnimation(Colors.white),
                     ),
                   )
                 : Text(
-                    Platform.isAndroid ? 'Verify & Proceed' : 'I have Enabled It',
+                    Platform.isAndroid
+                        ? 'Verify & Proceed'
+                        : 'I have Enabled It',
                     style: GoogleFonts.poppins(
                       fontSize: 15.0.sp,
                       fontWeight: FontWeight.bold,

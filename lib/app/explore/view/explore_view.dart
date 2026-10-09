@@ -1,9 +1,10 @@
 import 'dart:math' show min;
 import 'package:child_track/app/home/view_model/bloc/homepage_bloc.dart';
 import 'package:child_track/app/subscription/view/subscription_multi_plan_view.dart';
-import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/app/home/view/trips_view.dart';
@@ -24,109 +25,40 @@ class ExploreView extends StatelessWidget {
     final sharedPrefsService = injector<SharedPrefsService>();
 
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF8FAFC,
-      ), // Off-white background matching mockup
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        leadingWidth: 72,
-        leading: Align(
-          alignment: Alignment.centerLeft,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: GestureDetector(
-              onTap: onNavigateToHome,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  CupertinoIcons.chevron_left,
-                  color: Colors.black,
-                  size: 18,
-                ),
-              ),
-            ),
+      backgroundColor: Color(0xFFF3F4F6),
+      appBar: figmaAppBar(
+        context,
+        title: 'Explore',
+        onBack: onNavigateToHome,
+        trailing: FigmaCircleButton(
+          child: SvgPicture.asset(
+            'assets/help/help_search.svg',
+            width: 24.w,
+            height: 24.w,
           ),
         ),
-        title: Text(
-          'Explore',
-          style: GoogleFonts.poppins(
-            fontSize: 24.0.sp,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF0C1D37),
-          ),
-        ),
-        actions: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  CupertinoIcons.search,
-                  color: Colors.black,
-                  size: 20,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.fromLTRB(10.w, 16.w, 10.w, 16.w),
           child: Column(
             children: [
               // CARD 1: Core Parental Controls
               _buildSectionCard(
                 children: [
                   _buildExploreItem(
-                    icon: Icons.smartphone_outlined,
-                    iconColor: const Color(0xFF3B82F6), // Blue
-                    iconBgColor: const Color(0xFFEFF6FF), // Soft Blue
+                    iconAsset: 'assets/icons/explore_scroll.svg',
                     title: 'Scroll',
                     subtitle: "Contacts shown on kid's device",
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const SocialAppsView(),
-                        ),
+                        MaterialPageRoute(builder: (_) => SocialAppsView()),
                       );
                     },
                   ),
-                  _buildDivider(),
                   _buildExploreItem(
-                    icon: Icons.location_on_outlined,
-                    iconColor: const Color(0xFF3B82F6), // Blue
-                    iconBgColor: const Color(0xFFEFF6FF), // Soft Blue
+                    iconAsset: 'assets/icons/explore_geofencing.svg',
                     title: 'Geofencing',
                     subtitle: 'Set virtual location boundaries',
                     onTap: () {
@@ -143,29 +75,23 @@ class ExploreView extends StatelessWidget {
                           ),
                         ),
                       ).then((_) {
-                        injector<HomepageBloc>().add(const GetHomepageData());
+                        injector<HomepageBloc>().add(GetHomepageData());
                       });
                     },
                   ),
-                  _buildDivider(),
                   _buildExploreItem(
-                    icon: Icons.route_outlined,
-                    iconColor: const Color(0xFFEF4444), // Red
-                    iconBgColor: const Color(0xFFFEF2F2), // Soft Red
+                    iconAsset: 'assets/icons/explore_route_history.svg',
                     title: 'Route History',
                     subtitle: 'View past travel routes',
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const TripsView()),
+                        MaterialPageRoute(builder: (_) => TripsView()),
                       );
                     },
                   ),
-                  _buildDivider(),
                   _buildExploreItem(
-                    icon: Icons.gps_fixed_rounded,
-                    iconColor: const Color(0xFFF97316), // Orange
-                    iconBgColor: const Color(0xFFFFF7ED), // Soft Orange
+                    iconAsset: 'assets/icons/explore_live_tracking.svg',
                     title: 'Live Tracking',
                     subtitle: 'Real-time location updates',
                     onTap: onNavigateToHome,
@@ -173,65 +99,52 @@ class ExploreView extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: 12.w),
 
               // CARD 2: Additional Controls
               _buildSectionCard(
                 children: [
                   _buildExploreItem(
-                    icon: Icons.phone_in_talk_outlined,
-                    iconColor: const Color(0xFF3B82F6), // Blue
-                    iconBgColor: const Color(0xFFEFF6FF), // Soft Blue
+                    iconAsset: 'assets/icons/explore_parents_contact.svg',
                     title: 'Parents Contact',
                     subtitle: "Contact displayed in kid's device",
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const ParentsContactView(),
-                        ),
+                        MaterialPageRoute(builder: (_) => ParentsContactView()),
                       );
                     },
                   ),
-                  _buildDivider(),
                   _buildExploreItem(
-                    icon: Icons.send_outlined,
-                    iconColor: const Color(0xFF3B82F6), // Blue
-                    iconBgColor: const Color(0xFFEFF6FF), // Soft Blue
+                    iconAsset: 'assets/icons/explore_request_tracking.svg',
                     title: 'Request Tracking',
                     subtitle: 'Tracking permission of others',
                     onTap: () {
                       _showActiveSharesRevocationSheet(context);
                     },
                   ),
-                  _buildDivider(),
                   _buildExploreItem(
-                    icon: Icons.monitor_heart_outlined,
-                    iconColor: const Color(0xFFEF4444), // Red
-                    iconBgColor: const Color(0xFFFEF2F2), // Soft Red
+                    iconAsset: 'assets/icons/explore_emergency_contact.svg',
                     title: 'Emergency Contact',
                     subtitle: 'People related to kid',
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const EmergencyContactsView(),
+                          builder: (_) => EmergencyContactsView(),
                         ),
                       );
                     },
                   ),
-                  _buildDivider(),
                   _buildExploreItem(
-                    icon: Icons.credit_card_outlined,
-                    iconColor: const Color(0xFFF97316), // Orange
-                    iconBgColor: const Color(0xFFFFF7ED), // Soft Orange
+                    iconAsset: 'assets/icons/explore_subscription.svg',
                     title: 'Subscription',
                     subtitle: 'Your plan details',
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const SubscriptionMultiPlanView(),
+                          builder: (_) => SubscriptionMultiPlanView(),
                         ),
                       );
                     },
@@ -245,31 +158,43 @@ class ExploreView extends StatelessWidget {
     );
   }
 
+  /// White 24px-radius card; rows are separated by a 1px #EEF0F4 divider
+  /// inset 20px on both sides, followed by an 8px gap (Figma Explore).
   Widget _buildSectionCard({required List<Widget> children}) {
+    final rows = <Widget>[];
+    for (var i = 0; i < children.length; i++) {
+      if (i > 0) {
+        rows.add(
+          Padding(
+            padding: EdgeInsets.fromLTRB(20.w, 0.w, 20.w, 8.w),
+            child: Divider(height: 1, thickness: 1, color: Color(0xFFEEF0F4)),
+          ),
+        );
+      }
+      rows.add(children[i]);
+    }
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(24.w),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0C1D37).withValues(alpha: 0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 20.w,
+            offset: Offset(0.w, 4.w),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Column(children: children),
+        borderRadius: BorderRadius.circular(24.w),
+        child: Column(children: rows),
       ),
     );
   }
 
   Widget _buildExploreItem({
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBgColor,
+    required String iconAsset,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
@@ -277,47 +202,65 @@ class ExploreView extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        padding: EdgeInsets.fromLTRB(20.w, 16.w, 20.w, 11.w),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 44.w,
+              height: 44.w,
               decoration: BoxDecoration(
-                color: iconBgColor,
-                borderRadius: BorderRadius.circular(12),
+                color: Color(0xFFF7F8FA),
+                borderRadius: BorderRadius.circular(16.w),
               ),
-              child: Center(child: Icon(icon, color: iconColor, size: 20)),
+              child: Center(
+                child: SvgPicture.asset(iconAsset, width: 20.w, height: 20.w),
+              ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16.w),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 15.0.sp,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF0C1D37),
+              child: Padding(
+                padding: EdgeInsets.only(top: 1.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.poppins(
+                        fontSize: 20.0.sp,
+                        fontWeight: FontWeight.w400,
+                        height: 28 / 20,
+                        letterSpacing: 0.2,
+                        color: Color(0xFF0F1320),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12.0.sp,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF64748B),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.0.sp,
+                        fontWeight: FontWeight.w400,
+                        height: 20 / 12,
+                        letterSpacing: 0.2,
+                        color: Color(0xFF4A5267),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            const Icon(
-              CupertinoIcons.chevron_right,
-              color: Color(0xFFCBD5E1),
-              size: 16,
+            SizedBox(
+              height: 44.w,
+              child: Center(
+                child: SvgPicture.asset(
+                  'assets/icons/settings_chevron.svg',
+                  width: 18.w,
+                  height: 18.w,
+                  colorFilter: ColorFilter.mode(
+                    Color(0xFF707784),
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -325,21 +268,12 @@ class ExploreView extends StatelessWidget {
     );
   }
 
-  Widget _buildDivider() {
-    return const Divider(
-      height: 1,
-      color: Color(0xFFF1F5F9),
-      indent: 72,
-      endIndent: 16,
-    );
-  }
-
   void _showActiveSharesRevocationSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.w)),
       ),
       builder: (sheetContext) {
         return const _ActiveOutgoingSharesSheetContent();
@@ -400,19 +334,19 @@ class __ActiveOutgoingSharesSheetContentState
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.w),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
             child: Container(
-              width: 40,
-              height: 5,
-              margin: const EdgeInsets.only(bottom: 16),
+              width: 40.w,
+              height: 5.w,
+              margin: EdgeInsets.only(bottom: 16.w),
               decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
-                borderRadius: BorderRadius.circular(3),
+                color: Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(3.w),
               ),
             ),
           ),
@@ -421,29 +355,29 @@ class __ActiveOutgoingSharesSheetContentState
             style: GoogleFonts.poppins(
               fontSize: 18.0.sp,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF0C1D37),
+              color: Color(0xFF0C1D37),
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6.w),
           Text(
             'Manage active location permissions granted to other parents.',
             style: GoogleFonts.poppins(
               fontSize: 12.0.sp,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF64748B),
+              color: Color(0xFF64748B),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.w),
           if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 40),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 40.w),
               child: Center(
                 child: CircularProgressIndicator(color: Color(0xFF0066FF)),
               ),
             )
           else if (_errorMessage != null)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 40),
+              padding: EdgeInsets.symmetric(vertical: 40.w),
               child: Center(
                 child: Text(
                   'Error: $_errorMessage',
@@ -457,14 +391,14 @@ class __ActiveOutgoingSharesSheetContentState
             )
           else if (_activeShares == null || _activeShares!.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 40),
+              padding: EdgeInsets.symmetric(vertical: 40.w),
               child: Center(
                 child: Text(
                   'No active location sharing sessions',
                   style: GoogleFonts.poppins(
                     fontSize: 14.0.sp,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF94A3B8),
+                    color: Color(0xFF94A3B8),
                   ),
                 ),
               ),
@@ -474,8 +408,7 @@ class __ActiveOutgoingSharesSheetContentState
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: _activeShares!.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
+                separatorBuilder: (context, index) => SizedBox(height: 12.w),
                 itemBuilder: (context, index) {
                   final shareData =
                       _activeShares![index] as Map<String, dynamic>;
@@ -504,11 +437,11 @@ class __ActiveOutgoingSharesSheetContentState
                   }
 
                   return Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16.w),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      color: Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16.w),
+                      border: Border.all(color: Color(0xFFE2E8F0)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -516,9 +449,9 @@ class __ActiveOutgoingSharesSheetContentState
                         Row(
                           children: [
                             Container(
-                              width: 44,
-                              height: 44,
-                              decoration: const BoxDecoration(
+                              width: 44.w,
+                              height: 44.w,
+                              decoration: BoxDecoration(
                                 color: Color(0xFFEFF6FF),
                                 shape: BoxShape.circle,
                               ),
@@ -530,11 +463,11 @@ class __ActiveOutgoingSharesSheetContentState
                                 style: GoogleFonts.poppins(
                                   fontSize: 14.0.sp,
                                   fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF0066FF),
+                                  color: Color(0xFF0066FF),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12.w),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -543,14 +476,14 @@ class __ActiveOutgoingSharesSheetContentState
                                   style: GoogleFonts.poppins(
                                     fontSize: 13.0.sp,
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF0C1D37),
+                                    color: Color(0xFF0C1D37),
                                   ),
                                 ),
                                 Text(
                                   phone,
                                   style: GoogleFonts.poppins(
                                     fontSize: 12.0.sp,
-                                    color: const Color(0xFF475569),
+                                    color: Color(0xFF475569),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -558,7 +491,7 @@ class __ActiveOutgoingSharesSheetContentState
                                   'Expires in $minutesLeft mins',
                                   style: GoogleFonts.poppins(
                                     fontSize: 11.0.sp,
-                                    color: const Color(0xFF94A3B8),
+                                    color: Color(0xFF94A3B8),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -568,15 +501,15 @@ class __ActiveOutgoingSharesSheetContentState
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFEF2F2),
-                            foregroundColor: const Color(0xFFEF4444),
+                            backgroundColor: Color(0xFFFEF2F2),
+                            foregroundColor: Color(0xFFEF4444),
                             elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 8.w,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(8.w),
                             ),
                           ),
                           onPressed: () async {
@@ -594,7 +527,7 @@ class __ActiveOutgoingSharesSheetContentState
                                     content: Text(
                                       'Stopped sharing location of $childName successfully',
                                     ),
-                                    backgroundColor: const Color(0xFFEF4444),
+                                    backgroundColor: Color(0xFFEF4444),
                                   ),
                                 );
                                 // Re-fetch list
@@ -628,7 +561,7 @@ class __ActiveOutgoingSharesSheetContentState
                 },
               ),
             ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.w),
         ],
       ),
     );

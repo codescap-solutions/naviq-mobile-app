@@ -32,8 +32,21 @@ extension ResponsiveFont on double {
     return view.physicalSize.width / view.devicePixelRatio;
   }
 
-  double get sp {
-    final scale = (_screenWidth / _designWidth).clamp(_minScale, _maxScale);
-    return this * scale;
-  }
+  /// Screen-width factor vs the 428pt Figma frame, clamped 0.85–1.15. Shared by
+  /// fonts (`.sp`) and layout sizes (`.w`) so text and boxes always scale together.
+  static double get scale =>
+      (_screenWidth / _designWidth).clamp(_minScale, _maxScale);
+
+  double get sp => this * scale;
+}
+
+/// Layout sizes straight from Figma (width, height, radius, padding, gap, icon
+/// size), scaled by the same factor as fonts: `12.w`, `176.w`, `24.w`.
+///
+/// Width-based on purpose, for heights too — scaling by the width ratio keeps
+/// every card's proportions identical to the design on any phone, whereas a
+/// height ratio would stretch cards on tall/short screens. On a 428pt device
+/// (the Figma frame) every value is exactly the Figma number.
+extension ResponsiveSize on num {
+  double get w => this * ResponsiveFont.scale;
 }

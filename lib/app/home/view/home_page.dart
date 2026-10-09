@@ -2352,7 +2352,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       top: false,
       child: Container(
         // Figma footer: white, 8px vertical padding, 24px between 56px items.
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.symmetric(vertical: 8.w),
         color: Colors.white,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -2363,7 +2363,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               'Home',
               svgAsset: 'assets/home/home_nav_home.svg',
             ),
-            const SizedBox(width: 24),
+            SizedBox(width: 24.w),
             _buildBottomNavItem(
               1,
               _currentIndex == 1
@@ -2372,14 +2372,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               'Settings',
               svgAsset: 'assets/home/home_nav_settings.svg',
             ),
-            const SizedBox(width: 24),
+            SizedBox(width: 24.w),
             _buildBottomNavItem(
               2,
               Icons.menu_rounded,
               'Explore',
               svgAsset: 'assets/home/home_nav_explore.svg',
             ),
-            const SizedBox(width: 24),
+            SizedBox(width: 24.w),
             _buildBottomNavItem(
               3,
               _currentIndex == 3
@@ -2410,18 +2410,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       },
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 56,
+        width: 56.w,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 56,
-              height: 53,
+              width: 56.w,
+              height: 53.w,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(44),
+                borderRadius: BorderRadius.circular(44.w),
                 gradient: isSelected
-                    ? const LinearGradient(
+                    ? LinearGradient(
                         colors: [Color(0x003DB5E9), Color(0x2E2352BB)],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -2434,21 +2434,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ? SvgPicture.asset(
                       svgAsset,
                       colorFilter: ColorFilter.mode(
-                        isSelected
-                            ? const Color(0xFF16181A)
-                            : const Color(0xFF9BA4B5),
+                        isSelected ? Color(0xFF16181A) : Color(0xFF9BA4B5),
                         BlendMode.srcIn,
                       ),
                     )
                   : Icon(
                       icon,
-                      color: isSelected
-                          ? const Color(0xFF16181A)
-                          : const Color(0xFF9BA4B5),
-                      size: 24,
+                      color: isSelected ? Color(0xFF16181A) : Color(0xFF9BA4B5),
+                      size: 24.w,
                     ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4.w),
             Text(
               label,
               style: GoogleFonts.poppins(
@@ -2456,7 +2452,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 height: isSelected ? null : 20 / 12,
                 letterSpacing: 0.2,
-                color: isSelected ? Colors.black : const Color(0xFF9BA4B5),
+                color: isSelected ? Colors.black : Color(0xFF9BA4B5),
               ),
             ),
           ],
@@ -2500,12 +2496,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           }
         },
         child: Scaffold(
-          backgroundColor: const Color(0xFFF8FAFC),
+          backgroundColor: Color(0xFFF8FAFC),
           body: IndexedStack(
             index: _currentIndex,
             children: [
               _buildHomeTabContent(context),
-              const SettingsView(),
+              SettingsView(
+                onNavigateToHome: () {
+                  setState(() {
+                    _currentIndex = 0;
+                  });
+                },
+              ),
               ExploreView(
                 onNavigateToHome: () {
                   setState(() {
@@ -2612,13 +2614,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         // the sheet slides up OVER a fixed map). Its full painted height is
         // half the screen, but the pinned header only reserves the part above
         // the location card — the card (its own sliver) overlaps the rest.
-        const double kLocationCardOverlap = 167; // card (~155) + Figma's 12px
+        final double kLocationCardOverlap =
+            188.w; // card (176, Figma) + 12px, scaled to the device
         // Figma home: at rest the sheet shows the location card, Scroll /
         // Geo Guard and the WHOLE Today's Route Map card above the nav bar
         // (~575pt of content). The map gets whatever height is left above.
-        const double kRestSheetContent = 527;
+        final double kRestSheetContent = 552
+            .w; // 548 of content + 4 so the route card's bottom border clears the nav bar
         final double navHeight =
-            MediaQueryData.fromView(View.of(context)).padding.bottom + 93;
+            MediaQueryData.fromView(View.of(context)).padding.bottom + 93.w;
         final double mapHeaderExtent =
             (screenHeight - navHeight - kRestSheetContent).clamp(
               96.0,
@@ -2682,7 +2686,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       setState(() => _capSheetAtRest = cap);
                     }
                   } else if (n is ScrollEndNotification) {
-                    if (_capSheetAtRest) setState(() => _capSheetAtRest = false);
+                    if (_capSheetAtRest)
+                      setState(() => _capSheetAtRest = false);
                     final start = _sheetDragStart;
                     final last = _sheetDragLast;
                     _sheetDragStart = null;
@@ -3382,11 +3387,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               // Sliver 1: location card — top of the sheet, floats over the map.
                               SliverToBoxAdapter(
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    12,
+                                  padding: EdgeInsets.fromLTRB(
+                                    12.w,
                                     0,
-                                    12,
-                                    20,
+                                    12.w,
+                                    20.w,
                                   ),
                                   child: _buildLocationCardOnly(
                                     context,
@@ -3406,15 +3411,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               // Sliver 2: Scrollable content cards below the map
                               if (!_viewingSharedChild)
                                 DecoratedSliver(
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                     color: Color(0xFFF7F8FA),
                                   ),
                                   sliver: SliverPadding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      14,
-                                      7,
-                                      14,
-                                      16,
+                                    padding: EdgeInsets.fromLTRB(
+                                      14.w,
+                                      7.w,
+                                      14.w,
+                                      16.w,
                                     ),
                                     sliver: SliverList(
                                       delegate: SliverChildListDelegate([
@@ -3452,10 +3457,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                         '0 Apps Locked',
                                                     iconAsset:
                                                         'assets/home/home_scroll.svg',
-                                                    cardBg: const Color(
-                                                      0xFFEBF3FF,
-                                                    ),
-                                                    statusTextCol: const Color(
+                                                    cardBg: Color(0xFFEBF3FF),
+                                                    statusTextCol: Color(
                                                       0xFF3084F7,
                                                     ),
                                                     onTap: () {
@@ -3463,13 +3466,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                         context,
                                                         MaterialPageRoute(
                                                           builder: (_) =>
-                                                              const SocialAppsView(),
+                                                              SocialAppsView(),
                                                         ),
                                                       );
                                                     },
                                                   ),
                                                 ),
-                                                const SizedBox(width: 16),
+                                                SizedBox(width: 16.w),
                                                 Expanded(
                                                   child: _buildFeatureCard(
                                                     title: 'Geo Guard',
@@ -3482,10 +3485,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                         '0 Fencing',
                                                     iconAsset:
                                                         'assets/home/home_geoguard.svg',
-                                                    cardBg: const Color(
-                                                      0xFFFFF5E5,
-                                                    ),
-                                                    statusTextCol: const Color(
+                                                    cardBg: Color(0xFFFFF5E5),
+                                                    statusTextCol: Color(
                                                       0xFFF78635,
                                                     ),
                                                     onTap: () {
@@ -3513,7 +3514,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                       ).then((_) {
                                                         injector<HomepageBloc>()
                                                             .add(
-                                                              const GetHomepageData(),
+                                                              GetHomepageData(),
                                                             );
                                                         _loadSavedPlaces();
                                                       });
@@ -3524,7 +3525,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
+                                        SizedBox(height: 8.w),
 
                                         // 3. Today's Route Map Card — same disabled treatment.
                                         IgnorePointer(
@@ -3536,7 +3537,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                             child: _buildRouteMapCard(context),
                                           ),
                                         ),
-                                        const SizedBox(height: 15),
+                                        SizedBox(height: 15.w),
 
                                         // 5. Screentime Today Section — same disabled treatment.
                                         IgnorePointer(
@@ -3550,11 +3551,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(height: 24),
+                                        SizedBox(height: 12.w),
 
                                         // 6. Shortcuts Section
                                         _buildShortcutsSection(context),
-                                        const SizedBox(height: 12),
+                                        SizedBox(height: 12.w),
 
                                         // 7. Help Centre Section
                                         _buildHelpCentreSection(context),
@@ -3614,36 +3615,36 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         state.currentLocation == null) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24.w),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(24.w),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0C1D37).withValues(alpha: 0.08),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              color: Color(0xFF0C1D37).withValues(alpha: 0.08),
+              blurRadius: 16.w,
+              offset: Offset(0.w, 4.w),
             ),
           ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(
-              width: 18,
-              height: 18,
+            SizedBox(
+              width: 18.w,
+              height: 18.w,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: Color(0xFF0066FF),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12.w),
             Text(
               "Loading $childName's location…",
               style: GoogleFonts.poppins(
                 fontSize: 13.0.sp,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF64748B),
+                color: Color(0xFF64748B),
               ),
             ),
           ],
@@ -3667,15 +3668,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final childCode = _sharedPrefsService.getString('child_code');
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(20.w),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(24.w),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0C1D37).withValues(alpha: 0.08),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              color: Color(0xFF0C1D37).withValues(alpha: 0.08),
+              blurRadius: 16.w,
+              offset: Offset(0.w, 4.w),
             ),
           ],
         ),
@@ -3686,19 +3687,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 42,
-                  height: 42,
-                  decoration: const BoxDecoration(
+                  width: 42.w,
+                  height: 42.w,
+                  decoration: BoxDecoration(
                     color: Color(0xFFFEF3C7),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.warning_amber_rounded,
                     color: Color(0xFFB45309),
-                    size: 20,
+                    size: 20.w,
                   ),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: 14.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3708,17 +3709,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         style: GoogleFonts.poppins(
                           fontSize: 15.0.sp,
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0C1D37),
+                          color: Color(0xFF0C1D37),
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         'GPS tracking, screen time rules, and safe geofencing '
                         'will activate automatically once the companion app is paired.',
                         style: GoogleFonts.poppins(
                           fontSize: 12.0.sp,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF94A3B8),
+                          color: Color(0xFF94A3B8),
                         ),
                       ),
                     ],
@@ -3726,7 +3727,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.w),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -3736,7 +3737,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         "Set up $childName on NaviQ: install the NaviQ app on "
                         "${childName}'s phone and enter this code to connect — $childCode",
                       ),
-                icon: const Icon(Icons.share_rounded, size: 18),
+                icon: Icon(Icons.share_rounded, size: 18.w),
                 label: Text(
                   'Share Invite Link',
                   style: GoogleFonts.poppins(
@@ -3745,11 +3746,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0066FF),
+                  backgroundColor: Color(0xFF0066FF),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(vertical: 14.w),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16.w),
                   ),
                 ),
               ),
@@ -3837,16 +3838,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 28),
+      // Figma card: 404 x 176, padding 25 / 19 / 27 / 17 (top / right /
+      // bottom / left) measured from the outer edge, so each side is 1px
+      // less here because the 1px border already insets the content. Inside:
+      // name row 32 + "is at" line 36 + gap 24 + chips 32 = 124 (+ 52 padding).
+      padding: EdgeInsets.fromLTRB(16.w, 24.w, 18.w, 26.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(24.w),
         border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            blurRadius: 30.w,
+            offset: Offset(0.w, 8.w),
           ),
         ],
       ),
@@ -3854,9 +3859,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            height: 28,
+            height: 32.w,
             child: OverflowBox(
-              maxHeight: 32,
+              maxHeight: 32.w,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -3876,7 +3881,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               fontSize: 24.0.sp,
                               fontWeight: FontWeight.w700,
                               height: 1.0,
-                              color: const Color(0xFF707784),
+                              color: Color(0xFF707784),
                             ),
                           ),
                         ),
@@ -3887,34 +3892,32 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         // case this was ambiguous to a parent otherwise.
                         if (!_viewingSharedChild &&
                             state.deviceInfo?.deviceImei != null) ...[
-                          const SizedBox(width: 6),
+                          SizedBox(width: 6.w),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 3,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 7.w,
+                              vertical: 3.w,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: const Color(0xFFBFDBFE),
-                              ),
+                              color: Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(8.w),
+                              border: Border.all(color: Color(0xFFBFDBFE)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.gps_fixed_rounded,
-                                  size: 10,
+                                  size: 10.w,
                                   color: Color(0xFF2563EB),
                                 ),
-                                const SizedBox(width: 3),
+                                SizedBox(width: 3.w),
                                 Text(
                                   'GPS Tracker',
                                   style: GoogleFonts.poppins(
                                     fontSize: 9.0.sp,
                                     fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF2563EB),
+                                    color: Color(0xFF2563EB),
                                   ),
                                 ),
                               ],
@@ -3924,11 +3927,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
+                    width: 32.w,
+                    height: 32.w,
+                    decoration: BoxDecoration(
                       color: Color(0xFFDDE1EA),
                       shape: BoxShape.circle,
                     ),
@@ -3937,13 +3940,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             alignment: Alignment.center,
                             children: [
                               SizedBox(
-                                width: 32,
-                                height: 32,
+                                width: 32.w,
+                                height: 32.w,
                                 child: CircularProgressIndicator(
                                   value: _refreshProgress / 100,
                                   strokeWidth: 2,
-                                  color: const Color(0xFF10B981),
-                                  backgroundColor: const Color(0xFFE2E8F0),
+                                  color: Color(0xFF10B981),
+                                  backgroundColor: Color(0xFFE2E8F0),
                                 ),
                               ),
                               Text(
@@ -3951,7 +3954,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 style: GoogleFonts.poppins(
                                   fontSize: 10.0.sp,
                                   fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF0C1D37),
+                                  color: Color(0xFF0C1D37),
                                 ),
                               ),
                             ],
@@ -3959,17 +3962,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         : IconButton(
                             padding: EdgeInsets.zero,
                             icon: SizedBox(
-                              width: 18,
-                              height: 18,
+                              width: 18.w,
+                              height: 18.w,
                               child: Stack(
                                 children: [
                                   Positioned(
-                                    left: 2.25,
-                                    top: 0.75,
+                                    left: 2.25.w,
+                                    top: 0.75.w,
                                     child: SvgPicture.asset(
                                       'assets/home/home_action_refresh.svg',
-                                      width: 13.5,
-                                      height: 15.75,
+                                      width: 13.5.w,
+                                      height: 15.75.w,
                                     ),
                                   ),
                                 ],
@@ -3978,11 +3981,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             onPressed: _startRefreshProgress,
                           ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
+                    width: 32.w,
+                    height: 32.w,
+                    decoration: BoxDecoration(
                       color: Color(0xFFDDE1EA),
                       shape: BoxShape.circle,
                     ),
@@ -3990,24 +3993,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       padding: EdgeInsets.zero,
                       icon: SvgPicture.asset(
                         'assets/home/home_action_bell.svg',
-                        width: 18,
-                        height: 18,
+                        width: 18.w,
+                        height: 18.w,
                       ),
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const NotificationPage(),
-                          ),
+                          MaterialPageRoute(builder: (_) => NotificationPage()),
                         );
                       },
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
+                    width: 32.w,
+                    height: 32.w,
+                    decoration: BoxDecoration(
                       color: Color(0xFFDDE1EA),
                       shape: BoxShape.circle,
                     ),
@@ -4015,8 +4016,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       padding: EdgeInsets.zero,
                       icon: SvgPicture.asset(
                         'assets/home/home_action_share.svg',
-                        width: 16,
-                        height: 16,
+                        width: 16.w,
+                        height: 16.w,
                       ),
                       onPressed: () async {
                         final lat =
@@ -4128,7 +4129,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     trackingSnapshot?.latestLocation?.deviceTimestamp,
                   ) !=
                   null) ...[
-            const SizedBox(height: 4),
+            SizedBox(height: 4.w),
             Builder(
               builder: (context) {
                 final locTs = trackingSnapshot?.latestLocation?.deviceTimestamp;
@@ -4155,7 +4156,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   style: GoogleFonts.poppins(
                     fontSize: 11.0.sp,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF94A3B8),
+                    color: Color(0xFF94A3B8),
                   ),
                 );
               },
@@ -4174,29 +4175,29 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       .difference(state.deviceInfo!.lastAlarmAt!.toUtc())
                       .inHours <
                   24) ...[
-            const SizedBox(height: 10),
+            SizedBox(height: 10.w),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.w),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF3C7),
-                borderRadius: BorderRadius.circular(12),
+                color: Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(12.w),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.warning_amber_rounded,
-                    size: 16,
+                    size: 16.w,
                     color: Color(0xFF92400E),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
                       '${_formatAlarmLabel(state.deviceInfo!.lastAlarmType)} • ${_formatLastAlarmTime(state.deviceInfo!.lastAlarmAt)}',
                       style: GoogleFonts.poppins(
                         fontSize: 11.0.sp,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF92400E),
+                        color: Color(0xFF92400E),
                       ),
                     ),
                   ),
@@ -4204,18 +4205,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             ),
           ],
-          // Chips sit 19px under the "is at" line while the "Location
-          // updated" line above is hidden. (If that line is shown again, the
-          // Figma gap is 40 including the line, and kLocationCardOverlap /
-          // kRestSheetContent go back up by 21.)
-          const SizedBox(height: 19),
+          // Figma: 24px between the name/"is at" block and the chips, with the
+          // "Location updated" line hidden (kLocationCardOverlap /
+          // kRestSheetContent already account for the 176px card).
+          SizedBox(height: 24.w),
           // Horizontally scrollable instead of a fixed spaceAround Row —
           // a 4th pill (altitude, tracker-only) plus a 5th (alarm context)
           // down the line no longer has to fit a fixed card width; it was
           // overflowing by 12px on a real tracker-linked child the moment
           // the altitude pill had something to show (confirmed real case).
           SizedBox(
-            height: 32,
+            height: 32.w,
             child: LayoutBuilder(
               builder: (context, box) => OverflowBox(
                 minWidth: box.maxWidth + 8,
@@ -4253,11 +4253,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                   ?.stationarySince,
                                             ))),
                           backgroundColor: isLocationOff || showUnreachableAlert
-                              ? const Color(0xFFFEE2E2)
-                              : const Color(0xFFEEF0F4),
+                              ? Color(0xFFFEE2E2)
+                              : Color(0xFFEEF0F4),
                           contentColor: isLocationOff || showUnreachableAlert
-                              ? const Color(0xFFDC2626)
-                              : const Color(0xFF4A5267),
+                              ? Color(0xFFDC2626)
+                              : Color(0xFF4A5267),
                           svgAsset: isLocationOff || showUnreachableAlert
                               ? null
                               : 'assets/home/home_chip_clock.svg',
@@ -4325,24 +4325,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     Color? contentColor,
     String? svgAsset,
   }) {
-    final bg = backgroundColor ?? const Color(0xFFEEF0F4);
-    final content = contentColor ?? const Color(0xFF4A5267);
+    final bg = backgroundColor ?? Color(0xFFEEF0F4);
+    final content = contentColor ?? Color(0xFF4A5267);
     return Container(
-      height: 32,
-      constraints: const BoxConstraints(minWidth: 100),
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      height: 32.w,
+      constraints: BoxConstraints(minWidth: 100.w),
+      padding: EdgeInsets.symmetric(horizontal: 10.w),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.w),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           svgAsset != null
-              ? SvgPicture.asset(svgAsset, width: 14, height: 14)
-              : Icon(icon, size: 14, color: content),
-          const SizedBox(width: 10),
+              ? SvgPicture.asset(svgAsset, width: 14.w, height: 14.w)
+              : Icon(icon, size: 14.w, color: content),
+          SizedBox(width: 10.w),
           Text(
             text,
             overflow: TextOverflow.ellipsis,
@@ -4370,23 +4370,25 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return GestureDetector(
       onTap: onTap,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.w),
         child: Container(
+          // Figma card is exactly 161 high (193 wide in the 2-column row).
+          height: 161.w,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFEEF0F4)),
+            borderRadius: BorderRadius.circular(20.w),
+            border: Border.all(color: Color(0xFFEEF0F4)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 3,
-                offset: const Offset(0, 1),
+                blurRadius: 3.w,
+                offset: Offset(0.w, 1.w),
               ),
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 2,
+                blurRadius: 2.w,
                 spreadRadius: -1,
-                offset: const Offset(0, 1),
+                offset: Offset(0.w, 1.w),
               ),
             ],
           ),
@@ -4395,15 +4397,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               // Corner accent: 80x80 square, bottom-left fully rounded,
               // flush with the card's top-right corner.
               Positioned(
-                right: 0,
-                top: 0,
+                right: 0.w,
+                top: 0.w,
                 child: Container(
-                  width: 80,
-                  height: 80,
+                  width: 80.w,
+                  height: 80.w,
                   decoration: BoxDecoration(
                     color: cardBg,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(80),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(80.w),
                     ),
                   ),
                 ),
@@ -4411,27 +4413,34 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
               // Main content column
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                // Fixed 161 card: contents end ~22px above the bottom, so no bottom padding
+                // (a 24px one overflowed by the 1px border x2 + rounding).
+                padding: EdgeInsets.fromLTRB(16.w, 16.w, 16.w, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 48,
-                      height: 48,
+                      width: 48.w,
+                      height: 48.w,
                       decoration: BoxDecoration(
                         color: cardBg,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(14.w),
                       ),
                       alignment: Alignment.center,
-                      child: SvgPicture.asset(iconAsset, width: 24, height: 24),
+                      child: SvgPicture.asset(
+                        iconAsset,
+                        width: 24.w,
+                        height: 24.w,
+                      ),
                     ),
-                    const SizedBox(height: 9),
+                    SizedBox(height: 9.w),
                     Text(
                       title,
                       style: GoogleFonts.poppins(
                         fontSize: 16.0.sp,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0F1320),
+                        height: 23 / 16,
+                        color: Color(0xFF0F1320),
                       ),
                     ),
                     Text(
@@ -4441,15 +4450,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         fontWeight: FontWeight.w400,
                         height: 20 / 12,
                         letterSpacing: 0.2,
-                        color: const Color(0xFF2D3035),
+                        color: Color(0xFF2D3035),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4.w),
                     Text(
                       statusText,
                       style: GoogleFonts.poppins(
                         fontSize: 12.0.sp,
                         fontWeight: FontWeight.w600,
+                        height: 18 / 12,
                         letterSpacing: 0.2,
                         color: statusTextCol,
                       ),
@@ -4481,20 +4491,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           fontWeight: FontWeight.w400,
           height: 20 / 12,
           letterSpacing: 0.2,
-          color: const Color(0xFF2D3035),
+          color: Color(0xFF2D3035),
         );
 
         return Container(
           width: double.infinity,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFDDE1EA)),
+            borderRadius: BorderRadius.circular(20.w),
+            border: Border.all(color: Color(0xFFDDE1EA)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 3,
-                offset: const Offset(0, 1),
+                blurRadius: 3.w,
+                offset: Offset(0.w, 1.w),
               ),
             ],
           ),
@@ -4502,7 +4512,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                padding: EdgeInsets.fromLTRB(20.w, 20.w, 20.w, 12.w),
                 child: Row(
                   children: [
                     Expanded(
@@ -4514,20 +4524,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             style: GoogleFonts.poppins(
                               fontSize: 16.0.sp,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF16181A),
+                              color: Color(0xFF16181A),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4.w),
                           Row(
                             children: [
                               Text(distance, style: subStyle),
-                              const SizedBox(width: 6),
+                              SizedBox(width: 6.w),
                               SvgPicture.asset(
                                 'assets/home/home_route_separator.svg',
-                                width: 2,
-                                height: 17,
+                                width: 2.w,
+                                height: 17.w,
                               ),
-                              const SizedBox(width: 6),
+                              SizedBox(width: 6.w),
                               Flexible(
                                 child: Text(
                                   newLoc,
@@ -4547,26 +4557,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         ).pushNamed(RouteNames.childLocationDetail);
                       },
                       child: Container(
-                        width: 40,
-                        height: 40,
+                        width: 40.w,
+                        height: 40.w,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0069F9),
+                          color: Color(0xFF0069F9),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(
-                                0xFF0070F0,
-                              ).withValues(alpha: 0.3),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
+                              color: Color(0xFF0070F0).withValues(alpha: 0.3),
+                              blurRadius: 4.w,
+                              offset: Offset(0.w, 2.w),
                             ),
                           ],
                         ),
                         child: SvgPicture.asset(
                           'assets/home/home_route_go.svg',
-                          width: 18,
-                          height: 18,
+                          width: 18.w,
+                          height: 18.w,
                         ),
                       ),
                     ),
@@ -4574,7 +4582,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                padding: EdgeInsets.fromLTRB(20.w, 8.w, 20.w, 8.w),
                 child: _buildTimelineRow(routeData?.timeline),
               ),
             ],
@@ -4588,13 +4596,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (nodes == null || nodes.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: EdgeInsets.symmetric(vertical: 16.w),
           child: Text(
             "No route activity recorded today",
             style: GoogleFonts.poppins(
               fontSize: 12.5.sp,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF94A3B8),
+              color: Color(0xFF94A3B8),
             ),
           ),
         ),
@@ -4621,22 +4629,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final bool firstActive = listNodes.isNotEmpty && listNodes[0].isActive;
     children.add(
       Padding(
-        padding: const EdgeInsets.only(
-          top: 10,
+        padding: EdgeInsets.only(
+          top: 10.w,
         ), // (22 circle height / 2) - (2 line height / 2) = 11 - 1 = 10
         child: SizedBox(
-          width: 12,
+          width: 12.w,
           height: 2,
           child: OverflowBox(
             alignment: Alignment.centerLeft,
-            maxWidth: 12 + _kNodeDeadSpace,
-            minWidth: 0,
+            maxWidth: 12.w + _kNodeDeadSpace,
+            minWidth: 0.w,
             child: Container(
-              width: 12 + _kNodeDeadSpace,
+              width: 12.w + _kNodeDeadSpace,
               height: 2,
-              color: firstActive
-                  ? const Color(0xFF0069F9)
-                  : const Color(0xFFDDE1EA),
+              color: firstActive ? Color(0xFF0069F9) : Color(0xFFDDE1EA),
             ),
           ),
         ),
@@ -4671,20 +4677,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final bool lastActive = listNodes.isNotEmpty && listNodes.last.isActive;
     children.add(
       Padding(
-        padding: const EdgeInsets.only(top: 10),
+        padding: EdgeInsets.only(top: 10.w),
         child: SizedBox(
-          width: 12,
+          width: 12.w,
           height: 2,
           child: OverflowBox(
             alignment: Alignment.centerRight,
-            maxWidth: 12 + _kNodeDeadSpace,
-            minWidth: 0,
+            maxWidth: 12.w + _kNodeDeadSpace,
+            minWidth: 0.w,
             child: Container(
-              width: 12 + _kNodeDeadSpace,
+              width: 12.w + _kNodeDeadSpace,
               height: 2,
-              color: lastActive
-                  ? const Color(0xFF0069F9)
-                  : const Color(0xFFDDE1EA),
+              color: lastActive ? Color(0xFF0069F9) : Color(0xFFDDE1EA),
             ),
           ),
         ),
@@ -4693,10 +4697,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(0, 12, 0, 12),
+      padding: EdgeInsets.fromLTRB(0.w, 12.w, 0.w, 12.w),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FA),
-        borderRadius: BorderRadius.circular(14),
+        color: Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(14.w),
       ),
       // Was an unbounded, non-scrollable Row rendering every stop in the
       // route unconditionally — with more than a handful of stops the
@@ -4705,7 +4709,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       // a fixed-size, swipeable stepper no matter how many stops there are.
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: EdgeInsets.symmetric(horizontal: 14.w),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: children,
@@ -4726,31 +4730,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // viewport at once, with long labels ellipsizing instead of forcing
     // every node wider (which used to squeeze the whole unscrollable row).
     return SizedBox(
-      width: 76,
+      width: 76.w,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 22,
-            height: 22,
+            width: 22.w,
+            height: 22.w,
             decoration: BoxDecoration(
-              color: isActive ? const Color(0xFF0069F9) : Colors.white,
+              color: isActive ? Color(0xFF0069F9) : Colors.white,
               shape: BoxShape.circle,
               border: isHighlighted
                   ? Border.all(
-                      color: const Color(0xFF0069F9).withValues(alpha: 0.25),
-                      width: 3,
+                      color: Color(0xFF0069F9).withValues(alpha: 0.25),
+                      width: 3.w,
                     )
                   : (isActive
                         ? null
-                        : Border.all(color: const Color(0xFFDDE1EA), width: 2)),
+                        : Border.all(color: Color(0xFFDDE1EA), width: 2)),
             ),
             child: isActive
                 ? Center(
                     child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
+                      width: 8.w,
+                      height: 8.w,
+                      decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
                       ),
@@ -4758,7 +4762,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   )
                 : null,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.w),
           _TimelineStopLabel(
             label: label,
             lat: lat,
@@ -4767,12 +4771,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               fontSize: 10.0.sp,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.2,
-              color: isHighlighted
-                  ? const Color(0xFF0069F9)
-                  : const Color(0xFF4A5267),
+              color: isHighlighted ? Color(0xFF0069F9) : Color(0xFF4A5267),
             ),
           ),
-          const SizedBox(height: 0),
+          SizedBox(height: 0),
           Text(
             time.isNotEmpty ? time : ' ',
             textAlign: TextAlign.center,
@@ -4781,7 +4783,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             style: GoogleFonts.poppins(
               fontSize: 9.0.sp,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF9BA4B5),
+              color: Color(0xFF9BA4B5),
             ),
           ),
         ],
@@ -4809,17 +4811,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // ("RenderFlex children have non-zero flex but incoming width
     // constraints are unbounded").
     return Padding(
-      padding: const EdgeInsets.only(top: 10),
+      padding: EdgeInsets.only(top: 10.w),
       child: SizedBox(
-        width: 32,
+        width: 32.w,
         height: 2,
         child: OverflowBox(
-          maxWidth: 32 + _kNodeDeadSpace * 2,
-          minWidth: 0,
+          maxWidth: 32.w + _kNodeDeadSpace * 2,
+          minWidth: 0.w,
           child: Container(
-            width: 32 + _kNodeDeadSpace * 2,
+            width: 32.w + _kNodeDeadSpace * 2,
             height: 2,
-            color: isActive ? const Color(0xFF0069F9) : const Color(0xFFDDE1EA),
+            color: isActive ? Color(0xFF0069F9) : Color(0xFFDDE1EA),
           ),
         ),
       ),
@@ -4845,26 +4847,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionHeading("Screentime Today", color: Colors.black),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             Container(
               width: double.infinity,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFDDE1EA)),
+                borderRadius: BorderRadius.circular(20.w),
+                border: Border.all(color: Color(0xFFDDE1EA)),
               ),
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16.w),
                     child: _buildAppUsagesGrid(screentimeData?.appUsages),
                   ),
                   Container(
-                    color: const Color(0xFFEBF3FF),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                    color: Color(0xFFEBF3FF),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 12.w,
                     ),
                     child: Row(
                       children: [
@@ -4877,7 +4879,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 style: GoogleFonts.poppins(
                                   fontSize: 16.0.sp,
                                   fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF0069F9),
+                                  color: Color(0xFF0069F9),
                                 ),
                               ),
                               Text(
@@ -4887,7 +4889,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   fontWeight: FontWeight.w400,
                                   height: 20 / 12,
                                   letterSpacing: 0.2,
-                                  color: const Color(0xFF2D3035),
+                                  color: Color(0xFF2D3035),
                                 ),
                               ),
                             ],
@@ -4898,22 +4900,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const SocialAppsView(),
+                                builder: (_) => SocialAppsView(),
                               ),
                             );
                           },
                           child: Container(
-                            width: 40,
-                            height: 40,
+                            width: 40.w,
+                            height: 40.w,
                             alignment: Alignment.center,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: Color(0xFF0069F9),
                               shape: BoxShape.circle,
                             ),
                             child: SvgPicture.asset(
                               'assets/home/home_go_arrow.svg',
-                              width: 18,
-                              height: 18,
+                              width: 18.w,
+                              height: 18.w,
                             ),
                           ),
                         ),
@@ -4936,9 +4938,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     Color color = const Color(0xFF16181A),
   }) {
     return Padding(
-      padding: const EdgeInsets.only(left: 10),
+      padding: EdgeInsets.only(left: 10.w),
       child: SizedBox(
-        height: 40,
+        height: 40.w,
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text(
@@ -4958,30 +4960,30 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget _buildAppUsagesGrid(List<AppUsage>? appUsages) {
     if (appUsages == null || appUsages.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24.0),
+        padding: EdgeInsets.symmetric(vertical: 24.0.w),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.insights_rounded,
-              size: 48,
-              color: const Color(0xFF94A3B8).withValues(alpha: 0.6),
+              size: 48.w,
+              color: Color(0xFF94A3B8).withValues(alpha: 0.6),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.w),
             Text(
               "No App Activity Today",
               style: GoogleFonts.poppins(
                 fontSize: 14.5.sp,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF475569),
+                color: Color(0xFF475569),
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4.w),
             Text(
               "Screen time usage will be displayed here.",
               style: GoogleFonts.poppins(
                 fontSize: 11.5.sp,
-                color: const Color(0xFF94A3B8),
+                color: Color(0xFF94A3B8),
               ),
             ),
           ],
@@ -5001,17 +5003,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           children: [
             Expanded(child: _buildDynamicAppTimeItem(item1)),
             if (item2 != null) ...[
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(child: _buildDynamicAppTimeItem(item2)),
             ] else ...[
-              const Spacer(),
+              Spacer(),
             ],
           ],
         ),
       );
 
       if (i + 2 < displayUsages.length) {
-        rows.add(const SizedBox(height: 12));
+        rows.add(SizedBox(height: 12.w));
       }
     }
 
@@ -5027,11 +5029,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (item.appIcon.startsWith('http')) {
       iconWidget = Image.network(
         item.appIcon,
-        width: 22,
-        height: 22,
+        width: 22.w,
+        height: 22.w,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) {
-          return Icon(Icons.apps_rounded, color: brandColor, size: 18);
+          return Icon(Icons.apps_rounded, color: brandColor, size: 18.w);
         },
       );
     } else if (item.appIcon.isNotEmpty) {
@@ -5048,14 +5050,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               finalPath,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
-                return Icon(Icons.apps_rounded, color: brandColor, size: 18);
+                return Icon(Icons.apps_rounded, color: brandColor, size: 18.w);
               },
             )
           : SvgPicture.asset(
               finalPath,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
-                return Icon(Icons.apps_rounded, color: brandColor, size: 18);
+                return Icon(Icons.apps_rounded, color: brandColor, size: 18.w);
               },
             );
     } else {
@@ -5064,23 +5066,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ? Icons.telegram
             : Icons.send_rounded,
         color: brandColor,
-        size: 18,
+        size: 18.w,
       );
     }
 
     return Row(
       children: [
         Container(
-          width: 32,
-          height: 32,
-          padding: const EdgeInsets.all(6),
+          width: 32.w,
+          height: 32.w,
+          padding: EdgeInsets.all(6.w),
           decoration: BoxDecoration(
             color: brandColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.w),
           ),
           child: iconWidget,
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12.w),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -5094,7 +5096,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   fontWeight: FontWeight.w400,
                   height: 24 / 16,
                   letterSpacing: 0.2,
-                  color: const Color(0xFF16181A),
+                  color: Color(0xFF16181A),
                 ),
               ),
               Text(
@@ -5106,7 +5108,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   fontWeight: FontWeight.w400,
                   height: 20 / 12,
                   letterSpacing: 0.2,
-                  color: const Color(0xFF2D3035),
+                  color: Color(0xFF2D3035),
                 ),
               ),
             ],
@@ -5121,19 +5123,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeading("Shortcuts"),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.w),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20.w),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFDDE1EA)),
+            borderRadius: BorderRadius.circular(20.w),
+            border: Border.all(color: Color(0xFFDDE1EA)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 5,
-                offset: const Offset(0, 2),
+                blurRadius: 5.w,
+                offset: Offset(0.w, 2.w),
               ),
             ],
           ),
@@ -5147,7 +5149,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SocialAppsView()),
+                    MaterialPageRoute(builder: (_) => SocialAppsView()),
                   );
                 },
               ),
@@ -5161,21 +5163,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               _buildShortcutItem(
                 'Notifications',
                 icon: Icons.notifications_outlined,
-                iconColor: const Color(0xFFF78635),
-                tileColor: const Color(0xFFF7F8FA),
+                iconColor: Color(0xFFF78635),
+                tileColor: Color(0xFFF7F8FA),
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const NotificationPage()),
-                  );
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => NotificationPage()));
                 },
               ),
               _buildShortcutItem(
                 'Device',
                 svgAsset: 'assets/home/home_shortcut_device.svg',
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const DevicesView()),
-                  );
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => DevicesView()));
                 },
               ),
             ],
@@ -5197,22 +5199,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 77.5,
+        width: 77.5.w,
         child: Column(
           children: [
             Container(
-              width: 52,
-              height: 52,
+              width: 52.w,
+              height: 52.w,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: tileColor,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(14.w),
               ),
               child: svgAsset != null
-                  ? SvgPicture.asset(svgAsset, width: 22, height: 22)
-                  : Icon(icon, color: iconColor, size: 22),
+                  ? SvgPicture.asset(svgAsset, width: 22.w, height: 22.w)
+                  : Icon(icon, color: iconColor, size: 22.w),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             Text(
               label,
               textAlign: TextAlign.center,
@@ -5222,7 +5224,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 fontWeight: FontWeight.w400,
                 height: 1.2,
                 letterSpacing: 0.2,
-                color: const Color(0xFF4A5267),
+                color: Color(0xFF4A5267),
               ),
             ),
           ],
@@ -5240,14 +5242,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeading("Help Centre"),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.w),
         Container(
           width: double.infinity,
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFDDE1EA)),
+            borderRadius: BorderRadius.circular(20.w),
+            border: Border.all(color: Color(0xFFDDE1EA)),
           ),
           child: Column(
             children: [
@@ -5274,7 +5276,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     MaterialPageRoute(
                       builder: (_) => BlocProvider.value(
                         value: injector<ChatBloc>(),
-                        child: const ChatScreen(
+                        child: ChatScreen(
                           recipientId:
                               '65b2a3f7e1b2c3d4e5f67890', // Placeholder Admin ID
                           recipientName: 'NaviQ Support',
@@ -5306,20 +5308,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.w),
         child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 40.w,
+              height: 40.w,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xFFF7F8FA),
-                borderRadius: BorderRadius.circular(14),
+                color: Color(0xFFF7F8FA),
+                borderRadius: BorderRadius.circular(14.w),
               ),
-              child: SvgPicture.asset(iconAsset, width: 20, height: 20),
+              child: SvgPicture.asset(iconAsset, width: 20.w, height: 20.w),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -5331,7 +5333,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       fontWeight: FontWeight.w400,
                       height: 24 / 16,
                       letterSpacing: 0.2,
-                      color: const Color(0xFF16181A),
+                      color: Color(0xFF16181A),
                     ),
                   ),
                   Text(
@@ -5341,17 +5343,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       fontWeight: FontWeight.w400,
                       height: 20 / 12,
                       letterSpacing: 0.2,
-                      color: const Color(0xFF2D3035),
+                      color: Color(0xFF2D3035),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12.w),
             SvgPicture.asset(
               'assets/home/home_chevron.svg',
-              width: 16,
-              height: 16,
+              width: 16.w,
+              height: 16.w,
             ),
           ],
         ),
@@ -5803,13 +5805,21 @@ class _DynamicLocationTextState extends State<_DynamicLocationText> {
     // Poppins Bold 20, one line (trimmed down from Figma's 24). A long street address keeps that
     // size and scrolls sideways (marquee) instead of shrinking or wrapping;
     // a short place name like "Tuition Class" just sits still.
-    return _MarqueeText(
-      'is at $displayText',
-      style: GoogleFonts.poppins(
-        fontSize: 20.0.sp,
-        fontWeight: FontWeight.w700,
-        height: 1.0,
-        color: const Color(0xFF16181A),
+    // Wrapped in a fixed 36px line box (Figma: name row 32 + this 36 = 68),
+    // text vertically centred in it.
+    return SizedBox(
+      height: 36.w,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: _MarqueeText(
+          'is at $displayText',
+          style: GoogleFonts.poppins(
+            fontSize: 20.0.sp,
+            fontWeight: FontWeight.w700,
+            height: 1.0,
+            color: const Color(0xFF16181A),
+          ),
+        ),
       ),
     );
   }

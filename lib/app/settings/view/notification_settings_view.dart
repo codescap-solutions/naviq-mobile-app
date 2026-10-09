@@ -23,7 +23,7 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
   // everything else here is UI-only (see notif_* local prefs below), pending
   // the underlying detection/notification feature actually being built.
   // Maps each toggle's exact label to its NotificationPreferences dot path.
-  static const Map<String, String> _backendFieldForTitle = {
+  static Map<String, String> _backendFieldForTitle = {
     'Entering a Place': 'notifications.safePlaceArrival.enabled',
     'Leaving a Place': 'notifications.safePlaceDeparture.enabled',
     'Starting Trip': 'notifications.tripStarted.enabled',
@@ -97,7 +97,7 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
   /// The key (the title used below) still drives the saved-preference name
   /// and the backend field mapping, so renaming a label never loses a
   /// parent's saved setting.
-  static const Map<String, String> _figmaLabel = {
+  static Map<String, String> _figmaLabel = {
     'Route Deviation': 'Route Ended',
     'Estimated arrival at a place': 'Estimated Arrival at a Place',
     'Movement speed': 'Movement Speed',
@@ -109,7 +109,7 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
     'App Updates/Reminder Alert': 'App Update / Permissions Alert',
   };
 
-  static const List<String> _allTitles = [
+  static List<String> _allTitles = [
     'Entering a Place',
     'Leaving a Place',
     'New Place',
@@ -151,19 +151,19 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
-      appBar: figmaAppBar(context, title: 'Notifications', titleSize: 24),
+      backgroundColor: Color(0xFFF7F8FA),
+      appBar: figmaAppBar(context, title: 'Notifications'),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(22, 24, 22, 32),
+                padding: EdgeInsets.fromLTRB(22.w, 24.w, 22.w, 32.w),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildActiveSummary(),
-                    const SizedBox(height: 10),
-                    _buildSection('Movements', const [
+                    SizedBox(height: 10.w),
+                    _buildSection('Movements', [
                       'Entering a Place',
                       'Leaving a Place',
                       'New Place',
@@ -175,30 +175,30 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
                       'Route Deviation Warning',
                       'Unusual Stop Detection',
                     ]),
-                    _buildSection('Device & App Health Alerts', const [
+                    _buildSection('Device & App Health Alerts', [
                       'Low Battery Notification',
                       'Signal Loss/GPS Offline Alert',
                       'Device Tampering Alert',
                       'Connectivity Loss Alert',
                       'App Status Alert',
                     ]),
-                    _buildSection('Communication Alerts', const [
+                    _buildSection('Communication Alerts', [
                       'New Message Notification',
                       'Missed Communication Alert',
                       'Scheduled School Delivery',
                       'Manual Whistle Clock',
                     ]),
-                    _buildSection('Health, Activity & Wellness', const [
+                    _buildSection('Health, Activity & Wellness', [
                       'Daily Step Count Report',
                       'Prolonged Inactivity Alert',
                     ]),
-                    _buildSection('Daily / Weekly', const [
+                    _buildSection('Daily / Weekly', [
                       'Daily Movement Summary',
                       'Weekly Safety & Activity Report',
                       'Real-time Accurate Notification',
                       'Weather Report',
                     ]),
-                    _buildSection('Family & App Usage', const [
+                    _buildSection('Family & App Usage', [
                       'New Family Member Alert',
                       'App Updates/Reminder Alert',
                     ]),
@@ -212,18 +212,18 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
   Widget _buildActiveSummary() {
     final active = _allTitles.where(_valueFor).length;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: 4.w),
       child: Row(
         children: [
           Container(
-            width: 12,
-            height: 12,
-            decoration: const BoxDecoration(
+            width: 12.w,
+            height: 12.w,
+            decoration: BoxDecoration(
               color: Color(0xFF84EBB4),
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 7),
+          SizedBox(width: 7.w),
           Text(
             '$active of ${_allTitles.length} notifications active',
             style: GoogleFonts.poppins(
@@ -231,7 +231,7 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
               fontWeight: FontWeight.w400,
               height: 20 / 12,
               letterSpacing: 0.2,
-              color: const Color(0xFF2D3035),
+              color: Color(0xFF2D3035),
             ),
           ),
         ],
@@ -246,14 +246,14 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
       rows.add(_buildNotificationTile(titles[i]));
     }
     return Padding(
-      padding: const EdgeInsets.only(top: 3.75, bottom: 19.5),
+      padding: EdgeInsets.only(top: 3.75.w, bottom: 19.5.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 4),
+            padding: EdgeInsets.only(left: 4.w),
             child: SizedBox(
-              height: 32,
+              height: 32.w,
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -263,7 +263,7 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
                     fontWeight: FontWeight.w400,
                     height: 28 / 20,
                     letterSpacing: 0.2,
-                    color: const Color(0xFF0F1320),
+                    color: Color(0xFF0F1320),
                   ),
                 ),
               ),
@@ -274,12 +274,12 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(14.w),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.07),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
+                  blurRadius: 10.w,
+                  offset: Offset(0.w, 2.w),
                 ),
               ],
             ),
@@ -308,9 +308,9 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
     return InkWell(
       onTap: () => onChanged(!value),
       child: SizedBox(
-        height: 56,
+        height: 56.w,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
           child: Row(
             children: [
               Expanded(
@@ -321,16 +321,16 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
                     fontWeight: FontWeight.w400,
                     height: 24 / 16,
                     letterSpacing: 0.2,
-                    color: const Color(0xFF4A5267),
+                    color: Color(0xFF4A5267),
                   ),
                 ),
               ),
               FigmaToggle(
                 value: value,
                 onChanged: onChanged,
-                activeColor: const Color(0xFF0DBF75),
-                width: 50,
-                height: 28,
+                activeColor: Color(0xFF0DBF75),
+                width: 50.w,
+                height: 28.w,
                 knob: 22,
               ),
             ],
@@ -341,8 +341,8 @@ class _NotificationSettingsViewState extends State<NotificationSettingsView> {
   }
 
   Widget _buildDivider() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Divider(height: 1, thickness: 1, color: Color(0xFFDDE1EA)),
     );
   }

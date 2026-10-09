@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -57,9 +58,15 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
         orElse: () => <String, dynamic>{},
       );
       if (defaultGuardian.isNotEmpty) {
-        _sharedPrefsService.setString('parent_name', defaultGuardian['name'] ?? '');
+        _sharedPrefsService.setString(
+          'parent_name',
+          defaultGuardian['name'] ?? '',
+        );
         if (defaultGuardian['avatar_url'] != null) {
-          _sharedPrefsService.setString('parent_avatar', defaultGuardian['avatar_url']);
+          _sharedPrefsService.setString(
+            'parent_avatar',
+            defaultGuardian['avatar_url'],
+          );
         }
       }
     } else {
@@ -67,7 +74,9 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
       if (mounted) {
         AppSnackbar.showError(
           context,
-          response.message.isEmpty ? 'Failed to load family members' : response.message,
+          response.message.isEmpty
+              ? 'Failed to load family members'
+              : response.message,
         );
       }
     }
@@ -79,14 +88,19 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+            topLeft: Radius.circular(20.w),
+            topRight: Radius.circular(20.w),
           ),
         ),
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        padding: EdgeInsets.fromLTRB(
+          16.w,
+          20.w,
+          16.w,
+          20.w + MediaQuery.paddingOf(context).bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -95,27 +109,33 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
               style: GoogleFonts.poppins(
                 fontSize: 18.0.sp,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF0C1D37),
+                color: Color(0xFF0C1D37),
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20.w),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF0066FF)),
+              leading: Icon(Icons.photo_library, color: Color(0xFF0066FF)),
               title: Text('Choose from Gallery', style: GoogleFonts.poppins()),
               onTap: () async {
                 Navigator.pop(context);
-                final XFile? file = await _imagePicker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+                final XFile? file = await _imagePicker.pickImage(
+                  source: ImageSource.gallery,
+                  imageQuality: 85,
+                );
                 if (file != null) {
                   _updateGuardianAvatar(index, file.path);
                 }
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Color(0xFF0066FF)),
+              leading: Icon(Icons.camera_alt, color: Color(0xFF0066FF)),
               title: Text('Take a Photo', style: GoogleFonts.poppins()),
               onTap: () async {
                 Navigator.pop(context);
-                final XFile? file = await _imagePicker.pickImage(source: ImageSource.camera, imageQuality: 85);
+                final XFile? file = await _imagePicker.pickImage(
+                  source: ImageSource.camera,
+                  imageQuality: 85,
+                );
                 if (file != null) {
                   _updateGuardianAvatar(index, file.path);
                 }
@@ -132,7 +152,10 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
     final id = guardian['id'] as String?;
     if (id == null) return;
 
-    final response = await _homeRepo.uploadGuardianAvatar(id: id, file: File(path));
+    final response = await _homeRepo.uploadGuardianAvatar(
+      id: id,
+      file: File(path),
+    );
     if (!mounted) return;
 
     if (response.isSuccess && response.data != null) {
@@ -156,20 +179,17 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
   Widget _buildAvatar(String? path) {
     if (path == null || path.isEmpty) {
       return Container(
-        width: 64,
-        height: 64,
+        width: 64.w,
+        height: 64.w,
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
+          color: Color(0xFFEFF6FF),
           shape: BoxShape.circle,
-          border: Border.all(
-            color: const Color(0xFF0066FF),
-            width: 2.0,
-          ),
+          border: Border.all(color: Color(0xFF0066FF), width: 2.0.w),
         ),
-        child: const Icon(
+        child: Icon(
           CupertinoIcons.person_fill,
           color: Color(0xFF0066FF),
-          size: 32,
+          size: 32.w,
         ),
       );
     }
@@ -184,18 +204,12 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
     }
 
     return Container(
-      width: 64,
-      height: 64,
+      width: 64.w,
+      height: 64.w,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFF0066FF),
-          width: 2.0,
-        ),
-        image: DecorationImage(
-          image: provider,
-          fit: BoxFit.cover,
-        ),
+        border: Border.all(color: Color(0xFF0066FF), width: 2.0.w),
+        image: DecorationImage(image: provider, fit: BoxFit.cover),
       ),
     );
   }
@@ -235,13 +249,17 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
               // Real account: POST /parent/guardians creates a role-3 User
               // linked to this family — the phone number can then actually
               // log in (OTP, same as any parent) and see this child.
-              final response = await _homeRepo.addGuardian(name: name, phoneNumber: phone);
+              final response = await _homeRepo.addGuardian(
+                name: name,
+                phoneNumber: phone,
+              );
               if (!mounted) return;
 
               if (response.isSuccess) {
                 Navigator.pop(context);
                 await _fetchGuardians();
-                if (mounted) AppSnackbar.showSuccess(context, '$name added as guardian');
+                if (mounted)
+                  AppSnackbar.showSuccess(context, '$name added as guardian');
               } else {
                 // Was AppSnackbar.showError(context, ...) here — a bottom
                 // sheet doesn't create its own ScaffoldMessenger, so
@@ -265,14 +283,22 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
+                    topLeft: Radius.circular(24.w),
+                    topRight: Radius.circular(24.w),
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                // Bottom inset keeps the last button clear of the Android
+                // system navigation bar (edge-to-edge); 0 while the keyboard
+                // is up (the outer Padding already lifts the sheet).
+                padding: EdgeInsets.fromLTRB(
+                  24.w,
+                  20.w,
+                  24.w,
+                  20.w + MediaQuery.paddingOf(context).bottom,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -285,97 +311,111 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                           style: GoogleFonts.poppins(
                             fontSize: 20.0.sp,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0C1D37),
+                            color: Color(0xFF0C1D37),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, color: Colors.black, size: 24),
+                          icon: Icon(
+                            Icons.close,
+                            color: Colors.black,
+                            size: 24.w,
+                          ),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.w),
                     Text(
                       'Name',
                       style: GoogleFonts.poppins(
                         fontSize: 14.0.sp,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF0C1D37),
+                        color: Color(0xFF0C1D37),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.w),
                     TextField(
                       controller: nameController,
                       decoration: InputDecoration(
                         hintText: 'Enter Name',
-                        hintStyle: GoogleFonts.poppins(color: const Color(0xFF94A3B8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        hintStyle: GoogleFonts.poppins(
+                          color: Color(0xFF94A3B8),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 14.w,
+                        ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          borderRadius: BorderRadius.circular(12.w),
+                          borderSide: BorderSide(color: Color(0xFFCBD5E1)),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          borderRadius: BorderRadius.circular(12.w),
+                          borderSide: BorderSide(color: Color(0xFFE2E8F0)),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.w),
                     Text(
                       'Phone Number',
                       style: GoogleFonts.poppins(
                         fontSize: 14.0.sp,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF0C1D37),
+                        color: Color(0xFF0C1D37),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.w),
                     TextField(
                       controller: phoneController,
                       keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
                         hintText: 'Enter Phone Number',
-                        hintStyle: GoogleFonts.poppins(color: const Color(0xFF94A3B8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        hintStyle: GoogleFonts.poppins(
+                          color: Color(0xFF94A3B8),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 14.w,
+                        ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          borderRadius: BorderRadius.circular(12.w),
+                          borderSide: BorderSide(color: Color(0xFFCBD5E1)),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          borderRadius: BorderRadius.circular(12.w),
+                          borderSide: BorderSide(color: Color(0xFFE2E8F0)),
                         ),
                       ),
                     ),
                     if (errorText != null) ...[
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16.w),
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 14.w,
+                          vertical: 10.w,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFEE2E2),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFFCA5A5)),
+                          color: Color(0xFFFEE2E2),
+                          borderRadius: BorderRadius.circular(10.w),
+                          border: Border.all(color: Color(0xFFFCA5A5)),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.error_outline_rounded,
                               color: Color(0xFFDC2626),
-                              size: 18,
+                              size: 18.w,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8.w),
                             Expanded(
                               child: Text(
                                 errorText!,
                                 style: GoogleFonts.poppins(
                                   fontSize: 13.0.sp,
                                   fontWeight: FontWeight.w600,
-                                  color: const Color(0xFFDC2626),
+                                  color: Color(0xFFDC2626),
                                 ),
                               ),
                             ),
@@ -383,24 +423,27 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.w),
                     SizedBox(
                       width: double.infinity,
-                      height: 54,
+                      height: 54.w,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0066FF),
+                          backgroundColor: Color(0xFF0066FF),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(16.w),
                           ),
                           elevation: 0,
                         ),
                         onPressed: isSubmitting ? null : submit,
                         child: isSubmitting
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                            ? SizedBox(
+                                width: 22.w,
+                                height: 22.w,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.white,
+                                ),
                               )
                             : Text(
                                 'Continue',
@@ -448,7 +491,10 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
               }
 
               setSheetState(() => isSubmitting = true);
-              final response = await _homeRepo.updateGuardianName(id: id, name: newName);
+              final response = await _homeRepo.updateGuardianName(
+                id: id,
+                name: newName,
+              );
               if (!mounted) return;
               setSheetState(() => isSubmitting = false);
 
@@ -460,11 +506,14 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                   _sharedPrefsService.setString('parent_name', newName);
                 }
                 Navigator.pop(context);
-                if (mounted) AppSnackbar.showSuccess(context, 'Name updated successfully');
+                if (mounted)
+                  AppSnackbar.showSuccess(context, 'Name updated successfully');
               } else {
                 AppSnackbar.showError(
                   context,
-                  response.message.isEmpty ? 'Failed to update name' : response.message,
+                  response.message.isEmpty
+                      ? 'Failed to update name'
+                      : response.message,
                 );
               }
             }
@@ -474,14 +523,22 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
+                    topLeft: Radius.circular(24.w),
+                    topRight: Radius.circular(24.w),
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                // Bottom inset keeps the last button clear of the Android
+                // system navigation bar (edge-to-edge); 0 while the keyboard
+                // is up (the outer Padding already lifts the sheet).
+                padding: EdgeInsets.fromLTRB(
+                  24.w,
+                  20.w,
+                  24.w,
+                  20.w + MediaQuery.paddingOf(context).bottom,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,7 +547,11 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.close, color: Colors.black, size: 24),
+                          icon: Icon(
+                            Icons.close,
+                            color: Colors.black,
+                            size: 24.w,
+                          ),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
@@ -500,42 +561,48 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                       style: GoogleFonts.poppins(
                         fontSize: 14.0.sp,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF0C1D37),
+                        color: Color(0xFF0C1D37),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.w),
                     TextField(
                       controller: editController,
                       decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 14.w,
+                        ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          borderRadius: BorderRadius.circular(12.w),
+                          borderSide: BorderSide(color: Color(0xFFCBD5E1)),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          borderRadius: BorderRadius.circular(12.w),
+                          borderSide: BorderSide(color: Color(0xFFE2E8F0)),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.w),
                     SizedBox(
                       width: double.infinity,
-                      height: 54,
+                      height: 54.w,
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           backgroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.black, width: 2.0),
+                          side: BorderSide(color: Colors.black, width: 2.0.w),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(16.w),
                           ),
                         ),
                         onPressed: isSubmitting ? null : submit,
                         child: isSubmitting
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black),
+                            ? SizedBox(
+                                width: 22.w,
+                                height: 22.w,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.black,
+                                ),
                               )
                             : Text(
                                 'Update',
@@ -563,7 +630,9 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.w),
+        ),
         title: Text(
           'Delete Guardian',
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
@@ -574,11 +643,20 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
         ),
         actions: [
           TextButton(
-            child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.grey)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(color: Colors.grey),
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
-            child: Text('Delete', style: GoogleFonts.poppins(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.poppins(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             onPressed: () async {
               Navigator.pop(context);
               if (id == null) return;
@@ -598,7 +676,9 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
               } else {
                 AppSnackbar.showError(
                   context,
-                  response.message.isEmpty ? 'Failed to delete guardian' : response.message,
+                  response.message.isEmpty
+                      ? 'Failed to delete guardian'
+                      : response.message,
                 );
               }
             },
@@ -611,202 +691,167 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        leadingWidth: 56,
-        leading: Center(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).maybePop(),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  CupertinoIcons.chevron_left,
-                  color: Colors.black,
-                  size: 18,
-                ),
-              ),
-            ),
-          ),
-        ),
-        title: Text(
-          'Family',
-          style: GoogleFonts.poppins(
-            fontSize: 32.0.sp,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF0C1D37),
-          ),
-        ),
+      backgroundColor: Color(0xFFF8FAFC),
+      appBar: figmaAppBar(
+        context,
+        title: 'Family',
       ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _fetchGuardians,
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator())
               : _guardians.isEmpty
-                  ? ListView(
-                      children: [
-                        SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.6,
-                          child: Center(
-                            child: Text(
-                              'No family members found.',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16.0.sp,
-                                color: const Color(0xFF94A3B8),
-                              ),
-                            ),
+              ? ListView(
+                  children: [
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      child: Center(
+                        child: Text(
+                          'No family members found.',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16.0.sp,
+                            color: Color(0xFF94A3B8),
                           ),
                         ),
-                      ],
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16.0),
-                      itemCount: _guardians.length,
-                      itemBuilder: (context, index) {
-                        final guardian = _guardians[index];
-                        final isDefault = guardian['is_default'] == true;
+                      ),
+                    ),
+                  ],
+                )
+              : ListView.builder(
+                  padding: EdgeInsets.all(16.0.w),
+                  itemCount: _guardians.length,
+                  itemBuilder: (context, index) {
+                    final guardian = _guardians[index];
+                    final isDefault = guardian['is_default'] == true;
 
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 16.0),
-                          padding: const EdgeInsets.all(16.0),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF0C1D37).withValues(alpha: 0.04),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                    return Container(
+                      margin: EdgeInsets.only(bottom: 16.0.w),
+                      padding: EdgeInsets.all(16.0.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24.w),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0xFF0C1D37).withValues(alpha: 0.04),
+                            blurRadius: 16.w,
+                            offset: Offset(0.w, 4.w),
                           ),
-                          child: Row(
-                            children: [
-                              // Avatar
-                              GestureDetector(
-                                onTap: () {
-                                  if (!_isPrimaryParent && isDefault) {
-                                    _pickImageForGuardian(index);
-                                  } else if (_isPrimaryParent) {
-                                    _pickImageForGuardian(index);
-                                  } else {
-                                    AppSnackbar.showError(context, 'Only primary parent can edit other members');
-                                  }
-                                },
-                                child: _buildAvatar(guardian['avatar_url']),
-                              ),
-                              const SizedBox(width: 16),
-                              // Name and Phone
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          // Avatar
+                          GestureDetector(
+                            onTap: () {
+                              if (!_isPrimaryParent && isDefault) {
+                                _pickImageForGuardian(index);
+                              } else if (_isPrimaryParent) {
+                                _pickImageForGuardian(index);
+                              } else {
+                                AppSnackbar.showError(
+                                  context,
+                                  'Only primary parent can edit other members',
+                                );
+                              }
+                            },
+                            child: _buildAvatar(guardian['avatar_url']),
+                          ),
+                          SizedBox(width: 16.w),
+                          // Name and Phone
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  guardian['name'] ?? '',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16.0.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0C1D37),
+                                  ),
+                                ),
+                                SizedBox(height: 4.w),
+                                Row(
                                   children: [
-                                    Text(
-                                      guardian['name'] ?? '',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 16.0.sp,
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF0C1D37),
-                                      ),
+                                    Icon(
+                                      CupertinoIcons.phone,
+                                      size: 14.w,
+                                      color: Color(0xFF94A3B8),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          CupertinoIcons.phone,
-                                          size: 14,
-                                          color: Color(0xFF94A3B8),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          guardian['phone_number'] ?? '',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 13.0.sp,
-                                            color: const Color(0xFF64748B),
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
+                                    SizedBox(width: 4.w),
+                                    Text(
+                                      guardian['phone_number'] ?? '',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13.0.sp,
+                                        color: Color(0xFF64748B),
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              // Actions (Edit, Delete)
-                              if (_isPrimaryParent) ...[
-                                // Edit Button
-                                GestureDetector(
-                                  onTap: () => _showEditGuardianSheet(index),
-                                  child: Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFEFF6FF),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      CupertinoIcons.pencil,
-                                      color: Color(0xFF0066FF),
-                                      size: 18,
-                                    ),
+                              ],
+                            ),
+                          ),
+                          // Actions (Edit, Delete)
+                          if (_isPrimaryParent) ...[
+                            // Edit is always the right-most icon so it lines
+                            // up on every card; Delete (added members only)
+                            // sits to its left. The primary parent has no
+                            // delete, so Edit sits at the card's edge.
+                            if (!isDefault) ...[
+                              GestureDetector(
+                                onTap: () => _confirmDeleteGuardian(index),
+                                child: Container(
+                                  width: 36.w,
+                                  height: 36.w,
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFFFEF2F2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    CupertinoIcons.trash,
+                                    color: Color(0xFFEF4444),
+                                    size: 18.w,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                // Delete Button (Only for custom guardians)
-                                if (!isDefault)
-                                  GestureDetector(
-                                    onTap: () => _confirmDeleteGuardian(index),
-                                    child: Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFFFEF2F2),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        CupertinoIcons.trash,
-                                        color: Color(0xFFEF4444),
-                                        size: 18,
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  const SizedBox(width: 36), // spacing match
-                              ] else ...[
-                                // Secondary guardians cannot edit/delete members
-                                const SizedBox.shrink(),
-                              ],
+                              ),
+                              SizedBox(width: 8.w),
                             ],
-                          ),
-                        );
-                      },
-                    ),
+                            GestureDetector(
+                              onTap: () => _showEditGuardianSheet(index),
+                              child: Container(
+                                width: 36.w,
+                                height: 36.w,
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFEFF6FF),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  CupertinoIcons.pencil,
+                                  color: Color(0xFF0066FF),
+                                  size: 18.w,
+                                ),
+                              ),
+                            ),
+                          ] else ...[
+                            // Secondary guardians cannot edit/delete members
+                            SizedBox.shrink(),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
         ),
       ),
       floatingActionButton: _isPrimaryParent
           ? FloatingActionButton(
               onPressed: _showAddGuardianSheet,
-              backgroundColor: const Color(0xFF0066FF),
-              shape: const CircleBorder(),
+              backgroundColor: Color(0xFF0066FF),
+              shape: CircleBorder(),
               elevation: 4,
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
+              child: Icon(Icons.add, color: Colors.white, size: 28.w),
             )
           : null,
     );

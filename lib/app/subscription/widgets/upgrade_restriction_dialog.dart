@@ -16,10 +16,7 @@ class UpgradeRestrictionDialog {
   /// Shows the standard "this support channel needs a higher plan" prompt.
   /// [channelName] is the disallowed channel's display name, e.g. "Chat"
   /// or "Call".
-  static void showHelpChannelBlocked(
-    BuildContext context,
-    String channelName,
-  ) {
+  static void showHelpChannelBlocked(BuildContext context, String channelName) {
     show(
       context,
       title: '$channelName Support Unavailable',
@@ -66,19 +63,19 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.w)),
       elevation: 0,
       backgroundColor: Colors.transparent,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24.w),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(24.w),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              blurRadius: 20.w,
+              offset: Offset(0.w, 8.w),
             ),
           ],
         ),
@@ -86,9 +83,9 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
+              width: 64.w,
+              height: 64.w,
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
                   colors: [Color(0xFF0066FF), Color(0xFF6F9EFF)],
@@ -96,42 +93,42 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
                   end: Alignment.bottomRight,
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.lock_outline_rounded,
                 color: Colors.white,
-                size: 32,
+                size: 32.w,
               ),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18.w),
             Text(
               title,
               style: GoogleFonts.poppins(
                 fontSize: 20.0.sp,
                 fontWeight: FontWeight.w800,
-                color: const Color(0xFF0C1D37),
+                color: Color(0xFF0C1D37),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             Text(
               message,
               style: GoogleFonts.poppins(
                 fontSize: 13.5.sp,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF64748B),
+                color: Color(0xFF64748B),
                 height: 1.4,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.w),
             SizedBox(
               width: double.infinity,
-              height: 48,
+              height: 48.w,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0066FF),
+                  backgroundColor: Color(0xFF0066FF),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(14.w),
                   ),
                   elevation: 0,
                 ),
@@ -149,14 +146,14 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             SizedBox(
               width: double.infinity,
-              height: 44,
+              height: 44.w,
               child: TextButton(
                 style: TextButton.styleFrom(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(14.w),
                   ),
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -165,7 +162,7 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 14.0.sp,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
+                    color: Color(0xFF64748B),
                   ),
                 ),
               ),

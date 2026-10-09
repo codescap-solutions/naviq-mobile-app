@@ -24,51 +24,51 @@ class ChildCodeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Color(0xFFF8FAFC),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.paddingL,
-            vertical: AppSizes.paddingM,
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSizes.paddingL.w,
+            vertical: AppSizes.paddingM.w,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (isFirstChild) ...[
-                const SizedBox(height: 24),
+                SizedBox(height: 24.w),
                 Text(
                   'Add your first child by\npasting this code',
                   style: GoogleFonts.poppins(
                     fontSize: 24.0.sp,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0C1D37),
+                    color: Color(0xFF0C1D37),
                     height: 1.3,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.w),
                 _buildCodeContainer(context),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.w),
                 Text(
                   'Enter this code on your child\'s device to link their account and start monitoring their activity.',
                   style: GoogleFonts.poppins(
                     fontSize: 14.0.sp,
-                    color: const Color(0xFF62748E),
+                    color: Color(0xFF62748E),
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.w),
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    borderRadius: BorderRadius.circular(16.w),
+                    border: Border.all(color: Color(0xFFE2E8F0)),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF0066FF).withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                        color: Color(0xFF0066FF).withValues(alpha: 0.02),
+                        blurRadius: 8.w,
+                        offset: Offset(0, 2.w),
                       ),
                     ],
                   ),
@@ -79,13 +79,13 @@ class ChildCodeScreen extends StatelessWidget {
                         title: 'Security',
                         subtitle: 'Your account is protected',
                       ),
-                      const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                      Divider(height: 1, color: Color(0xFFE2E8F0)),
                       _buildChecklistItem(
                         icon: Icons.visibility_outlined,
                         title: 'Privacy',
                         subtitle: 'Your information is private',
                       ),
-                      const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                      Divider(height: 1, color: Color(0xFFE2E8F0)),
                       _buildChecklistItem(
                         icon: Icons.shield_outlined,
                         title: 'Permissions',
@@ -94,107 +94,107 @@ class ChildCodeScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20.w),
                 Text(
                   "🎉 You're ready to use the app securely!",
                   style: GoogleFonts.poppins(
                     fontSize: 14.0.sp,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0C1D37),
+                    color: Color(0xFF0C1D37),
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.w),
                 CommonButton(
                   text: 'Go Home',
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.home_outlined,
                     color: Colors.white,
-                    size: 20,
+                    size: 20.w,
                   ),
-                  height: 54,
+                  height: 54.w,
                   borderRadius: 16,
                   onPressed: () => _navigateToHome(context),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.w),
                 SizedBox(
-                  height: 54,
+                  height: 54.w,
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF0C1D37), width: 1.5),
+                      side: BorderSide(color: Color(0xFF0C1D37), width: 1.5.w),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(16.w),
                       ),
                       backgroundColor: Colors.transparent,
                     ),
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           content: Text("Tutorial coming soon!"),
                           duration: Duration(seconds: 2),
                         ),
                       );
                     },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.play_arrow_outlined,
                       color: Color(0xFF0C1D37),
-                      size: 20,
+                      size: 20.w,
                     ),
                     label: Text(
                       "Watch Tutorial",
                       style: GoogleFonts.poppins(
                         fontSize: 15.0.sp,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF0C1D37),
+                        color: Color(0xFF0C1D37),
                       ),
                     ),
                   ),
                 ),
               ] else ...[
-                const SizedBox(height: 48),
-                const Center(
+                SizedBox(height: 48.w),
+                Center(
                   child: Icon(
                     Icons.check_circle_rounded,
                     color: Color(0xFF10B981),
-                    size: 80,
+                    size: 80.w,
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.w),
                 Text(
                   'Child Created Successfully!',
                   style: GoogleFonts.poppins(
                     fontSize: 24.0.sp,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0C1D37),
+                    color: Color(0xFF0C1D37),
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: 32.w),
                 Text(
                   'Your Child Code:',
                   style: GoogleFonts.poppins(
                     fontSize: 14.0.sp,
-                    color: const Color(0xFF62748E),
+                    color: Color(0xFF62748E),
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.w),
                 _buildCodeContainer(context),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.w),
                 Text(
                   'Enter this code on your child\'s device to link their account and start monitoring their activity.',
                   style: GoogleFonts.poppins(
                     fontSize: 14.0.sp,
-                    color: const Color(0xFF62748E),
+                    color: Color(0xFF62748E),
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 48),
+                SizedBox(height: 48.w),
                 CommonButton(
                   text: 'Continue to Home',
-                  height: 54,
+                  height: 54.w,
                   borderRadius: 16,
                   onPressed: () => _navigateToHome(context),
                 ),
@@ -208,16 +208,16 @@ class ChildCodeScreen extends StatelessWidget {
 
   Widget _buildCodeContainer(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(16.w),
+        border: Border.all(color: Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0066FF).withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Color(0xFF0066FF).withValues(alpha: 0.03),
+            blurRadius: 12.w,
+            offset: Offset(0, 4.w),
           ),
         ],
       ),
@@ -229,38 +229,35 @@ class ChildCodeScreen extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 26.0.sp,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF0066FF),
+              color: Color(0xFF0066FF),
               letterSpacing: 2,
             ),
           ),
           InkWell(
             onTap: () {
               Clipboard.setData(ClipboardData(text: childCode));
-              AppSnackbar.showInfo(
-                context,
-                'Child code copied to clipboard!',
-              );
+              AppSnackbar.showInfo(context, 'Child code copied to clipboard!');
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.w),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(8),
+                color: Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(8.w),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.copy_rounded,
                     color: Color(0xFF0066FF),
-                    size: 16,
+                    size: 16.w,
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6.w),
                   Text(
                     'Copy',
                     style: GoogleFonts.poppins(
                       fontSize: 14.0.sp,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF0066FF),
+                      color: Color(0xFF0066FF),
                     ),
                   ),
                 ],
@@ -278,21 +275,17 @@ class ChildCodeScreen extends StatelessWidget {
     required String subtitle,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.w),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
+            width: 40.w,
+            height: 40.w,
+            decoration: BoxDecoration(
               color: Color(0xFFEFF6FF),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF0066FF),
-              size: 20,
-            ),
+            child: Icon(icon, color: Color(0xFF0066FF), size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -318,11 +311,7 @@ class ChildCodeScreen extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(
-            Icons.check_circle,
-            color: Color(0xFF10B981),
-            size: 24,
-          ),
+          const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 24),
         ],
       ),
     );
@@ -334,9 +323,8 @@ class ChildCodeScreen extends StatelessWidget {
     // with that read.
     await injector<SharedPrefsService>().setString('child_id', childId);
     if (!context.mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      RouteNames.home,
-      (route) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(RouteNames.home, (route) => false);
   }
 }

@@ -55,24 +55,24 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.w)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      padding: EdgeInsets.fromLTRB(20.w, 12.w, 20.w, 24.w),
       child: FutureBuilder<SubscriptionPlan?>(
         future: _planFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const SizedBox(
-              height: 300,
+            return SizedBox(
+              height: 300.w,
               child: Center(child: CircularProgressIndicator()),
             );
           }
 
           if (!snapshot.hasData || snapshot.data == null) {
-            return const SizedBox(
-              height: 300,
+            return SizedBox(
+              height: 300.w,
               child: Center(child: Text('Failed to load plan details')),
             );
           }
@@ -83,32 +83,32 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
             children: [
               // Drag Handle
               Container(
-                width: 48,
-                height: 4,
+                width: 48.w,
+                height: 4.w,
                 decoration: BoxDecoration(
                   color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(2.w),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20.w),
 
               // Title Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 40.w,
+                    height: 40.w,
                     decoration: BoxDecoration(
                       color: Colors.blue[50],
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.all_inclusive,
                       color: AppColors.primaryColor,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Text(
                     plan.name,
                     style: AppTextStyles.headline3.copyWith(
@@ -118,7 +118,7 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.w),
 
               if (plan.yearlyDiscountBadge != null) ...[
                 Text(
@@ -128,7 +128,7 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                     color: Colors.grey[700],
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20.w),
               ],
 
               // Pricing Cards
@@ -144,7 +144,7 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: GestureDetector(
                       onTap: () => setState(() => _isYearlySelected = true),
@@ -157,7 +157,7 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.w),
 
               // Subtitle (Everything in Basic Plan and)
               if (widget.tier == SubscriptionTier.smart)
@@ -178,7 +178,7 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                 ),
               if (widget.tier != SubscriptionTier.basic &&
                   widget.tier != SubscriptionTier.starter)
-                const SizedBox(height: 16),
+                SizedBox(height: 16.w),
 
               // Features List
               Flexible(
@@ -191,12 +191,12 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.w),
 
               // Know More Button
               SizedBox(
                 width: double.infinity,
-                height: 56,
+                height: 56.w,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
@@ -213,7 +213,7 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryColor,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16.w),
                     ),
                     elevation: 0,
                   ),
@@ -226,7 +226,7 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.w),
 
               // View All Plans
               TextButton(
@@ -235,7 +235,7 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const SubscriptionMultiPlanView(),
+                      builder: (_) => SubscriptionMultiPlanView(),
                     ),
                   );
                 },
@@ -248,7 +248,7 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.w),
 
               // Disclaimer
               Text(
@@ -279,12 +279,12 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
       clipBehavior: Clip.none,
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.w),
           decoration: BoxDecoration(
             color: isSelected
                 ? Colors.blue[50]?.withValues(alpha: 0.3)
                 : Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.w),
             border: Border.all(
               color: isSelected ? AppColors.primaryColor : Colors.grey[300]!,
               width: isSelected ? 2 : 1,
@@ -300,7 +300,7 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                   fontSize: 14.0.sp,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.w),
               Text(
                 '₹ ${price.round()}',
                 style: AppTextStyles.headline3.copyWith(
@@ -308,15 +308,12 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.w),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.w),
                 decoration: BoxDecoration(
                   color: isSelected ? Colors.blue[50] : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.w),
                 ),
                 child: Text(
                   '₹ $perMonthPrice /mon',
@@ -334,12 +331,12 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
         if (isYearly && plan.yearlyDiscountBadge != null)
           Positioned(
             top: -12,
-            right: 16,
+            right: 16.w,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.w),
               decoration: BoxDecoration(
                 color: AppColors.primaryColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.w),
               ),
               child: Text(
                 plan.yearlyDiscountBadge!,
@@ -356,23 +353,19 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
 
   Widget _buildFeatureRow(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: 12.w),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(2),
+            padding: EdgeInsets.all(2.w),
             decoration: BoxDecoration(
               color: Colors.blue[50],
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.check,
-              size: 14,
-              color: AppColors.primaryColor,
-            ),
+            child: Icon(Icons.check, size: 14.w, color: AppColors.primaryColor),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Text(
               text,

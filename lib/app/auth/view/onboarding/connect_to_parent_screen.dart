@@ -51,14 +51,12 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
           if (!isAllowDelete) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (_) => const DeletionRestrictionConfigScreen(),
+                builder: (_) => DeletionRestrictionConfigScreen(),
               ),
             );
           } else {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => const PermissionSequenceScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => PermissionSequenceScreen()),
             );
           }
         } else {
@@ -83,7 +81,9 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.w),
+        ),
         title: Text(
           'Where is my code?',
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
@@ -97,7 +97,7 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
             child: Text(
               'Close',
               style: GoogleFonts.poppins(
-                color: const Color(0xFF0066FF),
+                color: Color(0xFF0066FF),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -111,23 +111,12 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F8FE),
+      backgroundColor: Color(0xFFF5F8FE),
       // Figma: 52px white back circle with an arrow, centred Bold title, on
       // the same near-white blue as the page.
-      appBar: figmaAppBar(
-        context,
-        title: 'Add Child',
-        titleSize: 22,
-        titleColor: const Color(0xFF16181A),
-        background: const Color(0xFFFAFCFE),
-        backIcon: const Icon(
-          Icons.arrow_back_rounded,
-          color: Color(0xFF16181A),
-          size: 24,
-        ),
-      ),
+      appBar: figmaAppBar(context, title: 'Add Child'),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFFFAFCFE), Color(0xFFF5F8FE)],
             begin: Alignment.topCenter,
@@ -139,7 +128,7 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(22, 20, 22, 24),
+                padding: EdgeInsets.fromLTRB(22.w, 20.w, 22.w, 24.w),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
                     minHeight: constraints.maxHeight - 44,
@@ -155,47 +144,47 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 24.0.sp,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF16181A),
+                              color: Color(0xFF16181A),
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          SizedBox(height: 6.w),
                           Text(
                             'The six didgit code that generated in Parents App',
                             style: GoogleFonts.poppins(
                               fontSize: 14.0.sp,
                               fontWeight: FontWeight.w500,
-                              color: const Color(0xFF4A5267),
+                              color: Color(0xFF4A5267),
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          SizedBox(height: 24.w),
                           // How to get code blue box
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(16.w),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEFF7FF),
-                              borderRadius: BorderRadius.circular(16),
+                              color: Color(0xFFEFF7FF),
+                              borderRadius: BorderRadius.circular(16.w),
                               border: Border.all(
-                                color: const Color(0xFFD9E6F8),
-                                width: 1.5,
+                                color: Color(0xFFD9E6F8),
+                                width: 1.5.w,
                               ),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Container(
-                                  width: 30,
-                                  height: 30,
-                                  decoration: const BoxDecoration(
+                                  width: 30.w,
+                                  height: 30.w,
+                                  decoration: BoxDecoration(
                                     color: Color(0xFFD9EAFF),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.people_outline,
                                     color: Color(0xFF0069F9),
-                                    size: 16,
+                                    size: 16.w,
                                   ),
                                 ),
-                                const SizedBox(width: 16),
+                                SizedBox(width: 16.w),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -206,20 +195,20 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                                         style: GoogleFonts.poppins(
                                           fontSize: 14.0.sp,
                                           fontWeight: FontWeight.w600,
-                                          color: const Color(0xFF16181A),
+                                          color: Color(0xFF16181A),
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      SizedBox(height: 4.w),
                                       RichText(
                                         text: TextSpan(
                                           style: GoogleFonts.poppins(
                                             fontSize: 12.0.sp,
-                                            color: const Color(0xFF4A5267),
+                                            color: Color(0xFF4A5267),
                                             height: 1.5,
                                             fontWeight: FontWeight.w400,
                                           ),
                                           children: [
-                                            const TextSpan(
+                                            TextSpan(
                                               text:
                                                   "Incase you installed kids app first go parents app and ",
                                             ),
@@ -227,10 +216,10 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                                               text: "Finish Sign Up",
                                               style: GoogleFonts.poppins(
                                                 fontWeight: FontWeight.w600,
-                                                color: const Color(0xFF0069F9),
+                                                color: Color(0xFF0069F9),
                                               ),
                                             ),
-                                            const TextSpan(
+                                            TextSpan(
                                               text:
                                                   " . The 6-character code will appear there.",
                                             ),
@@ -243,16 +232,16 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 28),
+                          SizedBox(height: 28.w),
                           Text(
                             'Child Code',
                             style: GoogleFonts.poppins(
                               fontSize: 14.0.sp,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF16181A),
+                              color: Color(0xFF16181A),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8.w),
                           TextFormField(
                             controller: _childCodeController,
                             textCapitalization: TextCapitalization.characters,
@@ -264,56 +253,56 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 20.0.sp,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF16181A),
+                              color: Color(0xFF16181A),
                               letterSpacing: 4,
                             ),
                             decoration: InputDecoration(
                               hintText: 'e.g. KIDS01',
                               hintStyle: GoogleFonts.poppins(
-                                color: const Color(0xFF949DAA),
+                                color: Color(0xFF949DAA),
                                 fontSize: 20.0.sp,
                                 letterSpacing: 4,
                                 fontWeight: FontWeight.w600,
                               ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 16,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 24.w,
+                                vertical: 16.w,
                               ),
                               filled: true,
                               fillColor: Colors.white,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(
+                                borderRadius: BorderRadius.circular(16.w),
+                                borderSide: BorderSide(
                                   color: Color(0xFF16181A),
-                                  width: 1.5,
+                                  width: 1.5.w,
                                 ),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(
+                                borderRadius: BorderRadius.circular(16.w),
+                                borderSide: BorderSide(
                                   color: Color(0xFF16181A),
-                                  width: 1.5,
+                                  width: 1.5.w,
                                 ),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(
+                                borderRadius: BorderRadius.circular(16.w),
+                                borderSide: BorderSide(
                                   color: Color(0xFF0069F9),
-                                  width: 2.0,
+                                  width: 2.0.w,
                                 ),
                               ),
                               errorBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(
+                                borderRadius: BorderRadius.circular(16.w),
+                                borderSide: BorderSide(
                                   color: Colors.red,
-                                  width: 1.0,
+                                  width: 1.0.w,
                                 ),
                               ),
                               focusedErrorBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(
+                                borderRadius: BorderRadius.circular(16.w),
+                                borderSide: BorderSide(
                                   color: Colors.red,
-                                  width: 2.0,
+                                  width: 2.0.w,
                                 ),
                               ),
                             ),
@@ -332,7 +321,7 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                             },
                             onFieldSubmitted: (_) => _connectToParent(),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12.w),
                           // 6 segment dashes below code box
                           Row(
                             children: List.generate(6, (index) {
@@ -340,33 +329,33 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                                   _childCodeController.text.length > index;
                               return Expanded(
                                 child: Container(
-                                  height: 5,
+                                  height: 5.w,
                                   margin: EdgeInsets.only(
-                                    left: index == 0 ? 0 : 6,
+                                    left: index == 0.w ? 0.w : 6.w,
                                   ),
                                   decoration: BoxDecoration(
                                     color: isEntered
-                                        ? const Color(0xFF5593F8)
-                                        : const Color(0xFFE2E7F3),
-                                    borderRadius: BorderRadius.circular(3),
+                                        ? Color(0xFF5593F8)
+                                        : Color(0xFFE2E7F3),
+                                    borderRadius: BorderRadius.circular(3.w),
                                   ),
                                 ),
                               );
                             }),
                           ),
-                          const SizedBox(height: 28),
+                          SizedBox(height: 28.w),
                           // Yellow Note box
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.w,
+                              vertical: 12.w,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFFBEF),
-                              borderRadius: BorderRadius.circular(12),
+                              color: Color(0xFFFFFBEF),
+                              borderRadius: BorderRadius.circular(12.w),
                               border: Border.all(
-                                color: const Color(0xFFFFF1C4),
-                                width: 1.0,
+                                color: Color(0xFFFFF1C4),
+                                width: 1.0.w,
                               ),
                             ),
                             child: Row(
@@ -377,11 +366,11 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                                     text: TextSpan(
                                       style: GoogleFonts.poppins(
                                         fontSize: 12.0.sp,
-                                        color: const Color(0xFF8C7612),
+                                        color: Color(0xFF8C7612),
                                         height: 1.4,
                                         fontWeight: FontWeight.w400,
                                       ),
-                                      children: const [
+                                      children: [
                                         TextSpan(
                                           text:
                                               'Note: You can add multiple kids by adding in parent app',
@@ -393,28 +382,26 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                               ],
                             ),
                           ),
-                          const Spacer(),
-                          const SizedBox(height: 32),
+                          Spacer(),
+                          SizedBox(height: 32.w),
                           // Verify Code Button
                           SizedBox(
                             width: double.infinity,
-                            height: 56,
+                            height: 56.w,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF61A2F9),
-                                disabledBackgroundColor: const Color(
-                                  0xFF61A2F9,
-                                ),
+                                backgroundColor: Color(0xFF61A2F9),
+                                disabledBackgroundColor: Color(0xFF61A2F9),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(16.w),
                                 ),
                                 elevation: 0,
                               ),
                               onPressed: _isLoading ? null : _connectToParent,
                               child: _isLoading
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
+                                  ? SizedBox(
+                                      width: 24.w,
+                                      height: 24.w,
                                       child: CircularProgressIndicator(
                                         color: Colors.white,
                                         strokeWidth: 2.5,
@@ -430,7 +417,7 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                                     ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16.w),
                           // Help footer link
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -439,7 +426,7 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                                 "Can't find the code? ",
                                 style: GoogleFonts.poppins(
                                   fontSize: 14.0.sp,
-                                  color: const Color(0xFF4A5267),
+                                  color: Color(0xFF4A5267),
                                   fontWeight: FontWeight.w400,
                                 ),
                               ),
@@ -449,14 +436,14 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
                                   "Help",
                                   style: GoogleFonts.poppins(
                                     fontSize: 14.0.sp,
-                                    color: const Color(0xFF0069F9),
+                                    color: Color(0xFF0069F9),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8.w),
                         ],
                       ),
                     ),

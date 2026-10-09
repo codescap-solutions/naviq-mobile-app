@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 
 /// 52px white circle with the Figma drop shadow, used for the header's back
@@ -20,8 +20,8 @@ class FigmaCircleButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 52,
-        height: 52,
+        width: 52.w,
+        height: 52.w,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: color,
@@ -29,8 +29,8 @@ class FigmaCircleButton extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 2,
-              offset: const Offset(0, 4),
+              blurRadius: 2.w,
+              offset: Offset(0.w, 4.w),
             ),
           ],
         ),
@@ -40,53 +40,46 @@ class FigmaCircleButton extends StatelessWidget {
   }
 }
 
-/// Header shared by the Figma settings-style screens: white band running up
-/// under the status bar, 52px back circle, centred Poppins Bold title and an
-/// optional 52px trailing circle.
+/// Header used by every Figma screen: white band running up under the status
+/// bar, 52px back circle (24px arrow), centred Poppins Regular 20 / 28 title
+/// (letter spacing 0.2, #0F1320) and an optional 52px trailing circle holding
+/// a 24px icon. The title style is deliberately not configurable so all
+/// screens stay identical.
 PreferredSizeWidget figmaAppBar(
   BuildContext context, {
   required String title,
-  double titleSize = 20,
-  Color titleColor = Colors.black,
-  Color background = Colors.white,
   Widget? trailing,
   VoidCallback? onBack,
-  Color circleColor = Colors.white,
-  Widget? backIcon,
 }) {
   return AppBar(
-    backgroundColor: background,
+    backgroundColor: Colors.white,
     elevation: 0,
     scrolledUnderElevation: 0,
     surfaceTintColor: Colors.transparent,
     centerTitle: true,
-    toolbarHeight: 68,
-    leadingWidth: 70,
+    toolbarHeight: 68.w,
+    leadingWidth: 70.w,
     leading: Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(left: 18),
+        padding: EdgeInsets.only(left: 18.w),
         child: FigmaCircleButton(
-          color: circleColor,
           onTap: onBack ?? () => Navigator.of(context).maybePop(),
-          child:
-              backIcon ??
-              Image.asset('assets/icons/auth_back.png', width: 24, height: 24),
+          child: Image.asset(
+            'assets/icons/auth_back.png',
+            width: 24.w,
+            height: 24.w,
+          ),
         ),
       ),
     ),
-    title: Text(
-      title,
-      style: GoogleFonts.poppins(
-        fontSize: titleSize.sp,
-        fontWeight: FontWeight.w700,
-        height: 1.2,
-        color: titleColor,
-      ),
-    ),
+    title: Text(title, style: FigmaText.appBarTitle),
     actions: [
       if (trailing != null)
-        Padding(padding: const EdgeInsets.only(right: 18), child: trailing),
+        Padding(
+          padding: EdgeInsets.only(right: 18.w),
+          child: trailing,
+        ),
     ],
   );
 }

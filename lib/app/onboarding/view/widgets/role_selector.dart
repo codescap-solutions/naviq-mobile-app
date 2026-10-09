@@ -18,15 +18,15 @@ class RoleSelector extends StatelessWidget {
     final isKidSelected = selected == 'Kid';
 
     return Container(
-      width: 310,
-      padding: const EdgeInsets.all(5),
+      width: 310.w,
+      padding: EdgeInsets.all(5.w),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16.w),
+        border: Border.all(color: Color(0xFFE2E8F0)),
       ),
       child: SizedBox(
-        height: 47,
+        height: 47.w,
         child: LayoutBuilder(
           builder: (context, constraints) {
             final tabWidth = constraints.maxWidth / 2;
@@ -34,7 +34,7 @@ class RoleSelector extends StatelessWidget {
               children: [
                 // Sliding Selection Indicator
                 AnimatedAlign(
-                  duration: const Duration(milliseconds: 250),
+                  duration: Duration(milliseconds: 250),
                   curve: Curves.easeInOut,
                   alignment: isKidSelected
                       ? Alignment.centerLeft
@@ -43,8 +43,8 @@ class RoleSelector extends StatelessWidget {
                     width: tabWidth,
                     height: double.infinity,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0069F9),
-                      borderRadius: BorderRadius.circular(12),
+                      color: Color(0xFF0069F9),
+                      borderRadius: BorderRadius.circular(12.w),
                     ),
                   ),
                 ),
@@ -75,7 +75,7 @@ class RoleSelector extends StatelessWidget {
             fontWeight: FontWeight.w400,
             height: 24 / 16,
             letterSpacing: 0.2,
-            color: isSelected ? Colors.white : const Color(0xFF64748B),
+            color: isSelected ? Colors.white : Color(0xFF64748B),
           ),
         ),
       ),

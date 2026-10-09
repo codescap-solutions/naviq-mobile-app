@@ -93,9 +93,11 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
       if (_selectedLifestyleIndex == -1) return;
       if (_lifestyleFormKey.currentState?.validate() ?? false) {
         final name = _nameController.text.trim();
-        final parentingSituation = _getParentingSituationValue(_selectedFamilyStructureIndex);
+        final parentingSituation = _getParentingSituationValue(
+          _selectedFamilyStructureIndex,
+        );
         final parentRoutine = _getParentRoutineValue(_selectedLifestyleIndex);
-        
+
         context.read<AuthBloc>().add(
           RegisterUser(
             phoneNumber: widget.phoneNumber,
@@ -128,7 +130,8 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
   Widget build(BuildContext context) {
     final bool isContinueEnabled = _currentStep == 0
         ? _selectedFamilyStructureIndex != -1
-        : (_selectedLifestyleIndex != -1 && _nameController.text.trim().length >= 2);
+        : (_selectedLifestyleIndex != -1 &&
+              _nameController.text.trim().length >= 2);
 
     return BlocProvider.value(
       value: injector<AuthBloc>(),
@@ -136,9 +139,7 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
         listener: (context, state) {
           if (state is AuthSuccess) {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => const AddKidView(),
-              ),
+              MaterialPageRoute(builder: (_) => const AddKidView()),
             );
           } else if (state is AuthError) {
             AppSnackbar.showError(context, state.message);
@@ -147,12 +148,9 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFFFBFCFE),
-                  Color(0xFFEDF4FE),
-                ],
+                colors: [Color(0xFFFBFCFE), Color(0xFFEDF4FE)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -161,13 +159,13 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: AppSizes.spacingS),
+                  SizedBox(height: AppSizes.spacingS.w),
                   _buildCustomAppBar(),
                   _buildProgressBar(),
                   Expanded(
                     child: PageView(
                       controller: _pageController,
-                      physics: const NeverScrollableScrollPhysics(),
+                      physics: NeverScrollableScrollPhysics(),
                       children: [
                         _buildFamilyStructureStep(),
                         _buildLifestyleStep(),
@@ -175,7 +173,7 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(AppSizes.paddingL),
+                    padding: EdgeInsets.all(AppSizes.paddingL.w),
                     child: _buildContinueButton(isContinueEnabled),
                   ),
                 ],
@@ -189,18 +187,18 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
 
   Widget _buildCustomAppBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingS),
+      padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingS.w),
       child: Row(
         children: [
           IconButton(
             onPressed: _previousStep,
-            icon: const Icon(
+            icon: Icon(
               Icons.chevron_left_rounded,
               color: AppColors.textPrimary,
-              size: 32,
+              size: 32.w,
             ),
           ),
-          const Spacer(),
+          Spacer(),
           Text(
             'Parent profile',
             style: GoogleFonts.poppins(
@@ -209,8 +207,8 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
               color: AppColors.textPrimary,
             ),
           ),
-          const Spacer(),
-          const SizedBox(width: 48), // Balance spacing with Back button
+          Spacer(),
+          SizedBox(width: 48.w), // Balance spacing with Back button
         ],
       ),
     );
@@ -218,31 +216,31 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
 
   Widget _buildProgressBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.paddingL,
-        vertical: AppSizes.paddingS,
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSizes.paddingL.w,
+        vertical: AppSizes.paddingS.w,
       ),
       child: Row(
         children: [
           Expanded(
             child: Container(
-              height: 4,
+              height: 4.w,
               decoration: BoxDecoration(
-                color: const Color(0xFF0066FF),
-                borderRadius: BorderRadius.circular(2),
+                color: Color(0xFF0066FF),
+                borderRadius: BorderRadius.circular(2.w),
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8.w),
           Expanded(
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              height: 4,
+              duration: Duration(milliseconds: 300),
+              height: 4.w,
               decoration: BoxDecoration(
                 color: _currentStep >= 1
-                    ? const Color(0xFF0066FF)
-                    : const Color(0xFF0066FF).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(2),
+                    ? Color(0xFF0066FF)
+                    : Color(0xFF0066FF).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(2.w),
               ),
             ),
           ),
@@ -253,46 +251,47 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
 
   Widget _buildFamilyStructureStep() {
     return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+      physics: BouncingScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingL.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: AppSizes.spacingM),
+          SizedBox(height: AppSizes.spacingM.w),
           Text(
             'Your Family Structure',
             style: GoogleFonts.poppins(
               fontSize: 12.0.sp,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF0066FF),
+              color: Color(0xFF0066FF),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.w),
           Text(
             'How would you describe your parenting situation?',
             style: GoogleFonts.oswald(
               fontSize: 22.0.sp,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1D293C),
+              color: Color(0xFF1D293C),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.w),
           Text(
             "We'll customise sharing settings and support features around your family.",
             style: GoogleFonts.poppins(
               fontSize: 13.0.sp,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF62748E),
+              color: Color(0xFF62748E),
             ),
           ),
-          const SizedBox(height: AppSizes.spacingXL),
+          SizedBox(height: AppSizes.spacingXL.w),
           ParentOptionCard(
             emoji: '👫',
             title: 'Co-Parenting',
             subtitle: 'You share parenting with a partner or co-parent',
             detailText: 'Shared dashboards & coordinated schedule visibility.',
-            tipText: "💡 Co-parents save 30 min/day by eliminating 'where are the kids?' check-in calls.",
-            themeColor: const Color(0xFF0066FF),
+            tipText:
+                "💡 Co-parents save 30 min/day by eliminating 'where are the kids?' check-in calls.",
+            themeColor: Color(0xFF0066FF),
             isSelected: _selectedFamilyStructureIndex == 0,
             onTap: () {
               setState(() {
@@ -300,14 +299,15 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
               });
             },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.w),
           ParentOptionCard(
             emoji: '👩',
             title: 'Single Mom',
             subtitle: "You're raising your children independently",
             detailText: 'Dedicated emergency SOS & trusted contact shortcuts.',
-            tipText: "💡 Single parents rely on quick-glance safety updates — we've designed every feature with you in mind.",
-            themeColor: const Color(0xFF0066FF),
+            tipText:
+                "💡 Single parents rely on quick-glance safety updates — we've designed every feature with you in mind.",
+            themeColor: Color(0xFF0066FF),
             isSelected: _selectedFamilyStructureIndex == 1,
             onTap: () {
               setState(() {
@@ -315,14 +315,16 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
               });
             },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.w),
           ParentOptionCard(
             emoji: '👨',
             title: 'Single Dad',
             subtitle: "You're the primary caregiver for your children",
-            detailText: 'Quick SOS, school pick-up alerts & after-school zones.',
-            tipText: '💡 Dads who use location tools report 40% less daily stress about child safety.',
-            themeColor: const Color(0xFF0066FF),
+            detailText:
+                'Quick SOS, school pick-up alerts & after-school zones.',
+            tipText:
+                '💡 Dads who use location tools report 40% less daily stress about child safety.',
+            themeColor: Color(0xFF0066FF),
             isSelected: _selectedFamilyStructureIndex == 2,
             onTap: () {
               setState(() {
@@ -330,14 +332,16 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
               });
             },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.w),
           ParentOptionCard(
             emoji: '👨',
             title: 'Guardian',
             subtitle: "You're the primary caretaker for your children",
-            detailText: 'Quick SOS, school pick-up alerts & after-school zones.',
-            tipText: '💡 Dads who use location tools report 40% less daily stress about child safety.',
-            themeColor: const Color(0xFF0066FF),
+            detailText:
+                'Quick SOS, school pick-up alerts & after-school zones.',
+            tipText:
+                '💡 Dads who use location tools report 40% less daily stress about child safety.',
+            themeColor: Color(0xFF0066FF),
             isSelected: _selectedFamilyStructureIndex == 3,
             onTap: () {
               setState(() {
@@ -345,7 +349,7 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
               });
             },
           ),
-          const SizedBox(height: AppSizes.spacingL),
+          SizedBox(height: AppSizes.spacingL.w),
         ],
       ),
     );
@@ -353,54 +357,54 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
 
   Widget _buildLifestyleStep() {
     return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+      physics: BouncingScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingL.w),
       child: Form(
         key: _lifestyleFormKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: AppSizes.spacingM),
+            SizedBox(height: AppSizes.spacingM.w),
             Text(
               'About Your Lifestyle',
               style: GoogleFonts.poppins(
                 fontSize: 12.0.sp,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF0066FF),
+                color: Color(0xFF0066FF),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             Text(
               'What best describes your daily routine?',
               style: GoogleFonts.oswald(
                 fontSize: 22.0.sp,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF1D293C),
+                color: Color(0xFF1D293C),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             Text(
               'This helps us personalise your notification schedule and safety alerts.',
               style: GoogleFonts.poppins(
                 fontSize: 13.0.sp,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF62748E),
+                color: Color(0xFF62748E),
               ),
             ),
-            const SizedBox(height: AppSizes.spacingXL),
+            SizedBox(height: AppSizes.spacingXL.w),
             Text(
               'Parent Name',
               style: GoogleFonts.poppins(
                 fontSize: 12.0.sp,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF1D293C),
+                color: Color(0xFF1D293C),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             CommonTextField(
               controller: _nameController,
               hintText: 'Enter parent name',
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Icons.person_outline_rounded,
                 color: Color(0xFF7C8BA0),
               ),
@@ -414,17 +418,20 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
                 return null;
               },
             ),
-            const SizedBox(height: AppSizes.spacingXL),
+            SizedBox(height: AppSizes.spacingXL.w),
             ParentOptionCard(
               emoji: '🏠',
               title: 'Homemaker Parent',
-              subtitle: "You're at home full-time — the heart of the household.",
+              subtitle:
+                  "You're at home full-time — the heart of the household.",
               badgeText: 'Full-time caregiver',
-              badgeColor: const Color(0xFFFFEAD5),
-              badgeTextColor: const Color(0xFFD35F00),
-              detailText: "We'll set up home-zone alerts & routine check-ins tailored to your day.",
-              tipText: '💡 Homemaker parents are often the first responders in their household. SafeNest helps you stay aware without hovering — giving you peace of mind while letting kids build independence.',
-              themeColor: const Color(0xFFD35F00),
+              badgeColor: Color(0xFFFFEAD5),
+              badgeTextColor: Color(0xFFD35F00),
+              detailText:
+                  "We'll set up home-zone alerts & routine check-ins tailored to your day.",
+              tipText:
+                  '💡 Homemaker parents are often the first responders in their household. SafeNest helps you stay aware without hovering — giving you peace of mind while letting kids build independence.',
+              themeColor: Color(0xFFD35F00),
               stat1Value: '76%',
               stat1Label: 'feel safer with real-time location awareness',
               stat2Value: '3×',
@@ -436,17 +443,20 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
                 });
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.w),
             ParentOptionCard(
               emoji: '💼',
               title: 'Working Parent',
-              subtitle: 'You balance a career while raising your children every day.',
+              subtitle:
+                  'You balance a career while raising your children every day.',
               badgeText: 'Career + family',
-              badgeColor: const Color(0xFFE8DDFC),
-              badgeTextColor: const Color(0xFF7A4AF6),
-              detailText: 'Priority alerts between meetings & school hours — no noise, just what matters.',
-              tipText: '💡 Working parents often feel the tension between being present at work and being present for their kids. SafeNest bridges that gap with smart, quiet alerts — only buzzing when it truly matters.',
-              themeColor: const Color(0xFF7A4AF6),
+              badgeColor: Color(0xFFE8DDFC),
+              badgeTextColor: Color(0xFF7A4AF6),
+              detailText:
+                  'Priority alerts between meetings & school hours — no noise, just what matters.',
+              tipText:
+                  '💡 Working parents often feel the tension between being present at work and being present for their kids. SafeNest bridges that gap with smart, quiet alerts — only buzzing when it truly matters.',
+              themeColor: Color(0xFF7A4AF6),
               stat1Value: '8×',
               stat1Label: 'average daily location checks by working parents',
               stat2Value: '62%',
@@ -458,7 +468,7 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
                 });
               },
             ),
-            const SizedBox(height: AppSizes.spacingL),
+            SizedBox(height: AppSizes.spacingL.w),
           ],
         ),
       ),
@@ -472,20 +482,20 @@ class _ParentProfileSetupViewState extends State<ParentProfileSetupView> {
         final bool shouldDisable = !isEnabled || isLoading;
         return InkWell(
           onTap: shouldDisable ? null : _nextStep,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.w),
           child: Container(
-            height: 60,
+            height: 60.w,
             decoration: BoxDecoration(
               color: shouldDisable
-                  ? const Color(0xFF0066FF).withValues(alpha: 0.5)
-                  : const Color(0xFF0066FF),
-              borderRadius: BorderRadius.circular(16),
+                  ? Color(0xFF0066FF).withValues(alpha: 0.5)
+                  : Color(0xFF0066FF),
+              borderRadius: BorderRadius.circular(16.w),
             ),
             alignment: Alignment.center,
             child: isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
+                ? SizedBox(
+                    width: 24.w,
+                    height: 24.w,
                     child: CircularProgressIndicator(
                       color: Colors.white,
                       strokeWidth: 2.5,
@@ -547,13 +557,11 @@ class ParentOptionCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.all(16),
+        duration: Duration(milliseconds: 300),
+        padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
-          color: isSelected
-              ? themeColor.withValues(alpha: 0.03)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: isSelected ? themeColor.withValues(alpha: 0.03) : Colors.white,
+          borderRadius: BorderRadius.circular(16.w),
           border: Border.all(
             color: isSelected ? themeColor : AppColors.borderColor,
             width: isSelected ? 2.0 : 1.0,
@@ -562,16 +570,16 @@ class ParentOptionCard extends StatelessWidget {
               ? [
                   BoxShadow(
                     color: themeColor.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  )
+                    blurRadius: 10.w,
+                    offset: Offset(0, 4.w),
+                  ),
                 ]
               : [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  )
+                    blurRadius: 4.w,
+                    offset: Offset(0, 2.w),
+                  ),
                 ],
         ),
         child: Column(
@@ -581,19 +589,16 @@ class ParentOptionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 44.w,
+                  height: 44.w,
                   decoration: BoxDecoration(
                     color: themeColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.w),
                   ),
                   alignment: Alignment.center,
-                  child: Text(
-                    emoji,
-                    style: TextStyle(fontSize: 22.0.sp),
-                  ),
+                  child: Text(emoji, style: TextStyle(fontSize: 22.0.sp)),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: 14.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -606,20 +611,20 @@ class ParentOptionCard extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontSize: 14.0.sp,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1D293C),
+                                color: Color(0xFF1D293C),
                               ),
                             ),
                           ),
                           if (badgeText != null) ...[
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8.w),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8.w,
+                                vertical: 4.w,
                               ),
                               decoration: BoxDecoration(
                                 color: badgeColor,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(8.w),
                               ),
                               child: Text(
                                 badgeText!,
@@ -633,13 +638,13 @@ class ParentOptionCard extends StatelessWidget {
                           ],
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.w),
                       Text(
                         subtitle,
                         style: GoogleFonts.poppins(
                           fontSize: 12.0.sp,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF62748E),
+                          color: Color(0xFF62748E),
                           height: 1.3,
                         ),
                       ),
@@ -649,18 +654,15 @@ class ParentOptionCard extends StatelessWidget {
               ],
             ),
             AnimatedSize(
-              duration: const Duration(milliseconds: 300),
+              duration: Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               child: isSelected
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 16),
-                        Container(
-                          height: 1,
-                          color: AppColors.borderColor,
-                        ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16.w),
+                        Container(height: 1, color: AppColors.borderColor),
+                        SizedBox(height: 16.w),
                         // Detail Text Row
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -668,9 +670,9 @@ class ParentOptionCard extends StatelessWidget {
                             Icon(
                               Icons.arrow_right_alt_rounded,
                               color: themeColor,
-                              size: 18,
+                              size: 18.w,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8.w),
                             Expanded(
                               child: Text(
                                 detailText,
@@ -686,21 +688,22 @@ class ParentOptionCard extends StatelessWidget {
                         ),
                         // Optional Stats Block
                         if (stat1Value != null && stat2Value != null) ...[
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16.w),
                           Row(
                             children: [
                               Expanded(
                                 child: Container(
-                                  padding: const EdgeInsets.all(12),
+                                  padding: EdgeInsets.all(12.w),
                                   decoration: BoxDecoration(
                                     color: themeColor.withValues(alpha: 0.05),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(12.w),
                                     border: Border.all(
                                       color: themeColor.withValues(alpha: 0.1),
                                     ),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         stat1Value!,
@@ -710,13 +713,13 @@ class ParentOptionCard extends StatelessWidget {
                                           color: themeColor,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      SizedBox(height: 4.w),
                                       Text(
                                         stat1Label!,
                                         style: GoogleFonts.poppins(
                                           fontSize: 10.0.sp,
                                           fontWeight: FontWeight.w500,
-                                          color: const Color(0xFF62748E),
+                                          color: Color(0xFF62748E),
                                           height: 1.2,
                                         ),
                                       ),
@@ -724,19 +727,20 @@ class ParentOptionCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12.w),
                               Expanded(
                                 child: Container(
-                                  padding: const EdgeInsets.all(12),
+                                  padding: EdgeInsets.all(12.w),
                                   decoration: BoxDecoration(
                                     color: themeColor.withValues(alpha: 0.05),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(12.w),
                                     border: Border.all(
                                       color: themeColor.withValues(alpha: 0.1),
                                     ),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         stat2Value!,
@@ -746,13 +750,13 @@ class ParentOptionCard extends StatelessWidget {
                                           color: themeColor,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      SizedBox(height: 4.w),
                                       Text(
                                         stat2Label!,
                                         style: GoogleFonts.poppins(
                                           fontSize: 10.0.sp,
                                           fontWeight: FontWeight.w500,
-                                          color: const Color(0xFF62748E),
+                                          color: Color(0xFF62748E),
                                           height: 1.2,
                                         ),
                                       ),
@@ -763,7 +767,7 @@ class ParentOptionCard extends StatelessWidget {
                             ],
                           ),
                         ],
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16.w),
                         // Expanded Tip / Info Section
                         _WhyThisMattersSection(
                           tipText: tipText,
@@ -771,7 +775,7 @@ class ParentOptionCard extends StatelessWidget {
                         ),
                       ],
                     )
-                  : const SizedBox.shrink(),
+                  : SizedBox.shrink(),
             ),
           ],
         ),
@@ -810,42 +814,44 @@ class _WhyThisMattersSectionState extends State<_WhyThisMattersSection> {
           child: Row(
             children: [
               Icon(
-                _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                color: const Color(0xFF7C8BA0),
-                size: 16,
+                _isExpanded
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.keyboard_arrow_down_rounded,
+                color: Color(0xFF7C8BA0),
+                size: 16.w,
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: 4.w),
               Text(
                 'Why this matters',
                 style: GoogleFonts.poppins(
                   fontSize: 11.0.sp,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF7C8BA0),
+                  color: Color(0xFF7C8BA0),
                 ),
               ),
-              const Spacer(),
+              Spacer(),
               Text(
                 'How is this used?',
                 style: GoogleFonts.poppins(
                   fontSize: 11.0.sp,
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xFF7C8BA0),
+                  color: Color(0xFF7C8BA0),
                 ),
               ),
             ],
           ),
         ),
         AnimatedSize(
-          duration: const Duration(milliseconds: 200),
+          duration: Duration(milliseconds: 200),
           curve: Curves.easeInOut,
           child: _isExpanded
               ? Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
+                  padding: EdgeInsets.only(top: 8.0.w),
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(12.w),
                     decoration: BoxDecoration(
                       color: widget.themeColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.w),
                     ),
                     child: Text(
                       widget.tipText,
@@ -858,7 +864,7 @@ class _WhyThisMattersSectionState extends State<_WhyThisMattersSection> {
                     ),
                   ),
                 )
-              : const SizedBox.shrink(),
+              : SizedBox.shrink(),
         ),
       ],
     );

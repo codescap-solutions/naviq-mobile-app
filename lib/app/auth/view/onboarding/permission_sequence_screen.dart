@@ -114,7 +114,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
           break;
         case PermissionStep.notification:
           final status = await Permission.notification.status;
-          isGranted = status.isGranted || (Platform.isIOS && status.isProvisional);
+          isGranted =
+              status.isGranted || (Platform.isIOS && status.isProvisional);
           break;
         case PermissionStep.battery:
           isGranted = await Permission.ignoreBatteryOptimizations.isGranted;
@@ -154,7 +155,7 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
       if (mounted) {
         if (silent) {
           // If silent, add a tiny delay to ensure smooth transition
-          await Future.delayed(const Duration(milliseconds: 300));
+          await Future.delayed(Duration(milliseconds: 300));
         }
         _advanceToNextStep();
       }
@@ -168,7 +169,7 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
       });
       _pageController.animateToPage(
         _currentStepIndex,
-        duration: const Duration(milliseconds: 400),
+        duration: Duration(milliseconds: 400),
         curve: Curves.easeInOut,
       );
       // Landing on the new step doesn't mean it needs asking. Only the
@@ -193,7 +194,7 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
       });
       _pageController.animateToPage(
         _currentStepIndex,
-        duration: const Duration(milliseconds: 400),
+        duration: Duration(milliseconds: 400),
         curve: Curves.easeInOut,
       );
     } else {
@@ -246,9 +247,11 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
         case PermissionStep.usageData:
           if (Platform.isIOS) {
             // First: Request raw Screen Time authorization if not granted
-            final authorized = await injector<ChildInfoService>().checkUsagePermission();
+            final authorized = await injector<ChildInfoService>()
+                .checkUsagePermission();
             if (!authorized) {
-              final granted = await injector<ChildInfoService>().openUsageSettings();
+              final granted = await injector<ChildInfoService>()
+                  .openUsageSettings();
               if (!granted) {
                 // User rejected permission request
                 return;
@@ -282,7 +285,7 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                       Navigator.pushReplacement(
                         context,
                         CupertinoPageRoute(
-                          builder: (context) => const AppCatalogScreen(),
+                          builder: (context) => AppCatalogScreen(),
                         ),
                       );
                     },
@@ -342,7 +345,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
             if (oem != null && mounted) {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (_) => OemBatteryScreen(oem: oem, onContinue: goToSos),
+                  builder: (_) =>
+                      OemBatteryScreen(oem: oem, onContinue: goToSos),
                 ),
               );
               break;
@@ -365,7 +369,7 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
               Color(0xFFE6EFFF), // soft sky blue
@@ -383,7 +387,7 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
+                  physics: NeverScrollableScrollPhysics(),
                   itemCount: _steps.length,
                   itemBuilder: (context, index) {
                     return _buildStepContent(_steps[index]);
@@ -398,21 +402,22 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
   }
 
   Widget _buildAppBar() {
-    final isSuccessStep = _currentStepIndex < _steps.length &&
+    final isSuccessStep =
+        _currentStepIndex < _steps.length &&
         _steps[_currentStepIndex] == PermissionStep.success;
     if (isSuccessStep) {
-      return const SizedBox(height: 30);
+      return SizedBox(height: 30.w);
     }
     return SizedBox(
-      height: 30,
+      height: 30.w,
       child: Align(
         alignment: Alignment.centerLeft,
         child: Padding(
-          padding: const EdgeInsets.only(left: 8.0),
+          padding: EdgeInsets.only(left: 8.0.w),
           child: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new,
-              size: 18,
+              size: 18.w,
               color: AppColors.textPrimary,
             ),
             onPressed: _goToPreviousStep,
@@ -499,22 +504,18 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
         // Top Half: preview device PNG positioned at top and extending downwards
         Positioned(
           top: -20, // push it slightly up to align nicely below the back button
-          left: 0,
-          right: 0,
+          left: 0.w,
+          right: 0.w,
           bottom:
               120, // allows the bottom portion to extend far below the white card top edge
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: Image.asset(
               imagePath,
               fit: BoxFit.contain,
               alignment: Alignment.topCenter,
               errorBuilder: (context, error, stackTrace) {
-                return const Icon(
-                  Icons.broken_image,
-                  size: 64,
-                  color: Colors.grey,
-                );
+                return Icon(Icons.broken_image, size: 64.w, color: Colors.grey);
               },
             ),
           ),
@@ -525,14 +526,14 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
           alignment: Alignment.bottomCenter,
           child: Container(
             width: double.infinity,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32.w)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black12,
-                  blurRadius: 16,
-                  offset: Offset(0, -4),
+                  blurRadius: 16.w,
+                  offset: Offset(0, -4.w),
                 ),
               ],
             ),
@@ -540,9 +541,13 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
               clipBehavior: Clip.none,
               children: [
                 // Overlapping floating permission icon
-                Positioned(top: -28, left: 28, child: _buildFloatingIcon(step)),
+                Positioned(
+                  top: -28,
+                  left: 28.w,
+                  child: _buildFloatingIcon(step),
+                ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(28, 42, 28, 28),
+                  padding: EdgeInsets.fromLTRB(28.w, 42.w, 28.w, 28.w),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -553,37 +558,37 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                         style: GoogleFonts.poppins(
                           fontSize: 22.0.sp,
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0F172A),
+                          color: Color(0xFF0F172A),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12.w),
                       // Subtitle
                       Text(
                         subtitle,
                         style: GoogleFonts.poppins(
                           fontSize: 13.5.sp,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF475569),
+                          color: Color(0xFF475569),
                           height: 1.45,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20.w),
                       // Pills/Badges row
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
+                        physics: BouncingScrollPhysics(),
                         child: Row(
                           children: pills.map((pill) {
                             return Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
+                              padding: EdgeInsets.only(right: 8.0.w),
                               child: pill,
                             );
                           }).toList(),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      const Divider(color: Color(0xFFF1F5F9), height: 1),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 24.w),
+                      Divider(color: Color(0xFFF1F5F9), height: 1),
+                      SizedBox(height: 16.w),
 
                       // How it works info and step dots
                       Row(
@@ -591,18 +596,18 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.info_outline_rounded,
                                 color: Color(0xFF0F172A),
-                                size: 18,
+                                size: 18.w,
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8.w),
                               Text(
                                 "How does it work",
                                 style: GoogleFonts.poppins(
                                   fontSize: 13.0.sp,
                                   fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF0F172A),
+                                  color: Color(0xFF0F172A),
                                 ),
                               ),
                             ],
@@ -610,23 +615,23 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                           _buildStepDots(),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24.w),
 
                       // Action Buttons Row
                       Row(
                         children: [
                           // Skip Button
                           SizedBox(
-                            width: 100,
-                            height: 52,
+                            width: 100.w,
+                            height: 52.w,
                             child: OutlinedButton(
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(
+                                side: BorderSide(
                                   color: Color(0xFFCBD5E1),
-                                  width: 1.5,
+                                  width: 1.5.w,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(16.w),
                                 ),
                               ),
                               onPressed: _isRequesting
@@ -637,21 +642,21 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                                 style: GoogleFonts.poppins(
                                   fontSize: 15.0.sp,
                                   fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF0F172A),
+                                  color: Color(0xFF0F172A),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12.w),
                           // Allow Access Button
                           Expanded(
                             child: SizedBox(
-                              height: 52,
+                              height: 52.w,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF0066FF),
+                                  backgroundColor: Color(0xFF0066FF),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(16.w),
                                   ),
                                   elevation: 0,
                                 ),
@@ -659,9 +664,9 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                                     ? null
                                     : _handlePermissionRequest,
                                 child: _isRequesting
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
+                                    ? SizedBox(
+                                        width: 20.w,
+                                        height: 20.w,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2.5,
                                           valueColor: AlwaysStoppedAnimation(
@@ -704,11 +709,11 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
       case PermissionStep.notification:
         iconData = Icons.notifications_rounded;
         badge = Positioned(
-          top: 6,
-          right: 6,
+          top: 6.w,
+          right: 6.w,
           child: Container(
-            padding: const EdgeInsets.all(3),
-            decoration: const BoxDecoration(
+            padding: EdgeInsets.all(3.w),
+            decoration: BoxDecoration(
               color: Color(0xFFEF4444),
               shape: BoxShape.circle,
             ),
@@ -737,17 +742,17 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
     }
 
     return Container(
-      width: 56,
-      height: 56,
+      width: 56.w,
+      height: 56.w,
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: Color(0xFFEFF6FF),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0066FF).withValues(alpha: 0.12),
-            blurRadius: 12,
-            spreadRadius: 4,
-            offset: const Offset(0, 4),
+            color: Color(0xFF0066FF).withValues(alpha: 0.12),
+            blurRadius: 12.w,
+            spreadRadius: 4.w,
+            offset: Offset(0, 4.w),
           ),
         ],
         border: Border.all(color: Colors.white, width: 2),
@@ -755,7 +760,7 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Icon(iconData, color: const Color(0xFF0066FF), size: 26),
+          Icon(iconData, color: Color(0xFF0066FF), size: 26.w),
           if (badge != null) badge,
         ],
       ),
@@ -764,26 +769,26 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
 
   Widget _buildPill(String text, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.w),
         border: Border.all(
-          color: const Color(0xFF0066FF).withValues(alpha: 0.18),
-          width: 1.5,
+          color: Color(0xFF0066FF).withValues(alpha: 0.18),
+          width: 1.5.w,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: const Color(0xFF0066FF), size: 14),
-          const SizedBox(width: 6),
+          Icon(icon, color: Color(0xFF0066FF), size: 14.w),
+          SizedBox(width: 6.w),
           Text(
             text,
             style: GoogleFonts.poppins(
               fontSize: 12.0.sp,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF0066FF),
+              color: Color(0xFF0066FF),
             ),
           ),
         ],
@@ -793,20 +798,20 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
 
   Widget _buildStepDots() {
     final totalDots = _steps.length - 1; // success step doesn't count
-    if (_currentStepIndex >= totalDots) return const SizedBox.shrink();
+    if (_currentStepIndex >= totalDots) return SizedBox.shrink();
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(totalDots, (index) {
         final isActive = index == _currentStepIndex;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.only(left: 4),
+          duration: Duration(milliseconds: 300),
+          margin: EdgeInsets.only(left: 4.w),
           width: isActive ? 20 : 6,
-          height: 6,
+          height: 6.w,
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF0066FF) : const Color(0xFFCBD5E1),
-            borderRadius: BorderRadius.circular(3),
+            color: isActive ? Color(0xFF0066FF) : Color(0xFFCBD5E1),
+            borderRadius: BorderRadius.circular(3.w),
           ),
         );
       }),
@@ -818,17 +823,18 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
       builder: (context, constraints) {
         return SingleChildScrollView(
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: constraints.maxHeight,
-            ),
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: IntrinsicHeight(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 24.0.w,
+                  vertical: 16.0.w,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Spacer(flex: 2),
-                    
+                    Spacer(flex: 2),
+
                     // Title
                     Text(
                       "All Set!",
@@ -836,11 +842,11 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                       style: GoogleFonts.poppins(
                         fontSize: 32.0.sp,
                         fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0F172A),
+                        color: Color(0xFF0F172A),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    
+                    SizedBox(height: 12.w),
+
                     // Subtitle
                     Text(
                       "Your security and privacy settings\nare now configured.",
@@ -848,24 +854,27 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                       style: GoogleFonts.poppins(
                         fontSize: 15.0.sp,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF64748B),
+                        color: Color(0xFF64748B),
                         height: 1.4,
                       ),
                     ),
-                    
-                    const Spacer(flex: 2),
-                    
+
+                    Spacer(flex: 2),
+
                     // White card containing details
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFFEFF2F6), width: 1.5),
+                        borderRadius: BorderRadius.circular(24.w),
+                        border: Border.all(
+                          color: Color(0xFFEFF2F6),
+                          width: 1.5,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
+                            color: Color(0xFF0F172A).withValues(alpha: 0.04),
+                            blurRadius: 16.w,
+                            offset: Offset(0, 8.w),
                           ),
                         ],
                       ),
@@ -876,13 +885,23 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                             title: "Security",
                             subtitle: "Your account is protected",
                           ),
-                          const Divider(color: Color(0xFFEFF2F6), height: 1, indent: 16, endIndent: 16),
+                          Divider(
+                            color: Color(0xFFEFF2F6),
+                            height: 1,
+                            indent: 16,
+                            endIndent: 16,
+                          ),
                           _buildSuccessRow(
                             icon: Icons.visibility_outlined,
                             title: "Privacy",
                             subtitle: "Your information is private",
                           ),
-                          const Divider(color: Color(0xFFEFF2F6), height: 1, indent: 16, endIndent: 16),
+                          Divider(
+                            color: Color(0xFFEFF2F6),
+                            height: 1,
+                            indent: 16,
+                            endIndent: 16,
+                          ),
                           _buildSuccessRow(
                             icon: Icons.shield_outlined,
                             title: "Permissions",
@@ -891,9 +910,9 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                         ],
                       ),
                     ),
-                    
-                    const Spacer(flex: 3),
-                    
+
+                    Spacer(flex: 3),
+
                     // Celebration Text
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -907,69 +926,82 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                           style: GoogleFonts.poppins(
                             fontSize: 14.0.sp,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF475569),
+                            color: Color(0xFF475569),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    
+                    SizedBox(height: 24.w),
+
                     // Go Home Button
                     SizedBox(
-                      height: 54,
+                      height: 54.w,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0066FF),
+                          backgroundColor: Color(0xFF0066FF),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(16.w),
                           ),
                           elevation: 0,
                         ),
-                        onPressed: _isRequesting ? null : _handlePermissionRequest,
-                        icon: const Icon(Icons.home_outlined, color: Colors.white, size: 20),
+                        onPressed: _isRequesting
+                            ? null
+                            : _handlePermissionRequest,
+                        icon: Icon(
+                          Icons.home_outlined,
+                          color: Colors.white,
+                          size: 20.w,
+                        ),
                         label: Text(
                           "Go Home",
                           style: GoogleFonts.poppins(
                             fontSize: 15.0.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
-                    ),
-                    const SizedBox(height: 12),
-                    
+                    SizedBox(height: 12.w),
+
                     // Watch Tutorial Button
                     SizedBox(
-                      height: 54,
+                      height: 54.w,
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF0F172A), width: 2),
+                          side: BorderSide(
+                            color: Color(0xFF0F172A),
+                            width: 2.w,
+                          ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(16.w),
                           ),
                           backgroundColor: Colors.transparent,
                         ),
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text("Tutorial coming soon!"),
                               duration: Duration(seconds: 2),
                             ),
                           );
                         },
-                        icon: const Icon(Icons.play_arrow_outlined, color: Color(0xFF0F172A), size: 20),
+                        icon: Icon(
+                          Icons.play_arrow_outlined,
+                          color: Color(0xFF0F172A),
+                          size: 20.w,
+                        ),
                         label: Text(
                           "Watch Tutorial",
                           style: GoogleFonts.poppins(
                             fontSize: 15.0.sp,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF0F172A),
+                            color: Color(0xFF0F172A),
                           ),
                         ),
                       ),
                     ),
-                    const Spacer(flex: 1),
+                    Spacer(flex: 1),
                   ],
                 ),
               ),
@@ -986,24 +1018,20 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
     required String subtitle,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      padding: EdgeInsets.symmetric(horizontal: 16.0.w, vertical: 16.0.w),
       child: Row(
         children: [
           // Icon Container
           Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
+            width: 44.w,
+            height: 44.w,
+            decoration: BoxDecoration(
               color: Color(0xFFEFF6FF),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF3B82F6),
-              size: 22,
-            ),
+            child: Icon(icon, color: Color(0xFF3B82F6), size: 22.w),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14.w),
           // Texts
           Expanded(
             child: Column(
@@ -1014,26 +1042,26 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
                   style: GoogleFonts.poppins(
                     fontSize: 15.0.sp,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0F172A),
+                    color: Color(0xFF0F172A),
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: GoogleFonts.poppins(
                     fontSize: 12.5.sp,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF64748B),
+                    color: Color(0xFF64748B),
                   ),
                 ),
               ],
             ),
           ),
           // Checkmark
-          const Icon(
+          Icon(
             Icons.check_circle_rounded,
             color: Color(0xFF10B981),
-            size: 24,
+            size: 24.w,
           ),
         ],
       ),

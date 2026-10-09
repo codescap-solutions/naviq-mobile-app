@@ -23,7 +23,11 @@ class OemBatteryScreen extends StatefulWidget {
   // avoids that entirely.
   final void Function(BuildContext) onContinue;
 
-  const OemBatteryScreen({super.key, required this.oem, required this.onContinue});
+  const OemBatteryScreen({
+    super.key,
+    required this.oem,
+    required this.onContinue,
+  });
 
   @override
   State<OemBatteryScreen> createState() => _OemBatteryScreenState();
@@ -65,7 +69,7 @@ class _OemBatteryScreenState extends State<OemBatteryScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFFE6EFFF), Color(0xFFF1F7FF)],
             begin: Alignment.topCenter,
@@ -74,33 +78,45 @@ class _OemBatteryScreenState extends State<OemBatteryScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 24),
+                SizedBox(height: 24.w),
                 Container(
-                  width: 64,
-                  height: 64,
+                  width: 64.w,
+                  height: 64.w,
                   decoration: BoxDecoration(
                     color: AppColors.primaryColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.battery_charging_full_rounded, color: AppColors.primaryColor, size: 32),
+                  child: Icon(
+                    Icons.battery_charging_full_rounded,
+                    color: AppColors.primaryColor,
+                    size: 32.w,
+                  ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20.w),
                 Text(
                   'One more step for ${widget.oem.displayName}',
-                  style: GoogleFonts.poppins(fontSize: 22.0.sp, fontWeight: FontWeight.w800, color: const Color(0xFF0C1D37)),
+                  style: GoogleFonts.poppins(
+                    fontSize: 22.0.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0C1D37),
+                  ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10.w),
                 Text(
                   '${widget.oem.displayName} devices have their own battery manager that can stop location '
                   'tracking in the background even after the previous permission — this whitelists NaviQ so '
                   'it keeps working when the app isn\'t open.',
-                  style: GoogleFonts.poppins(fontSize: 14.0.sp, color: const Color(0xFF64748B), height: 1.5),
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.0.sp,
+                    color: Color(0xFF64748B),
+                    height: 1.5,
+                  ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.w),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
@@ -112,59 +128,92 @@ class _OemBatteryScreenState extends State<OemBatteryScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primaryColor,
                               foregroundColor: Colors.white,
-                              minimumSize: const Size(double.infinity, 52),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              minimumSize: Size(double.infinity, 52),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14.w),
+                              ),
                             ),
                             child: _isOpening
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                ? SizedBox(
+                                    width: 20.w,
+                                    height: 20.w,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
                                   )
-                                : Text('Open ${widget.oem.settingLabel} Settings',
-                                    style: TextStyle(fontSize: 15.0.sp, fontWeight: FontWeight.w700)),
+                                : Text(
+                                    'Open ${widget.oem.settingLabel} Settings',
+                                    style: TextStyle(
+                                      fontSize: 15.0.sp,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
                           ),
                         if (_showManualSteps) ...[
                           Text(
                             "Couldn't open settings directly — do this manually instead:",
-                            style: GoogleFonts.poppins(fontSize: 13.0.sp, fontWeight: FontWeight.w700, color: const Color(0xFF0C1D37)),
+                            style: GoogleFonts.poppins(
+                              fontSize: 13.0.sp,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0C1D37),
+                            ),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12.w),
                           ...widget.oem.manualSteps.asMap().entries.map(
-                                (entry) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: 22,
-                                        height: 22,
-                                        margin: const EdgeInsets.only(top: 1),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primaryColor.withValues(alpha: 0.1),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Center(
-                                          child: Text('${entry.key + 1}',
-                                              style: TextStyle(fontSize: 11.0.sp, fontWeight: FontWeight.w700, color: AppColors.primaryColor)),
+                            (entry) => Padding(
+                              padding: EdgeInsets.only(bottom: 12.w),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 22.w,
+                                    height: 22.w,
+                                    margin: EdgeInsets.only(top: 1.w),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryColor.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${entry.key + 1}',
+                                        style: TextStyle(
+                                          fontSize: 11.0.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primaryColor,
                                         ),
                                       ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(entry.value,
-                                            style: GoogleFonts.poppins(fontSize: 13.0.sp, color: const Color(0xFF334155), height: 1.4)),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                ),
+                                  SizedBox(width: 10.w),
+                                  Expanded(
+                                    child: Text(
+                                      entry.value,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13.0.sp,
+                                        color: Color(0xFF334155),
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                            ),
+                          ),
                         ],
                         if (!_showManualSteps)
                           TextButton(
-                            onPressed: () => setState(() => _showManualSteps = true),
+                            onPressed: () =>
+                                setState(() => _showManualSteps = true),
                             child: Text(
                               "I'll do it manually instead",
-                              style: GoogleFonts.poppins(fontSize: 13.0.sp, color: const Color(0xFF64748B), fontWeight: FontWeight.w600),
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.0.sp,
+                                color: Color(0xFF64748B),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                       ],
@@ -173,25 +222,39 @@ class _OemBatteryScreenState extends State<OemBatteryScreen> {
                 ),
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 52.w,
                   child: OutlinedButton(
                     onPressed: _finish,
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: AppColors.primaryColor),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14.w),
+                      ),
                     ),
-                    child: Text("I've done this — Continue",
-                        style: TextStyle(fontSize: 15.0.sp, fontWeight: FontWeight.w700, color: AppColors.primaryColor)),
+                    child: Text(
+                      "I've done this — Continue",
+                      style: TextStyle(
+                        fontSize: 15.0.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.w),
                 Center(
                   child: TextButton(
                     onPressed: _skip,
-                    child: Text('Skip for now', style: GoogleFonts.poppins(fontSize: 13.0.sp, color: const Color(0xFF94A3B8))),
+                    child: Text(
+                      'Skip for now',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13.0.sp,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.w),
               ],
             ),
           ),

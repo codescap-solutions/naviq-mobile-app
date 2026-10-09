@@ -10,6 +10,7 @@ import 'package:child_track/core/di/injector.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
@@ -68,7 +69,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
 
     if (index == 0) {
       // Yesterday
-      final yesterday = now.subtract(const Duration(days: 1));
+      final yesterday = now.subtract(Duration(days: 1));
       final dateStr = yesterday.toIso8601String().split('T')[0];
       _bloc.add(FetchAppUsage(date: dateStr));
     } else if (index == 1) {
@@ -76,7 +77,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
       _bloc.add(FetchAppUsage(date: todayStr));
     } else {
       // Week — last 7 days (today to 6 days ago)
-      final weekStart = now.subtract(const Duration(days: 6));
+      final weekStart = now.subtract(Duration(days: 6));
       final startDateStr = weekStart.toIso8601String().split('T')[0];
       _bloc.add(
         FetchAppUsage(
@@ -103,62 +104,15 @@ class _SocialAppsViewState extends State<SocialAppsView> {
         BlocProvider.value(value: _timeLimitBloc..add(FetchTimeLimits())),
       ],
       child: Scaffold(
-        backgroundColor: const Color(0xFFF7F8FA),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFFF7F8FA),
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          surfaceTintColor: Colors.transparent,
-          centerTitle: true,
-          toolbarHeight: 68,
-          leadingWidth: 70,
-          leading: Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 18),
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).maybePop(),
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 1,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Image.asset(
-                    'assets/icons/auth_back.png',
-                    width: 24,
-                    height: 24,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          title: Text(
-            'Scroll',
-            style: GoogleFonts.poppins(
-              fontSize: 20.0.sp,
-              fontWeight: FontWeight.w700,
-              height: 1.0,
-              color: const Color(0xFF2D3035),
-            ),
-          ),
-        ),
+        backgroundColor: Color(0xFFF7F8FA),
+        appBar: figmaAppBar(context, title: 'Scroll'),
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14.0),
+            padding: EdgeInsets.symmetric(horizontal: 14.0.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 12),
+                SizedBox(height: 12.w),
                 AdvancedSegmentedTab(
                   onTabChanged: (index) {
                     setState(() {
@@ -167,7 +121,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
                     _fetchDataForIndex(index);
                   },
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20.w),
                 Expanded(child: _buildAppsList()),
               ],
             ),
@@ -184,7 +138,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
       builder: (context, lockState) {
         final lockedPackages = lockState is AppLockLoaded
             ? lockState.lockedPackages
-            : const <String>{};
+            : <String>{};
         return BlocBuilder<SocialAppsBloc, SocialAppsState>(
           builder: (context, state) {
             // Collect all package names visible right now
@@ -224,7 +178,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
             padding: EdgeInsets.zero,
             children: [
               _buildHeader(),
-              const SizedBox(height: 400, child: SocialAppsShimmer()),
+              SizedBox(height: 400.w, child: SocialAppsShimmer()),
             ],
           );
         } else if (state is SocialAppsError) {
@@ -235,7 +189,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
               Column(
                 children: [
                   Text(state.message, style: AppTextStyles.body1),
-                  const SizedBox(height: AppSizes.spacingS),
+                  SizedBox(height: AppSizes.spacingS.w),
                   CommonButton(
                     text: 'Retry',
                     onPressed: () => _fetchDataForIndex(_selectedTabIndex),
@@ -260,7 +214,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
               children: [
                 _buildHeader(),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  padding: EdgeInsets.symmetric(vertical: 32.w),
                   child: Center(
                     child: Text(
                       'No usage data for this period',
@@ -277,7 +231,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
             builder: (context, lockState) {
               final lockedPackages = lockState is AppLockLoaded
                   ? lockState.lockedPackages
-                  : const <String>{};
+                  : <String>{};
 
               final filteredData = dailyData.where((app) {
                 if (_selectedFilterIndex == 0) return true; // All
@@ -293,7 +247,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
                   children: [
                     _buildHeader(),
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      padding: EdgeInsets.symmetric(vertical: 32.w),
                       child: Center(
                         child: Text(
                           _selectedFilterIndex == 1
@@ -321,7 +275,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
                   final index = listIndex - 1;
                   if (index == filteredData.length) {
                     return Column(
-                      children: [const SizedBox(height: AppSizes.spacingL)],
+                      children: [SizedBox(height: AppSizes.spacingL.w)],
                     );
                   }
 
@@ -439,7 +393,7 @@ class _SocialAppsViewState extends State<SocialAppsView> {
             },
           );
         }
-        return const SizedBox.shrink();
+        return SizedBox.shrink();
       },
     );
   }
@@ -479,7 +433,7 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
     if (widget.allPackages.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('No apps to block')));
+      ).showSnackBar(SnackBar(content: Text('No apps to block')));
       return;
     }
 
@@ -547,12 +501,12 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
     ];
 
     if (widget.selectedTabIndex == 0) {
-      final yesterday = now.subtract(const Duration(days: 1));
+      final yesterday = now.subtract(Duration(days: 1));
       return "Yesterday · ${weekdays[yesterday.weekday % 7]}, ${months[yesterday.month - 1]} ${yesterday.day}";
     } else if (widget.selectedTabIndex == 1) {
       return "Today · ${weekdays[now.weekday % 7]}, ${months[now.month - 1]} ${now.day}";
     } else {
-      final weekStart = now.subtract(const Duration(days: 6));
+      final weekStart = now.subtract(Duration(days: 6));
       return "This Week · ${months[weekStart.month - 1]} ${weekStart.day} - ${months[now.month - 1]} ${now.day}";
     }
   }
@@ -564,8 +518,8 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
         final w = box.maxWidth;
         Widget divider(double at) => Positioned(
           left: w * at,
-          top: 0,
-          bottom: 0,
+          top: 0.w,
+          bottom: 0.w,
           child: Container(
             width: height > 8 ? 2 : 1.5,
             color: Colors.white.withValues(alpha: height > 8 ? 0.6 : 0.7),
@@ -575,19 +529,17 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
           borderRadius: BorderRadius.circular(height),
           child: Container(
             height: height,
-            color: height > 8
-                ? const Color(0xFFDDE1EA)
-                : const Color(0xFFEEF0F4),
+            color: height > 8 ? Color(0xFFDDE1EA) : Color(0xFFEEF0F4),
             child: Stack(
               children: [
                 Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
+                  left: 0.w,
+                  top: 0.w,
+                  bottom: 0.w,
                   width: w * percentage,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5A623),
+                      color: Color(0xFFF5A623),
                       borderRadius: BorderRadius.circular(height),
                     ),
                   ),
@@ -605,51 +557,51 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
 
   Widget _buildWarningBanner() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      margin: EdgeInsets.only(bottom: 16.w),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.w),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [Color(0xFFFB7185), Color(0xFFF43F5E)], // Rose/coral gradient
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.w),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF43F5E).withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Color(0xFFF43F5E).withValues(alpha: 0.15),
+            blurRadius: 10.w,
+            offset: Offset(0, 4.w),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(8.w),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: const Stack(
+            child: Stack(
               alignment: Alignment.center,
               children: [
                 Icon(
                   Icons.warning_amber_rounded,
                   color: Colors.yellow,
-                  size: 20,
+                  size: 20.w,
                 ),
                 Positioned(
-                  bottom: 2,
+                  bottom: 2.w,
                   child: Icon(
                     Icons.flash_on_rounded,
                     color: Colors.yellow,
-                    size: 12,
+                    size: 12.w,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,7 +614,7 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   "Keep restriction on apps",
                   style: GoogleFonts.poppins(
@@ -716,42 +668,42 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
 
     final headerRow = Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FA),
-        borderRadius: BorderRadius.circular(8),
+        color: Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(8.w),
       ),
-      padding: EdgeInsets.fromLTRB(8, 8, isWeek ? 12 : 8, 8),
+      padding: EdgeInsets.fromLTRB(8.w, 8.w, isWeek ? 12.w : 8.w, 8.w),
       child: Row(
         children: [
           isWeek
               ? Container(
-                  width: 50,
-                  height: 50,
+                  width: 50.w,
+                  height: 50.w,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Color(0xFFEBF3FF),
                     shape: BoxShape.circle,
                   ),
                   child: SvgPicture.asset(
                     'assets/icons/scroll_monitor_week.svg',
-                    width: 20,
-                    height: 20,
+                    width: 20.w,
+                    height: 20.w,
                   ),
                 )
               : Container(
-                  width: 40,
-                  height: 40,
+                  width: 40.w,
+                  height: 40.w,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0069F9).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: Color(0xFF0069F9).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8.w),
                   ),
                   child: SvgPicture.asset(
                     'assets/icons/scroll_monitor_day.svg',
-                    width: 22,
-                    height: 19,
+                    width: 22.w,
+                    height: 19.w,
                   ),
                 ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -763,7 +715,7 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                     fontWeight: FontWeight.w400,
                     height: 24 / 16,
                     letterSpacing: 0.2,
-                    color: isWeek ? const Color(0xFF16181A) : Colors.black,
+                    color: isWeek ? Color(0xFF16181A) : Colors.black,
                   ),
                 ),
                 Text(
@@ -773,7 +725,7 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                     fontWeight: FontWeight.w400,
                     height: 20 / 12,
                     letterSpacing: 0.2,
-                    color: const Color(0xFF9BA4B5),
+                    color: Color(0xFF9BA4B5),
                   ),
                 ),
               ],
@@ -793,10 +745,10 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
             fontSize: 24.0.sp,
             fontWeight: FontWeight.w700,
             height: 28 / 24,
-            color: const Color(0xFF0F1320),
+            color: Color(0xFF0F1320),
           ),
         ),
-        const SizedBox(width: 4),
+        SizedBox(width: 4.w),
         Text(
           isWeek ? "hrs used" : "h / $limitHoursText hours",
           style: GoogleFonts.poppins(
@@ -804,10 +756,10 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
             fontWeight: FontWeight.w400,
             height: 20 / 12,
             letterSpacing: 0.2,
-            color: isWeek ? const Color(0xFF0F1320) : const Color(0xFF4A5267),
+            color: isWeek ? Color(0xFF0F1320) : Color(0xFF4A5267),
           ),
         ),
-        const Spacer(),
+        Spacer(),
         Text(
           isWeek ? weekLimitText : comparisonText,
           style: GoogleFonts.poppins(
@@ -815,7 +767,7 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
             fontWeight: FontWeight.w400,
             height: 20 / 12,
             letterSpacing: 0.2,
-            color: isWeek ? const Color(0xFF2D3035) : const Color(0xFFF78635),
+            color: isWeek ? Color(0xFF2D3035) : Color(0xFFF78635),
           ),
         ),
       ],
@@ -828,44 +780,42 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
             ? null
             : () => allBlocked ? _onUnblockAll(context) : _onBlockAll(context),
         child: Container(
-          height: 34,
-          constraints: const BoxConstraints(minWidth: 100),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          height: 34.w,
+          constraints: BoxConstraints(minWidth: 100.w),
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.w),
           decoration: BoxDecoration(
-            color: allBlocked
-                ? const Color(0xFFEF4444)
-                : const Color(0xFF0069F9),
-            borderRadius: BorderRadius.circular(44),
+            color: allBlocked ? Color(0xFFEF4444) : Color(0xFF0069F9),
+            borderRadius: BorderRadius.circular(44.w),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                width: 14,
-                height: 14,
+                width: 14.w,
+                height: 14.w,
                 child: allBlocked
-                    ? const Icon(
+                    ? Icon(
                         Icons.lock_open_rounded,
-                        size: 14,
+                        size: 14.w,
                         color: Color(0xFFF7F8FA),
                       )
                     : Center(
                         child: SvgPicture.asset(
                           'assets/icons/scroll_clock_white.svg',
-                          width: 11.4,
-                          height: 11.4,
+                          width: 11.4.w,
+                          height: 11.4.w,
                         ),
                       ),
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: 4.w),
               Text(
                 allBlocked ? "Unblock All" : "Set New Limit",
                 style: GoogleFonts.poppins(
                   fontSize: 12.0.sp,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.2,
-                  color: const Color(0xFFF7F8FA),
+                  color: Color(0xFFF7F8FA),
                 ),
               ),
             ],
@@ -880,18 +830,18 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(14.w),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: isWeek ? 10 : 8,
-                offset: const Offset(0, 2),
+                offset: Offset(0, 2.w),
               ),
             ],
           ),
           padding: isWeek
-              ? const EdgeInsets.all(12)
-              : const EdgeInsets.fromLTRB(20, 17, 20, 19),
+              ? EdgeInsets.all(12.w)
+              : EdgeInsets.fromLTRB(20.w, 17.w, 20.w, 19.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -900,21 +850,21 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
               valueRow,
               SizedBox(height: isWeek ? 12 : 6),
               _buildProgressBar(percentage, height: isWeek ? 10 : 7),
-              if (!isWeek) ...[const SizedBox(height: 26), blockPill],
+              if (!isWeek) ...[SizedBox(height: 26.w), blockPill],
               if (isWeek) ...[
-                const SizedBox(height: 20),
+                SizedBox(height: 20.w),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12.w),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEBF3FF),
-                    borderRadius: BorderRadius.circular(14),
+                    color: Color(0xFFEBF3FF),
+                    borderRadius: BorderRadius.circular(14.w),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       if (diffHours != null && prevHours != null) ...[
                         Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(16.w),
                           child: Column(
                             children: [
                               Text(
@@ -924,10 +874,10 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                                   fontSize: 32.0.sp,
                                   fontWeight: FontWeight.w700,
                                   height: 40 / 32,
-                                  color: const Color(0xFF16181A),
+                                  color: Color(0xFF16181A),
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4.w),
                               Text(
                                 diffHours <= 0
                                     ? "reduced from last week"
@@ -938,13 +888,13 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                                   fontWeight: FontWeight.w400,
                                   height: 24 / 16,
                                   letterSpacing: 0.2,
-                                  color: const Color(0xFF2D3035),
+                                  color: Color(0xFF2D3035),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8.w),
                         Text(
                           "$hoursStr hr this week  ·  ${prevHours.toStringAsFixed(1)} hr last week",
                           textAlign: TextAlign.center,
@@ -953,18 +903,18 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                             fontWeight: FontWeight.w400,
                             height: 20 / 12,
                             letterSpacing: 0.2,
-                            color: const Color(0xFF707784),
+                            color: Color(0xFF707784),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8.w),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 14.w,
+                            vertical: 12.w,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12.w),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -978,10 +928,10 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                                   fontWeight: FontWeight.w400,
                                   height: 28 / 20,
                                   letterSpacing: 0.2,
-                                  color: const Color(0xFF2D3035),
+                                  color: Color(0xFF2D3035),
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4.w),
                               Text(
                                 diffHours <= 0
                                     ? "A new limit can help bring the screen time down even more."
@@ -991,7 +941,7 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                                   fontWeight: FontWeight.w400,
                                   height: 20 / 12,
                                   letterSpacing: 0.2,
-                                  color: const Color(0xFF2D3035),
+                                  color: Color(0xFF2D3035),
                                 ),
                               ),
                             ],
@@ -999,7 +949,7 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                         ),
                       ] else
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: EdgeInsets.symmetric(vertical: 16.w),
                           child: Center(
                             child: Text(
                               "No usage data available for last week yet",
@@ -1009,7 +959,7 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                                 fontWeight: FontWeight.w400,
                                 height: 20 / 12,
                                 letterSpacing: 0.2,
-                                color: const Color(0xFF707784),
+                                color: Color(0xFF707784),
                               ),
                             ),
                           ),
@@ -1017,19 +967,17 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20.w),
                 GestureDetector(
                   onTap: () => allBlocked
                       ? _onUnblockAll(context)
                       : _onBlockAll(context),
                   child: Container(
-                    height: 56,
+                    height: 56.w,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: allBlocked
-                          ? const Color(0xFFEF4444)
-                          : const Color(0xFF0069F9),
-                      borderRadius: BorderRadius.circular(14),
+                      color: allBlocked ? Color(0xFFEF4444) : Color(0xFF0069F9),
+                      borderRadius: BorderRadius.circular(14.w),
                     ),
                     child: Text(
                       allBlocked ? "Unblock All" : "Change Time Limit",
@@ -1047,7 +995,7 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16.w),
         // "Social media Use high" warning banner hidden per request — kept
         // in place (not deleted) in case it's revisited later.
         // _buildWarningBanner(),
@@ -1095,36 +1043,36 @@ class _BlockAllDurationDialogState extends State<_BlockAllDurationDialog> {
     final disabled = _hours == 0 && _minutes == 0;
     return Container(
       padding: EdgeInsets.fromLTRB(
-        16,
-        12,
-        16,
-        24 + MediaQuery.of(context).padding.bottom,
+        16.w,
+        12.w,
+        16.w,
+        24.w + MediaQuery.of(context).padding.bottom,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
+          topLeft: Radius.circular(30.w),
+          topRight: Radius.circular(30.w),
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            height: 195,
+            height: 195.w,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 Container(
-                  height: 57,
+                  height: 57.w,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFFB9E2FF).withValues(alpha: 0.6),
-                        const Color(0xFFB9E2FF).withValues(alpha: 0.35),
+                        Color(0xFFB9E2FF).withValues(alpha: 0.6),
+                        Color(0xFFB9E2FF).withValues(alpha: 0.35),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.w),
                   ),
                 ),
                 Row(
@@ -1150,10 +1098,10 @@ class _BlockAllDurationDialogState extends State<_BlockAllDurationDialog> {
               ],
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4.w),
           Align(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 346),
+              constraints: BoxConstraints(maxWidth: 346.w),
               child: GestureDetector(
                 onTap: disabled
                     ? null
@@ -1164,12 +1112,12 @@ class _BlockAllDurationDialogState extends State<_BlockAllDurationDialog> {
                 child: Opacity(
                   opacity: disabled ? 0.5 : 1,
                   child: Container(
-                    height: 56,
+                    height: 56.w,
                     width: double.infinity,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0069F9),
-                      borderRadius: BorderRadius.circular(14),
+                      color: Color(0xFF0069F9),
+                      borderRadius: BorderRadius.circular(14.w),
                     ),
                     child: Text(
                       'Set',
@@ -1193,7 +1141,7 @@ class _BlockAllDurationDialogState extends State<_BlockAllDurationDialog> {
 
   Widget _unitLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: EdgeInsets.symmetric(horizontal: 4.w),
       child: Text(
         text,
         style: GoogleFonts.poppins(
@@ -1201,7 +1149,7 @@ class _BlockAllDurationDialogState extends State<_BlockAllDurationDialog> {
           fontWeight: FontWeight.w400,
           height: 28 / 20,
           letterSpacing: 0.2,
-          color: const Color(0xFF9BA4B5),
+          color: Color(0xFF9BA4B5),
         ),
       ),
     );
@@ -1215,14 +1163,14 @@ class _BlockAllDurationDialogState extends State<_BlockAllDurationDialog> {
     String Function(int)? valueLabel,
   }) {
     return SizedBox(
-      width: 73,
-      height: 195,
+      width: 73.w,
+      height: 195.w,
       child: ListWheelScrollView.useDelegate(
         controller: controller,
         itemExtent: 65,
         diameterRatio: 100,
         perspective: 0.0001,
-        physics: const FixedExtentScrollPhysics(),
+        physics: FixedExtentScrollPhysics(),
         onSelectedItemChanged: onChanged,
         childDelegate: ListWheelChildBuilderDelegate(
           builder: (ctx, i) {
@@ -1273,15 +1221,15 @@ class FilterTabs extends StatelessWidget {
         final isSelected = index == selectedIndex;
 
         return Padding(
-          padding: const EdgeInsets.only(right: 8.0),
+          padding: EdgeInsets.only(right: 8.0.w),
           child: GestureDetector(
             onTap: () => onFilterChanged(index),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              duration: Duration(milliseconds: 250),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.w),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xffE8EEFF) : Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: isSelected ? Color(0xffE8EEFF) : Colors.white,
+                borderRadius: BorderRadius.circular(12.w),
                 border: Border.all(
                   color: isSelected
                       ? AppColors.primaryColor.withValues(alpha: 0.3)
@@ -1342,11 +1290,11 @@ class _AdvancedSegmentedTabState extends State<AdvancedSegmentedTab>
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 40,
-      padding: const EdgeInsets.all(3),
+      height: 40.w,
+      padding: EdgeInsets.all(3.w),
       decoration: BoxDecoration(
-        color: const Color(0xFFEBF3FF),
-        borderRadius: BorderRadius.circular(14),
+        color: Color(0xFFEBF3FF),
+        borderRadius: BorderRadius.circular(14.w),
       ),
       child: LayoutBuilder(
         builder: (context, box) {
@@ -1356,16 +1304,16 @@ class _AdvancedSegmentedTabState extends State<AdvancedSegmentedTab>
             children: [
               // Sliding selection background
               AnimatedPositioned(
-                duration: const Duration(milliseconds: 280),
+                duration: Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
                 left: _controller.index * (tabW + 4),
-                top: 0,
-                bottom: 0,
+                top: 0.w,
+                bottom: 0.w,
                 width: tabW,
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(14.w),
                   ),
                 ),
               ),
@@ -1376,8 +1324,8 @@ class _AdvancedSegmentedTabState extends State<AdvancedSegmentedTab>
                 controller: _controller,
                 indicatorColor: Colors.transparent,
                 overlayColor: WidgetStateProperty.all(Colors.transparent),
-                labelColor: const Color(0xFF0F1320),
-                unselectedLabelColor: const Color(0xFF0F1320),
+                labelColor: Color(0xFF0F1320),
+                unselectedLabelColor: Color(0xFF0F1320),
                 labelPadding: EdgeInsets.zero,
                 labelStyle: GoogleFonts.poppins(
                   fontSize: 16.0.sp,

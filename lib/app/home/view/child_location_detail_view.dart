@@ -1,4 +1,5 @@
 import 'package:child_track/app/home/model/last_trip_model.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:child_track/app/home/view/trips_view.dart';
 import 'package:child_track/app/home/view_model/bloc/homepage_bloc.dart';
 import 'package:child_track/app/home/view_model/bloc/homepage_state.dart';
@@ -164,15 +165,9 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
       value: injector<HomepageBloc>(),
       child: Scaffold(
         backgroundColor: AppColors.backgroundColor,
-        appBar: AppBar(
-          backgroundColor: AppColors.surfaceColor,
-          foregroundColor: AppColors.textPrimary,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          title: Text('Kid Location Details', style: AppTextStyles.body1),
+        appBar: figmaAppBar(
+          context,
+          title: 'Kid Location Details',
         ),
         body: BlocBuilder<HomepageBloc, HomepageState>(
           builder: (context, state) {

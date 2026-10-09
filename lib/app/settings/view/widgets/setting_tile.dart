@@ -27,11 +27,11 @@ class SettingTile extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSizes.radiusM),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 0),
+        padding: EdgeInsets.symmetric(vertical: 0.w),
         child: Row(
           children: [
             leading,
-            const SizedBox(width: AppSizes.spacingM),
+            SizedBox(width: AppSizes.spacingM),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,10 +43,10 @@ class SettingTile extends StatelessWidget {
                         : AppTextStyles.subtitle2,
                   ),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       subtitle!,
-                      
+
                       style: AppTextStyles.caption.copyWith(
                         fontSize: 10.0.sp,
                         color: AppColors.textSecondary,

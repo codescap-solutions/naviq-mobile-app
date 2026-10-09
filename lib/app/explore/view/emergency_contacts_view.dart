@@ -43,7 +43,9 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
 
   void _loadContacts() {
     try {
-      final String? encoded = SharedPrefsService.prefs.getString('emergency_contacts');
+      final String? encoded = SharedPrefsService.prefs.getString(
+        'emergency_contacts',
+      );
       if (encoded != null && encoded.isNotEmpty) {
         final List<dynamic> decoded = json.decode(encoded);
         for (int i = 0; i < min(5, decoded.length); i++) {
@@ -79,7 +81,7 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Emergency contacts updated successfully!'),
             backgroundColor: Color(0xFF10B981),
           ),
@@ -108,10 +110,10 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
     return Container(
       color: AppColors.primaryColor,
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 8,
-        bottom: 24,
-        left: 20,
-        right: 20,
+        top: MediaQuery.of(context).padding.top + 8.w,
+        bottom: 24.w,
+        left: 20.w,
+        right: 20.w,
       ),
       child: Stack(
         alignment: Alignment.center,
@@ -121,16 +123,16 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                width: 44,
-                height: 44,
+                width: 44.w,
+                height: 44.w,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.chevron_left_rounded,
                   color: Colors.white,
-                  size: 28,
+                  size: 28.w,
                 ),
               ),
             ),
@@ -162,42 +164,45 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
           style: GoogleFonts.poppins(
             fontSize: 14.0.sp,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF0C1D37),
+            color: Color(0xFF0C1D37),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.w),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           style: GoogleFonts.poppins(
             fontSize: 15.0.sp,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF0C1D37),
+            color: Color(0xFF0C1D37),
           ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.poppins(
               fontSize: 14.0.sp,
-              color: const Color(0xFF94A3B8),
+              color: Color(0xFF94A3B8),
               fontWeight: FontWeight.w400,
             ),
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
+            fillColor: Color(0xFFF8FAFC),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 16.w,
+              vertical: 16.w,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderRadius: BorderRadius.circular(12.w),
+              borderSide: BorderSide(color: Color(0xFFE2E8F0)),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderRadius: BorderRadius.circular(12.w),
+              borderSide: BorderSide(color: Color(0xFFE2E8F0)),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primaryColor, width: 1.5),
+              borderRadius: BorderRadius.circular(12.w),
+              borderSide: BorderSide(
+                color: AppColors.primaryColor,
+                width: 1.5.w,
+              ),
             ),
           ),
         ),
@@ -211,16 +216,16 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
     final phoneController = _phoneControllers[index - 1];
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 32.0),
+      padding: EdgeInsets.only(bottom: 32.0.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                width: 28,
-                height: 28,
-                decoration: const BoxDecoration(
+                width: 28.w,
+                height: 28.w,
+                decoration: BoxDecoration(
                   color: AppColors.primaryColor,
                   shape: BoxShape.circle,
                 ),
@@ -234,30 +239,30 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10.w),
               Text(
                 'Contact $index',
                 style: GoogleFonts.poppins(
                   fontSize: 16.0.sp,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF0C1D37),
+                  color: Color(0xFF0C1D37),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.w),
           _buildTextField(
             label: 'Name',
             hint: 'Enter full name',
             controller: nameController,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.w),
           _buildTextField(
             label: 'Relation with Child',
             hint: 'e.g. Mother, Father, Uncle',
             controller: relationController,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.w),
           _buildTextField(
             label: 'Phone Number',
             hint: '+1 000 000 0000',
@@ -278,29 +283,29 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
           _buildHeader(context),
           Expanded(
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              physics: BouncingScrollPhysics(),
+              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.w),
               child: Column(
                 children: [
                   for (int i = 1; i <= 5; i++) _buildContactCard(i),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.w),
                   SizedBox(
                     width: double.infinity,
-                    height: 54,
+                    height: 54.w,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryColor,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(16.w),
                         ),
                         elevation: 0,
                       ),
                       onPressed: _isLoading ? null : _saveContacts,
                       child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
+                          ? SizedBox(
+                              width: 24.w,
+                              height: 24.w,
                               child: CircularProgressIndicator(
                                 color: Colors.white,
                                 strokeWidth: 2.5,
@@ -315,7 +320,7 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
                             ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.w),
                 ],
               ),
             ),

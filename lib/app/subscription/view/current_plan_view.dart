@@ -66,8 +66,18 @@ class _CurrentPlanViewState extends State<CurrentPlanView> {
     final date = DateTime.tryParse(isoDate);
     if (date == null) return '--';
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -75,18 +85,14 @@ class _CurrentPlanViewState extends State<CurrentPlanView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.black,
-            size: 20,
-          ),
+          icon: Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20.w),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text(
@@ -94,7 +100,7 @@ class _CurrentPlanViewState extends State<CurrentPlanView> {
           style: GoogleFonts.poppins(
             fontSize: 24.0.sp,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF0C1D37),
+            color: Color(0xFF0C1D37),
           ),
         ),
       ),
@@ -102,7 +108,7 @@ class _CurrentPlanViewState extends State<CurrentPlanView> {
         future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
 
           final data = snapshot.data;
@@ -112,18 +118,16 @@ class _CurrentPlanViewState extends State<CurrentPlanView> {
           final isFree = tier == SubscriptionTier.starter;
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(20.w),
                   decoration: BoxDecoration(
-                    color: isFree
-                        ? const Color(0xFFF1F5F9)
-                        : const Color(0xFFE5EFFF),
-                    borderRadius: BorderRadius.circular(20),
+                    color: isFree ? Color(0xFFF1F5F9) : Color(0xFFE5EFFF),
+                    borderRadius: BorderRadius.circular(20.w),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,8 +135,8 @@ class _CurrentPlanViewState extends State<CurrentPlanView> {
                       Row(
                         children: [
                           Container(
-                            width: 44,
-                            height: 44,
+                            width: 44.w,
+                            height: 44.w,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
@@ -144,7 +148,7 @@ class _CurrentPlanViewState extends State<CurrentPlanView> {
                               color: AppColors.primaryColor,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12.w),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,9 +177,9 @@ class _CurrentPlanViewState extends State<CurrentPlanView> {
                         ],
                       ),
                       if (!isFree) ...[
-                        const SizedBox(height: 16),
-                        const Divider(height: 1),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16.w),
+                        Divider(height: 1),
+                        SizedBox(height: 16.w),
                         _buildInfoRow(
                           entitlement?.willRenew == true
                               ? 'Renews on'
@@ -183,7 +187,7 @@ class _CurrentPlanViewState extends State<CurrentPlanView> {
                           _formatDate(entitlement?.expirationDate),
                         ),
                         if (entitlement?.latestPurchaseDate != null) ...[
-                          const SizedBox(height: 10),
+                          SizedBox(height: 10.w),
                           _buildInfoRow(
                             'Member since',
                             _formatDate(entitlement?.originalPurchaseDate),
@@ -193,7 +197,7 @@ class _CurrentPlanViewState extends State<CurrentPlanView> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.w),
                 if (plan != null && plan.features.isNotEmpty) ...[
                   Text(
                     'What\'s included',
@@ -202,26 +206,26 @@ class _CurrentPlanViewState extends State<CurrentPlanView> {
                       fontSize: 16.0.sp,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.w),
                   ...plan.features.map(
                     (f) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: EdgeInsets.only(bottom: 12.w),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(2),
+                            padding: EdgeInsets.all(2.w),
                             decoration: BoxDecoration(
                               color: Colors.blue[50],
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.check,
-                              size: 14,
+                              size: 14.w,
                               color: AppColors.primaryColor,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12.w),
                           Expanded(
                             child: Text(
                               f.name,
@@ -235,24 +239,24 @@ class _CurrentPlanViewState extends State<CurrentPlanView> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.w),
                 ],
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 52.w,
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const SubscriptionMultiPlanView(),
+                          builder: (_) => SubscriptionMultiPlanView(),
                         ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryColor,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(14.w),
                       ),
                       elevation: 0,
                     ),

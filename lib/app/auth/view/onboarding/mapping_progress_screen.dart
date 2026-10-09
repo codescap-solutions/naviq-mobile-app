@@ -12,10 +12,8 @@ import 'package:child_track/core/utils/responsive_font.dart';
 class MappingProgressScreen extends StatefulWidget {
   final List<CatalogAppItem> selectedApps;
 
-  const MappingProgressScreen({
-    Key? key,
-    required this.selectedApps,
-  }) : super(key: key);
+  const MappingProgressScreen({Key? key, required this.selectedApps})
+    : super(key: key);
 
   @override
   State<MappingProgressScreen> createState() => _MappingProgressScreenState();
@@ -137,10 +135,7 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
         });
       });
 
-      final body = {
-        "deviceId": _deviceId,
-        "mappings": mappingPayload,
-      };
+      final body = {"deviceId": _deviceId, "mappings": mappingPayload};
 
       final res = await _childRepo.postAppMappings(body);
 
@@ -148,7 +143,9 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
         AppLogger.info("Mappings synced to backend successfully.");
         try {
           final prefs = await SharedPreferences.getInstance();
-          final mappedAppsJson = mappingPayload.map((e) => jsonEncode(e)).toList();
+          final mappedAppsJson = mappingPayload
+              .map((e) => jsonEncode(e))
+              .toList();
           await prefs.setStringList('local_mapped_apps', mappedAppsJson);
         } catch (e) {
           AppLogger.error("Failed to save mappings locally: $e");
@@ -158,7 +155,8 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
         }
       } else {
         setState(() {
-          _validationError = res.message ?? "Failed to save mappings to backend.";
+          _validationError =
+              res.message ?? "Failed to save mappings to backend.";
           _isSubmitting = false;
         });
       }
@@ -184,26 +182,29 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        title: const Text("Mapping Progress", style: TextStyle(color: Colors.white)),
+        title: Text("Mapping Progress", style: TextStyle(color: Colors.white)),
       ),
       body: _isInitializing
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0066FF)),
               ),
             )
           : SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 24.0.w,
+                  vertical: 16.0.w,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Progress Indicator Area
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16.w),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1C1C1E),
-                        borderRadius: BorderRadius.circular(16),
+                        color: Color(0xFF1C1C1E),
+                        borderRadius: BorderRadius.circular(16.w),
                       ),
                       child: Column(
                         children: [
@@ -228,34 +229,42 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12.w),
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(8.w),
                             child: LinearProgressIndicator(
                               value: progress,
-                              minHeight: 8,
-                              backgroundColor: const Color(0xFF2C2C2E),
-                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF0066FF)),
+                              minHeight: 8.w,
+                              backgroundColor: Color(0xFF2C2C2E),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF0066FF),
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.w),
 
                     // Validation error banner
                     if (_validationError != null)
                       Container(
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: EdgeInsets.all(12.w),
+                        margin: EdgeInsets.only(bottom: 16.w),
                         decoration: BoxDecoration(
                           color: Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.red.withOpacity(0.3)),
+                          borderRadius: BorderRadius.circular(12.w),
+                          border: Border.all(
+                            color: Colors.red.withOpacity(0.3),
+                          ),
                         ),
                         child: Text(
                           _validationError!,
-                          style: TextStyle(color: Colors.redAccent, fontSize: 13.0.sp, height: 1.4),
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 13.0.sp,
+                            height: 1.4,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -263,16 +272,22 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
                     // Active Wizard Steps
                     Expanded(
                       child: ListView.builder(
-                        physics: const BouncingScrollPhysics(),
+                        physics: BouncingScrollPhysics(),
                         itemCount: totalCount,
                         itemBuilder: (context, index) {
                           final app = widget.selectedApps[index];
                           final isMapped = _mappedTokens.containsKey(app);
-                          final isCurrent = !isMapped &&
+                          final isCurrent =
+                              !isMapped &&
                               (_mappedTokens.length == index ||
                                   (index == 0 && _mappedTokens.isEmpty));
 
-                          return _buildStepItem(app, index + 1, isMapped, isCurrent);
+                          return _buildStepItem(
+                            app,
+                            index + 1,
+                            isMapped,
+                            isCurrent,
+                          );
                         },
                       ),
                     ),
@@ -280,27 +295,35 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
                     // Action Button
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: allComplete ? const Color(0xFF0066FF) : const Color(0xFF2C2C2E),
+                        backgroundColor: allComplete
+                            ? Color(0xFF0066FF)
+                            : Color(0xFF2C2C2E),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: 16.w),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(16.w),
                         ),
                         elevation: 0,
                       ),
-                      onPressed: (allComplete && !_isSubmitting) ? _finishMapping : null,
+                      onPressed: (allComplete && !_isSubmitting)
+                          ? _finishMapping
+                          : null,
                       child: _isSubmitting
-                          ? const CupertinoActivityIndicator(color: Colors.white)
+                          ? CupertinoActivityIndicator(color: Colors.white)
                           : Text(
-                              allComplete ? "Finish Mapping" : "Map remaining apps to complete",
+                              allComplete
+                                  ? "Finish Mapping"
+                                  : "Map remaining apps to complete",
                               style: TextStyle(
                                 fontSize: 16.0.sp,
                                 fontWeight: FontWeight.w600,
-                                color: allComplete ? Colors.white : Colors.grey[550],
+                                color: allComplete
+                                    ? Colors.white
+                                    : Colors.grey[550],
                               ),
                             ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10.w),
                   ],
                 ),
               ),
@@ -308,19 +331,24 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
     );
   }
 
-  Widget _buildStepItem(CatalogAppItem app, int stepNum, bool isMapped, bool isCurrent) {
+  Widget _buildStepItem(
+    CatalogAppItem app,
+    int stepNum,
+    bool isMapped,
+    bool isCurrent,
+  ) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.all(16.w),
+      margin: EdgeInsets.only(bottom: 14.w),
       decoration: BoxDecoration(
         color: isCurrent
-            ? const Color(0xFF1C1C1E)
-            : const Color(0xFF1C1C1E).withOpacity(0.6),
-        borderRadius: BorderRadius.circular(16),
+            ? Color(0xFF1C1C1E)
+            : Color(0xFF1C1C1E).withOpacity(0.6),
+        borderRadius: BorderRadius.circular(16.w),
         border: Border.all(
           color: isCurrent
-              ? const Color(0xFF0066FF).withOpacity(0.5)
-              : const Color(0xFF2C2C2E),
+              ? Color(0xFF0066FF).withOpacity(0.5)
+              : Color(0xFF2C2C2E),
           width: isCurrent ? 1.5 : 1,
         ),
       ),
@@ -328,30 +356,34 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
         children: [
           // Step circle indicator
           Container(
-            width: 32,
-            height: 32,
+            width: 32.w,
+            height: 32.w,
             decoration: BoxDecoration(
               color: isMapped
                   ? Colors.green.withOpacity(0.15)
                   : (isCurrent
-                      ? const Color(0xFF0066FF).withOpacity(0.15)
-                      : const Color(0xFF2C2C2E)),
+                        ? Color(0xFF0066FF).withOpacity(0.15)
+                        : Color(0xFF2C2C2E)),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: isMapped
-                  ? const Icon(CupertinoIcons.checkmark_alt, color: Colors.green, size: 18)
+                  ? Icon(
+                      CupertinoIcons.checkmark_alt,
+                      color: Colors.green,
+                      size: 18.w,
+                    )
                   : Text(
                       "$stepNum",
                       style: TextStyle(
-                        color: isCurrent ? const Color(0xFF0066FF) : Colors.grey[500],
+                        color: isCurrent ? Color(0xFF0066FF) : Colors.grey[500],
                         fontSize: 14.0.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14.w),
 
           // App Details
           Expanded(
@@ -361,12 +393,14 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
                 Text(
                   app.name,
                   style: TextStyle(
-                    color: isMapped || isCurrent ? Colors.white : Colors.grey[500],
+                    color: isMapped || isCurrent
+                        ? Colors.white
+                        : Colors.grey[500],
                     fontSize: 15.0.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.w),
                 Text(
                   isMapped
                       ? "Mapped Successfully"
@@ -374,7 +408,7 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
                   style: TextStyle(
                     color: isMapped
                         ? Colors.green[400]
-                        : (isCurrent ? const Color(0xFF0066FF) : Colors.grey[600]),
+                        : (isCurrent ? Color(0xFF0066FF) : Colors.grey[600]),
                     fontSize: 12.0.sp,
                   ),
                 ),
@@ -386,24 +420,36 @@ class _MappingProgressScreenState extends State<MappingProgressScreen> {
           if (isCurrent)
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0066FF),
+                backgroundColor: Color(0xFF0066FF),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.w),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.w),
+                ),
                 elevation: 0,
               ),
               onPressed: () => _mapApp(app),
               child: Text(
                 "Map",
-                style: TextStyle(fontSize: 13.0.sp, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 13.0.sp,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             )
           else if (!isMapped)
-            Icon(CupertinoIcons.padlock_solid, color: Colors.grey[700], size: 18)
+            Icon(
+              CupertinoIcons.padlock_solid,
+              color: Colors.grey[700],
+              size: 18.w,
+            )
           else
             TextButton(
               onPressed: () => _mapApp(app),
-              child: Text("Redo", style: TextStyle(color: Colors.grey, fontSize: 13.0.sp)),
+              child: Text(
+                "Redo",
+                style: TextStyle(color: Colors.grey, fontSize: 13.0.sp),
+              ),
             ),
         ],
       ),

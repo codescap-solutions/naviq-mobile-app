@@ -164,8 +164,6 @@ class _NotificationPageState extends State<NotificationPage> {
       appBar: figmaAppBar(
         context,
         title: 'Notifications',
-        titleSize: 24,
-        titleColor: const Color(0xFF0F1320),
         trailing: _notifications.isEmpty
             ? null
             : GestureDetector(

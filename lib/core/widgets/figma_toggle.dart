@@ -1,3 +1,4 @@
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:flutter/material.dart';
 
 /// Pill toggle from the Figma settings screens: coloured track, white knob
@@ -30,7 +31,7 @@ class FigmaToggle extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onChanged == null ? null : () => onChanged!(!value),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: Duration(milliseconds: 180),
         width: width,
         height: height,
         decoration: BoxDecoration(
@@ -38,7 +39,7 @@ class FigmaToggle extends StatelessWidget {
           borderRadius: BorderRadius.circular(height),
         ),
         child: AnimatedAlign(
-          duration: const Duration(milliseconds: 180),
+          duration: Duration(milliseconds: 180),
           alignment: value ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
             width: knob,
@@ -50,8 +51,8 @@ class FigmaToggle extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
+                  blurRadius: 3.w,
+                  offset: Offset(0.w, 1.w),
                 ),
               ],
             ),

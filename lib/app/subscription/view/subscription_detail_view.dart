@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -26,10 +27,10 @@ class SubscriptionDetailView extends StatelessWidget {
     final isStarter = plan.tier == SubscriptionTier.starter;
 
     final Color bgColor = isStarter
-        ? const Color(0xFFF1F5F9)
+        ? Color(0xFFF1F5F9)
         : isBasic
-        ? const Color(0xFFF1F5F9)
-        : const Color(0xFFE5EFFF);
+        ? Color(0xFFF1F5F9)
+        : Color(0xFFE5EFFF);
 
     final String title = isStarter
         ? 'Get Started'
@@ -47,34 +48,26 @@ class SubscriptionDetailView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.black,
-            size: 20,
-          ),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
+      appBar: figmaAppBar(
+        context,
+        title: '',
       ),
       body: SafeArea(
         child: Column(
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
+              padding: EdgeInsets.symmetric(vertical: 20.w),
               child: Column(
                 children: [
                   Text(
                     title,
                     style: AppTextStyles.headline3.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF1E293B),
+                      color: Color(0xFF1E293B),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.w),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -82,19 +75,19 @@ class SubscriptionDetailView extends StatelessWidget {
                         priceText,
                         style: AppTextStyles.subtitle2.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF334155),
+                          color: Color(0xFF334155),
                         ),
                       ),
                       if (plan.yearlyDiscountBadge != null && isYearly) ...[
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8.w),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 4.w,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE0E7FF),
-                            borderRadius: BorderRadius.circular(12),
+                            color: Color(0xFFE0E7FF),
+                            borderRadius: BorderRadius.circular(12.w),
                           ),
                           child: Text(
                             plan.yearlyDiscountBadge!,
@@ -117,12 +110,12 @@ class SubscriptionDetailView extends StatelessWidget {
                 width: double.infinity,
                 decoration: BoxDecoration(color: bgColor),
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
+                  padding: EdgeInsets.fromLTRB(16.w, 20.w, 16.w, 100.w),
                   children: [
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(20.w),
                       ),
                       child: Column(
                         children: plan.features.map((feature) {
@@ -139,16 +132,16 @@ class SubscriptionDetailView extends StatelessWidget {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: 20.w),
         child: SizedBox(
           width: double.infinity,
-          height: 56,
+          height: 56.w,
           child: ElevatedButton(
             onPressed: () => _handlePurchase(context),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryColor,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.w),
               ),
               elevation: 0,
             ),
@@ -180,9 +173,7 @@ class SubscriptionDetailView extends StatelessWidget {
 
     if (productId == null || productId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Product ID not configured for this plan.'),
-        ),
+        SnackBar(content: Text('Product ID not configured for this plan.')),
       );
       return;
     }
@@ -191,7 +182,7 @@ class SubscriptionDetailView extends StatelessWidget {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (context) => Center(child: CircularProgressIndicator()),
     );
 
     try {
@@ -201,7 +192,7 @@ class SubscriptionDetailView extends StatelessWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Purchase successful! Premium features unlocked.'),
           ),
         );
@@ -259,15 +250,15 @@ class SubscriptionDetailView extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.w),
       child: Row(
         children: [
           Icon(
             getIconForFeature(feature.name),
             color: Colors.black54,
-            size: 24,
+            size: 24.w,
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,12 +275,12 @@ class SubscriptionDetailView extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(4),
-            decoration: const BoxDecoration(
+            padding: EdgeInsets.all(4.w),
+            decoration: BoxDecoration(
               color: AppColors.primaryColor,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check, color: Colors.white, size: 16),
+            child: Icon(Icons.check, color: Colors.white, size: 16.w),
           ),
         ],
       ),

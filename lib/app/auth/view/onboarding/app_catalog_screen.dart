@@ -82,7 +82,11 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
         res.data!.forEach((category, list) {
           if (list is List) {
             grouped[category] = list
-                .map((e) => CatalogAppItem.fromJson(Map<String, dynamic>.from(e as Map)))
+                .map(
+                  (e) => CatalogAppItem.fromJson(
+                    Map<String, dynamic>.from(e as Map),
+                  ),
+                )
                 .toList();
           }
         });
@@ -111,19 +115,21 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1C1C1E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text("Add Custom App", style: TextStyle(color: Colors.white)),
+          backgroundColor: Color(0xFF1C1C1E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.w),
+          ),
+          title: Text("Add Custom App", style: TextStyle(color: Colors.white)),
           content: TextField(
             controller: _customAppController,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: "Enter application name (e.g. Pinterest)",
               hintStyle: TextStyle(color: Colors.grey[500]),
               filled: true,
-              fillColor: const Color(0xFF2C2C2E),
+              fillColor: Color(0xFF2C2C2E),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.w),
                 borderSide: BorderSide.none,
               ),
             ),
@@ -131,7 +137,7 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+              child: Text("Cancel", style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
               onPressed: () {
@@ -150,7 +156,13 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
                   Navigator.pop(context);
                 }
               },
-              child: const Text("Add", style: TextStyle(color: Color(0xFF0066FF), fontWeight: FontWeight.bold)),
+              child: Text(
+                "Add",
+                style: TextStyle(
+                  color: Color(0xFF0066FF),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         );
@@ -161,13 +173,14 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
   List<CatalogAppItem> _getFilteredApps(List<CatalogAppItem> apps) {
     if (_searchQuery.isEmpty) return apps;
     return apps
-        .where((app) => app.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .where(
+          (app) => app.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
         .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    
     // Compute total filtered count to show "+ Add Custom" fallback inside list
     int totalMatches = 0;
     _groupedApps.forEach((cat, list) {
@@ -180,7 +193,7 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        title: const Text(
+        title: Text(
           "Select Apps to Monitor",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
@@ -225,7 +238,7 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0066FF)),
               ),
@@ -233,45 +246,58 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
           : _hasError
           ? Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                padding: EdgeInsets.symmetric(horizontal: 32.0.w),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(CupertinoIcons.exclamationmark_triangle,
-                        color: Colors.grey[500], size: 36),
-                    const SizedBox(height: 16),
+                    Icon(
+                      CupertinoIcons.exclamationmark_triangle,
+                      color: Colors.grey[500],
+                      size: 36.w,
+                    ),
+                    SizedBox(height: 16.w),
                     Text(
                       "Couldn't load the app list",
                       style: TextStyle(
-                          color: Colors.grey[300],
-                          fontSize: 16.0.sp,
-                          fontWeight: FontWeight.w600),
+                        color: Colors.grey[300],
+                        fontSize: 16.0.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6.w),
                     Text(
                       "Check your connection and try again — or skip this for now and add apps later from Settings.",
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey[500], fontSize: 13.0.sp),
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 13.0.sp,
+                      ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.w),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0066FF),
+                        backgroundColor: Color(0xFF0066FF),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12.w),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 24.w,
+                          vertical: 12.w,
+                        ),
                       ),
                       onPressed: _fetchCatalog,
-                      child: const Text("Retry",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text(
+                        "Retry",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.w),
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
-                      child: Text("Skip for now",
-                          style: TextStyle(color: Colors.grey[400])),
+                      child: Text(
+                        "Skip for now",
+                        style: TextStyle(color: Colors.grey[400]),
+                      ),
                     ),
                   ],
                 ),
@@ -279,7 +305,7 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
             )
           : SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                padding: EdgeInsets.symmetric(horizontal: 16.0.w),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -289,55 +315,64 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
                     // at a full app grid with no explanation could still
                     // assume they *must* pick something to continue.
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
+                      padding: EdgeInsets.only(bottom: 12.0.w),
                       child: Text(
                         "Optional — pick apps to monitor now, or skip and add them later from Settings.",
-                        style: TextStyle(color: Color(0xFF8E8E93), fontSize: 12.5.sp),
+                        style: TextStyle(
+                          color: Color(0xFF8E8E93),
+                          fontSize: 12.5.sp,
+                        ),
                       ),
                     ),
                     // Search bar
                     Container(
-                      height: 48,
+                      height: 48.w,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1C1C1E),
-                        borderRadius: BorderRadius.circular(14),
+                        color: Color(0xFF1C1C1E),
+                        borderRadius: BorderRadius.circular(14.w),
                       ),
                       child: TextField(
                         controller: _searchController,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white),
                         onChanged: (val) {
                           setState(() {
                             _searchQuery = val;
                           });
                         },
                         decoration: InputDecoration(
-                          prefixIcon: const Icon(CupertinoIcons.search, color: Colors.grey),
+                          prefixIcon: Icon(
+                            CupertinoIcons.search,
+                            color: Colors.grey,
+                          ),
                           hintText: "Search apps...",
                           hintStyle: TextStyle(color: Colors.grey[500]),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                          contentPadding: EdgeInsets.symmetric(vertical: 14.w),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.w),
 
                     // List view displaying categories and matching grid items
                     Expanded(
                       child: ListView(
-                        physics: const BouncingScrollPhysics(),
+                        physics: BouncingScrollPhysics(),
                         children: [
                           // Categories
                           ..._groupedApps.entries.map((entry) {
                             final category = entry.key;
                             final filteredList = _getFilteredApps(entry.value);
-                            
-                            if (filteredList.isEmpty) return const SizedBox.shrink();
+
+                            if (filteredList.isEmpty) return SizedBox.shrink();
 
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: 12.0.w,
+                                    horizontal: 4.0.w,
+                                  ),
                                   child: Text(
                                     category.toUpperCase(),
                                     style: TextStyle(
@@ -350,17 +385,20 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
                                 ),
                                 GridView.builder(
                                   shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    mainAxisSpacing: 12,
-                                    crossAxisSpacing: 12,
-                                    childAspectRatio: 2.8,
-                                  ),
+                                  physics: NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        mainAxisSpacing: 12,
+                                        crossAxisSpacing: 12,
+                                        childAspectRatio: 2.8,
+                                      ),
                                   itemCount: filteredList.length,
                                   itemBuilder: (context, idx) {
                                     final app = filteredList[idx];
-                                    final isSelected = _selectedApps.contains(app);
+                                    final isSelected = _selectedApps.contains(
+                                      app,
+                                    );
                                     return _buildAppCard(app, isSelected);
                                   },
                                 ),
@@ -371,7 +409,10 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
                           // Custom app list
                           if (_customApps.isNotEmpty) ...[
                             Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
+                              padding: EdgeInsets.symmetric(
+                                vertical: 12.0.w,
+                                horizontal: 4.0.w,
+                              ),
                               child: Text(
                                 "CUSTOM APPS",
                                 style: TextStyle(
@@ -384,13 +425,14 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
                             ),
                             GridView.builder(
                               shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 12,
-                                crossAxisSpacing: 12,
-                                childAspectRatio: 2.8,
-                              ),
+                              physics: NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 12,
+                                    crossAxisSpacing: 12,
+                                    childAspectRatio: 2.8,
+                                  ),
                               itemCount: _getFilteredApps(_customApps).length,
                               itemBuilder: (context, idx) {
                                 final app = _getFilteredApps(_customApps)[idx];
@@ -402,36 +444,49 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
 
                           // Empty / Fallback state
                           if (totalMatches == 0 && _searchQuery.isNotEmpty) ...[
-                            const SizedBox(height: 60),
+                            SizedBox(height: 60.w),
                             Text(
                               "Can't find your app?",
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey[500], fontSize: 14.0.sp),
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 14.0.sp,
+                              ),
                             ),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12.w),
                             Center(
                               child: ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1C1C1E),
-                                  foregroundColor: const Color(0xFF0066FF),
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  backgroundColor: Color(0xFF1C1C1E),
+                                  foregroundColor: Color(0xFF0066FF),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 20.w,
+                                    vertical: 12.w,
+                                  ),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: const BorderSide(color: Color(0xFF2C2C2E)),
+                                    borderRadius: BorderRadius.circular(12.w),
+                                    side: BorderSide(color: Color(0xFF2C2C2E)),
                                   ),
                                 ),
                                 onPressed: _showAddCustomDialog,
-                                icon: const Icon(CupertinoIcons.plus, size: 16),
-                                label: const Text("Add Custom App", style: TextStyle(fontWeight: FontWeight.bold)),
+                                icon: Icon(CupertinoIcons.plus, size: 16.w),
+                                label: Text(
+                                  "Add Custom App",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ),
                             ),
                           ] else ...[
-                            const SizedBox(height: 24),
+                            SizedBox(height: 24.w),
                             Center(
                               child: TextButton.icon(
                                 onPressed: _showAddCustomDialog,
-                                icon: const Icon(CupertinoIcons.plus, size: 16, color: Color(0xFF0066FF)),
-                                label: const Text(
+                                icon: Icon(
+                                  CupertinoIcons.plus,
+                                  size: 16.w,
+                                  color: Color(0xFF0066FF),
+                                ),
+                                label: Text(
                                   "Add Custom App",
                                   style: TextStyle(
                                     color: Color(0xFF0066FF),
@@ -441,7 +496,7 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 40),
+                          SizedBox(height: 40.w),
                         ],
                       ),
                     ),
@@ -464,28 +519,34 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.w),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0066FF).withOpacity(0.15) : const Color(0xFF1C1C1E),
-          borderRadius: BorderRadius.circular(16),
+          color: isSelected
+              ? Color(0xFF0066FF).withOpacity(0.15)
+              : Color(0xFF1C1C1E),
+          borderRadius: BorderRadius.circular(16.w),
           border: Border.all(
-            color: isSelected ? const Color(0xFF0066FF) : const Color(0xFF2C2C2E),
-            width: 1.5,
+            color: isSelected ? Color(0xFF0066FF) : Color(0xFF2C2C2E),
+            width: 1.5.w,
           ),
         ),
         child: Row(
           children: [
             // Mock Icon loaded locally
             Container(
-              width: 32,
-              height: 32,
+              width: 32.w,
+              height: 32.w,
               decoration: BoxDecoration(
-                color: const Color(0xFF2C2C2E),
-                borderRadius: BorderRadius.circular(8),
+                color: Color(0xFF2C2C2E),
+                borderRadius: BorderRadius.circular(8.w),
               ),
-              child: const Icon(CupertinoIcons.app_fill, color: Colors.grey, size: 18),
+              child: Icon(
+                CupertinoIcons.app_fill,
+                color: Colors.grey,
+                size: 18.w,
+              ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10.w),
             Expanded(
               child: Text(
                 app.name,
@@ -499,10 +560,10 @@ class _AppCatalogScreenState extends State<AppCatalogScreen> {
               ),
             ),
             if (isSelected)
-              const Icon(
+              Icon(
                 CupertinoIcons.checkmark_circle_fill,
                 color: Color(0xFF0066FF),
-                size: 18,
+                size: 18.w,
               ),
           ],
         ),

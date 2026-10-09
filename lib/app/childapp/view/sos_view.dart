@@ -988,11 +988,9 @@ class _SosViewContentState extends State<_SosViewContent> {
     // notification), an approval here has to actually drive the app to log
     // out, so this needs its own handler rather than the generic
     // heads-up-only path in firebase_notification_service.dart.
-    _logoutTapSubscription = FirebaseNotificationService()
-        .notificationTapStream
+    _logoutTapSubscription = FirebaseNotificationService().notificationTapStream
         .listen(_handleLogoutResultMessage);
-    _logoutForegroundSubscription = FirebaseNotificationService()
-        .messageStream
+    _logoutForegroundSubscription = FirebaseNotificationService().messageStream
         .listen(_handleLogoutResultMessage);
   }
 
@@ -1012,9 +1010,7 @@ class _SosViewContentState extends State<_SosViewContent> {
       _performLogout(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Your parent denied the logout request.'),
-        ),
+        const SnackBar(content: Text('Your parent denied the logout request.')),
       );
     }
   }
@@ -2056,7 +2052,7 @@ class _SosViewContentState extends State<_SosViewContent> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Naviq Dev 1.0.4(Oct 7)',
+                          'Naviq Dev 1.0.4(Oct 9)',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             fontSize: 10.0.sp,

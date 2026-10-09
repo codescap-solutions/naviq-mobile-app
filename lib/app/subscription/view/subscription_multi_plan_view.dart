@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:child_track/core/constants/app_colors.dart';
-import 'package:child_track/core/constants/app_text_styles.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/services/dio_client.dart';
 import 'package:child_track/core/services/base_service.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import '../models/subscription_plan.dart';
 import '../view_model/subscription_repository.dart';
+import '../widgets/subscription_plan_card.dart';
 import 'subscription_detail_view.dart';
 
 class SubscriptionMultiPlanView extends StatefulWidget {
@@ -20,7 +22,8 @@ class SubscriptionMultiPlanView extends StatefulWidget {
 class _SubscriptionMultiPlanViewState extends State<SubscriptionMultiPlanView> {
   late final SubscriptionRepository _repository;
   late Future<BaseResponse<List<SubscriptionPlan>>> _plansFuture;
-  bool _isYearly = false;
+  // Figma shows the screen with "Yearly" selected.
+  bool _isYearly = true;
 
   @override
   void initState() {
@@ -32,76 +35,58 @@ class _SubscriptionMultiPlanViewState extends State<SubscriptionMultiPlanView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.black,
-            size: 20,
-          ),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: Text(
-          'Subscription',
-          style: AppTextStyles.headline4.copyWith(
-            fontSize: 20.0.sp,
-            fontWeight: FontWeight.w700,
-            color: Colors.black,
+      backgroundColor: Color(0xFFF7F8FA),
+      appBar: figmaAppBar(
+        context,
+        title: 'Subscription',
+        trailing: FigmaCircleButton(
+          child: SvgPicture.asset(
+            'assets/help/help_search.svg',
+            width: 24.w,
+            height: 24.w,
           ),
         ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          padding: EdgeInsets.fromLTRB(40.w, 12.w, 40.w, 30.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(width: double.infinity),
-              // Toggle Button
+              SizedBox(width: double.infinity),
               _buildToggle(),
-              const SizedBox(height: 30),
+              SizedBox(height: 44.w),
 
-              // Plans (Smart, Ultimate, Basic, Starter)
+              // Plans, in the backend's sortOrder (Smart, Ultimate, Basic, Starter).
               FutureBuilder<BaseResponse<List<SubscriptionPlan>>>(
                 future: _plansFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
+                    return Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40.w),
                       child: CircularProgressIndicator(),
                     );
                   } else if (snapshot.hasError ||
                       !snapshot.hasData ||
                       snapshot.data!.data == null ||
                       snapshot.data!.data!.isEmpty) {
-                    // Previously a dead end — the only way to retry a
-                    // failed/empty plans fetch was leaving this screen and
-                    // coming back (which re-runs initState). Every other
-                    // fetch-failure screen in the app (geofencing, social
-                    // apps) offers an explicit Retry button; this matches.
+                    // Every other fetch-failure screen in the app (geofencing,
+                    // social apps) offers an explicit Retry button.
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      padding: EdgeInsets.symmetric(vertical: 40.w),
                       child: Column(
                         children: [
-                          const Text('Failed to load plans.'),
-                          const SizedBox(height: 12),
+                          Text('Failed to load plans.'),
+                          SizedBox(height: 12.w),
                           ElevatedButton(
                             onPressed: () {
                               setState(() {
-                                _plansFuture = _repository.getPlans(forceRefresh: true);
+                                _plansFuture = _repository.getPlans(
+                                  forceRefresh: true,
+                                );
                               });
                             },
-                            child: const Text('Retry'),
+                            child: Text('Retry'),
                           ),
                         ],
                       ),
@@ -110,30 +95,51 @@ class _SubscriptionMultiPlanViewState extends State<SubscriptionMultiPlanView> {
 
                   final plans = snapshot.data!.data!;
                   return Column(
-                    children: plans
-                        .map((plan) => _buildPlanCard(plan))
-                        .toList(),
+                    children: [
+                      for (var i = 0; i < plans.length; i++) ...[
+                        if (i > 0) SizedBox(height: 14.w),
+                        SubscriptionPlanCard(
+                          plan: plans[i],
+                          isYearly: _isYearly,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SubscriptionDetailView(
+                                plan: plans[i],
+                                isYearly: _isYearly,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   );
                 },
               ),
 
-              const SizedBox(height: 20),
-              Text(
-                'cancel at anytime',
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+              SizedBox(height: 20.w),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'cancel at anytime',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.0.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Text(
+                    'Terms & Privacy Policy',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.0.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0069F9),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Terms & Privacy Policy',
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primaryColor,
-                ),
-              ),
-              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -141,427 +147,95 @@ class _SubscriptionMultiPlanViewState extends State<SubscriptionMultiPlanView> {
     );
   }
 
+  /// Monthly / Yearly toggle: 234 x 37 grey pill, 29px selected segment.
   Widget _buildToggle() {
+    const slate = Color(0xFF4A5267);
+    const blue = Color(0xFF0069F9);
+    Widget segment({
+      required bool selected,
+      required VoidCallback onTap,
+      required String label,
+      Widget? trailing,
+      required double horizontal,
+    }) {
+      final color = selected ? Colors.white : slate;
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 29.w,
+          padding: EdgeInsets.symmetric(horizontal: horizontal),
+          decoration: BoxDecoration(
+            color: selected ? blue : Colors.transparent,
+            borderRadius: BorderRadius.circular(15.w),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: blue.withValues(alpha: 0.25),
+                      blurRadius: 6.w,
+                      offset: Offset(0.w, 2.w),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.calendar_month_outlined, size: 14.w, color: color),
+              SizedBox(width: 6.w),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 11.0.sp,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: color,
+                ),
+              ),
+              if (trailing != null) ...[SizedBox(width: 6.w), trailing],
+            ],
+          ),
+        ),
+      );
+    }
+
     return Container(
+      padding: EdgeInsets.all(4.w),
       decoration: BoxDecoration(
-        color: const Color(0xFFE2E8F0),
-        borderRadius: BorderRadius.circular(30),
+        color: Color(0xFFE8E9EB),
+        borderRadius: BorderRadius.circular(20.w),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
+          segment(
+            selected: !_isYearly,
             onTap: () => setState(() => _isYearly = false),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: !_isYearly ? Colors.white : Colors.transparent,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: !_isYearly
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_month,
-                    size: 16,
-                    color: !_isYearly ? Colors.black87 : Colors.black54,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Monthly',
-                    style: AppTextStyles.subtitle2.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: !_isYearly ? Colors.black87 : Colors.black54,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            label: 'Monthly',
+            horizontal: 13,
           ),
-          GestureDetector(
+          segment(
+            selected: _isYearly,
             onTap: () => setState(() => _isYearly = true),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            label: 'Yearly',
+            horizontal: 11,
+            trailing: Container(
+              height: 14.w,
+              padding: EdgeInsets.symmetric(horizontal: 5.w),
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: _isYearly ? AppColors.primaryColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(30),
+                color: Color(0xFF0DBF75),
+                borderRadius: BorderRadius.circular(7.w),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today,
-                    size: 16,
-                    color: _isYearly ? Colors.white : Colors.black54,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Yearly',
-                    style: AppTextStyles.subtitle2.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: _isYearly ? Colors.white : Colors.black54,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4CAF50),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      'Save 20%',
-                      style: AppTextStyles.overline.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 9.0.sp,
-                      ),
-                    ),
-                  ),
-                ],
+              child: Text(
+                'Save 20%',
+                style: GoogleFonts.poppins(
+                  fontSize: 8.0.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPlanCard(SubscriptionPlan plan) {
-    // Determine colors based on plan
-    final isSmart = plan.tier == SubscriptionTier.smart;
-    final isPremium = plan.tier == SubscriptionTier.premium;
-    final isBasic = plan.tier == SubscriptionTier.basic;
-    final isStarter = plan.tier == SubscriptionTier.starter;
-
-    Color bgColor = Colors.white;
-    Color borderColor = Colors.transparent;
-
-    if (isSmart) {
-      bgColor = const Color(0xFFE5EFFF);
-      borderColor = AppColors.primaryColor;
-    } else if (isPremium) {
-      bgColor = const Color(0xFFFFF7E0);
-    } else if (isBasic) {
-      bgColor = const Color(0xFFF1F5F9);
-    }
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                SubscriptionDetailView(plan: plan, isYearly: _isYearly),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: borderColor, width: 2),
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Left Side: Pricing & Name
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (plan.badge != null &&
-                            plan.badge != 'Recommended') ...[
-                          Text(
-                            plan.badge!,
-                            style: AppTextStyles.overline.copyWith(
-                              color: isPremium
-                                  ? const Color(0xFFF5A623)
-                                  : AppColors.primaryColor,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                        if (isStarter) ...[
-                          Text(
-                            'Starter',
-                            style: AppTextStyles.subtitle2.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black54,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.send_rounded,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        if (!isStarter) ...[
-                          if (isPremium)
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFEDD5),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.workspace_premium,
-                                color: Color(0xFFF5A623),
-                              ),
-                            )
-                          else if (isSmart)
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFBFDBFE),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.shield_outlined,
-                                color: AppColors.primaryColor,
-                              ),
-                            ),
-                          const SizedBox(height: 12),
-                        ],
-                        Text(
-                          plan.name,
-                          style: AppTextStyles.headline4.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: isPremium
-                                ? const Color(0xFFF5A623)
-                                : isSmart
-                                ? AppColors.primaryColor
-                                : isBasic
-                                ? AppColors.primaryColor
-                                : Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              '₹',
-                              style: AppTextStyles.subtitle1.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            Text(
-                              _isYearly && plan.yearlyPrice != null
-                                  ? '${plan.yearlyPrice?.toInt()}'
-                                  : plan.isFree
-                                  ? '0'
-                                  : '${plan.monthlyPrice.toInt()}',
-                              style: AppTextStyles.headline3.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          plan.isFree
-                              ? 'forever free'
-                              : _isYearly
-                              ? '/year'
-                              : '/month',
-                          style: AppTextStyles.caption.copyWith(
-                            color: Colors.black54,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (plan.yearlyPrice != null && !_isYearly) ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSmart
-                                  ? const Color(0xFFBFDBFE)
-                                  : isPremium
-                                  ? const Color(0xFFFFEDD5)
-                                  : const Color(0xFFE2E8F0),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '₹${(plan.monthlyPrice * 12).toInt()}/yr',
-                              style: AppTextStyles.overline.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: isPremium
-                                    ? const Color(0xFFF5A623)
-                                    : isSmart
-                                    ? AppColors.primaryColor
-                                    : Colors.black54,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // Right Side: Features & Button
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ...plan.features
-                            .take(8)
-                            .map(
-                              (f) => Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle_outline,
-                                      size: 16,
-                                      color: isPremium
-                                          ? const Color(0xFFF5A623)
-                                          : Colors.grey.shade400,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        f.name,
-                                        style: AppTextStyles.caption.copyWith(
-                                          color: Colors.black87,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        if (plan.tagline != null) ...[
-                          const SizedBox(height: 12),
-                          Text(
-                            plan.tagline!,
-                            style: AppTextStyles.overline.copyWith(
-                              color: const Color(0xFFF5A623),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ] else ...[
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        SubscriptionDetailView(
-                                          plan: plan,
-                                          isYearly: _isYearly,
-                                        ),
-                                  ),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isPremium
-                                    ? const Color(0xFFF5A623)
-                                    : isBasic
-                                    ? const Color(0xFF1E293B)
-                                    : AppColors.primaryColor,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                elevation: 0,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    plan.ctaText,
-                                    style: AppTextStyles.button.copyWith(
-                                      color: Colors.white,
-                                      fontSize: 12.0.sp,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Icon(
-                                    Icons.arrow_forward_ios,
-                                    size: 12,
-                                    color: Colors.white,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSmart)
-              Positioned(
-                top: -12,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryColor,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Recommended',
-                    style: AppTextStyles.overline.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }

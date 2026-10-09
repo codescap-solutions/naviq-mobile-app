@@ -1,3 +1,4 @@
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:child_track/core/constants/app_colors.dart';
@@ -13,49 +14,15 @@ class AccountView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      appBar: AppBar(
-        leading: Container(
-          margin: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_new,
-              size: 18,
-              color: Colors.black,
-            ),
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-        ),
-        title: Text(
-          'Account',
-          style: TextStyle(
-            fontSize: 24.0.sp,
-            fontWeight: FontWeight.w800,
-            color: Colors.black,
-            letterSpacing: -0.5,
-          ),
-        ),
-        centerTitle: true,
-
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
+      appBar: figmaAppBar(
+        context,
+        title: 'Account',
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppSizes.paddingL),
+        padding: EdgeInsets.all(AppSizes.paddingL),
         children: [
           Padding(
-            padding: EdgeInsets.only(left: 8, bottom: 8),
+            padding: EdgeInsets.only(left: 8.w, bottom: 8.w),
             child: Text(
               'PREFERENCES',
               style: TextStyle(
@@ -68,7 +35,7 @@ class AccountView extends StatelessWidget {
           ),
           SectionCard(
             child: Column(
-              children: const [
+              children: [
                 SettingTile(
                   leading: Icon(
                     Icons.mail_outline_rounded,
@@ -78,13 +45,13 @@ class AccountView extends StatelessWidget {
                   subtitle: 'Not entered',
                   trailing: Icon(
                     Icons.arrow_forward_ios,
-                    size: 14,
+                    size: 14.w,
                     color: Color(0xFFD1D5DB),
                   ),
                 ),
-                SizedBox(height: 10),
+                SizedBox(height: 10.w),
                 Divider(height: 1, color: Color(0xFFF3F4F6)),
-                SizedBox(height: 10),
+                SizedBox(height: 10.w),
                 SettingTile(
                   leading: Icon(
                     Icons.format_paint_outlined,
@@ -94,16 +61,16 @@ class AccountView extends StatelessWidget {
                   subtitle: 'System',
                   trailing: Icon(
                     Icons.arrow_forward_ios,
-                    size: 14,
+                    size: 14.w,
                     color: Color(0xFFD1D5DB),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: 32.w),
           Padding(
-            padding: EdgeInsets.only(left: 8, bottom: 8),
+            padding: EdgeInsets.only(left: 8.w, bottom: 8.w),
             child: Text(
               'DANGER ZONE',
               style: TextStyle(
@@ -116,12 +83,12 @@ class AccountView extends StatelessWidget {
           ),
           SectionCard(
             child: SettingTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.delete_outline_rounded,
                 color: Color(0xFF6B7280),
               ),
               title: 'Delete Account',
-              titleColor: const Color(0xFFD33D29), // Dark red like Figma
+              titleColor: Color(0xFFD33D29), // Dark red like Figma
               onTap: () => _showDeleteAccountDialog(context),
             ),
           ),
@@ -134,15 +101,15 @@ class AccountView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Delete Account"),
-        content: const Text(
+        title: Text("Delete Account"),
+        content: Text(
           "This will permanently delete your account and associated data.\n\n"
           "You will be redirected to a deletion request form.",
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text("Cancel"),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -150,10 +117,7 @@ class AccountView extends StatelessWidget {
               Navigator.pop(context);
               _openDeleteForm();
             },
-            child: const Text(
-              "Continue",
-              style: TextStyle(color: Colors.white),
-            ),
+            child: Text("Continue", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

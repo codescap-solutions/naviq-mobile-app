@@ -87,59 +87,59 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(12.w)),
         ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.w),
                 child: GridView.count(
                   shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
+                  physics: NeverScrollableScrollPhysics(),
                   crossAxisCount: 2,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 10.w,
+                  crossAxisSpacing: 12.w,
                   childAspectRatio:
-                      (MediaQuery.of(context).size.width - 36) / 2 / 102,
+                      (MediaQuery.of(context).size.width - 36.w) / 2 / 100.w,
                   children: [
                     _buildPresetCard(
                       label: "School",
                       emoji: '🏫',
-                      circleBg: const Color(0xFF0DBF75),
+                      circleBg: Color(0xFF0DBF75),
                       category: "school",
                     ),
                     _buildPresetCard(
                       label: "Coaching",
                       emoji: '🎓',
-                      circleBg: const Color(0xFFF5A623),
+                      circleBg: Color(0xFFF5A623),
                       category: "tuition",
                     ),
                     _buildPresetCard(
                       label: "Grandma's",
                       emoji: '👵',
-                      circleBg: const Color(0xFFF03E3E),
+                      circleBg: Color(0xFFF03E3E),
                       category: "other",
                     ),
                     _buildPresetCard(
                       label: "Temple/Masjid",
                       emoji: '⛪',
-                      circleBg: const Color(0xFF0069F9),
+                      circleBg: Color(0xFF0069F9),
                       category: "other",
                     ),
                     _buildPresetCard(
                       label: "Sports Ground",
                       emoji: '🏏',
-                      circleBg: const Color(0xFF003A8C),
+                      circleBg: Color(0xFF003A8C),
                       category: "other",
                     ),
                     _buildPresetCard(
                       label: "Current Location",
                       emoji: '📍',
-                      circleBg: const Color(0xFF9BA4B5),
+                      circleBg: Color(0xFF9BA4B5),
                       category: "other",
                       isCurrentLocation: true,
                     ),
@@ -150,36 +150,33 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
               // 50px bordered input (Figma "AddItemCard").
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 16,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 16.w),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(12.w),
                   ),
                 ),
                 child: Container(
-                  height: 50,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  height: 50.w,
+                  padding: EdgeInsets.symmetric(horizontal: 16.w),
                   alignment: Alignment.centerLeft,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFDDE1EA)),
+                    borderRadius: BorderRadius.circular(10.w),
+                    border: Border.all(color: Color(0xFFDDE1EA)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 6,
+                        blurRadius: 6.w,
                         spreadRadius: -1,
-                        offset: const Offset(0, 4),
+                        offset: Offset(0, 4.w),
                       ),
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 4,
+                        blurRadius: 4.w,
                         spreadRadius: -2,
-                        offset: const Offset(0, 2),
+                        offset: Offset(0, 2.w),
                       ),
                     ],
                   ),
@@ -190,7 +187,7 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
                       fontWeight: FontWeight.w400,
                       height: 24 / 16,
                       letterSpacing: 0.2,
-                      color: const Color(0xFF0F1320),
+                      color: Color(0xFF0F1320),
                     ),
                     decoration: InputDecoration(
                       hintText: "Add Custom Place",
@@ -199,7 +196,7 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
                         fontWeight: FontWeight.w400,
                         height: 24 / 16,
                         letterSpacing: 0.2,
-                        color: const Color(0xFF9BA4B5),
+                        color: Color(0xFF9BA4B5),
                       ),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -214,7 +211,7 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
               // Create button row
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(10.w),
                 alignment: Alignment.centerRight,
                 color: Colors.white,
                 child: GestureDetector(
@@ -229,12 +226,12 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
                   child: Opacity(
                     opacity: _canCreate ? 1 : 0.5,
                     child: Container(
-                      width: 75,
-                      padding: const EdgeInsets.all(10),
+                      width: 75.w,
+                      padding: EdgeInsets.all(10.w),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0069F9),
-                        borderRadius: BorderRadius.circular(8),
+                        color: Color(0xFF0069F9),
+                        borderRadius: BorderRadius.circular(8.w),
                       ),
                       child: Text(
                         "Create",
@@ -249,7 +246,7 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
                   ),
                 ),
               ),
-              SizedBox(height: 38 + MediaQuery.of(context).padding.bottom),
+              SizedBox(height: 38.w + MediaQuery.of(context).padding.bottom),
             ],
           ),
         ),

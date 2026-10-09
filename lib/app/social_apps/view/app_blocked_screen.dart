@@ -62,7 +62,7 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
 
     // Pulsing glow animation for the shield icon
     _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: Duration(milliseconds: 2000),
       vsync: this,
     )..repeat(reverse: true);
 
@@ -72,12 +72,12 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
 
     // Slide-up + fade-in animation for content
     _slideController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: Duration(milliseconds: 800),
       vsync: this,
     );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+    _slideAnimation = Tween<Offset>(begin: Offset(0, 0.3.w), end: Offset.zero)
+        .animate(
           CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
         );
 
@@ -106,7 +106,7 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
         body: Container(
           width: double.infinity,
           height: double.infinity,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -119,16 +119,16 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
               child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  padding: EdgeInsets.symmetric(horizontal: 32.w),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Spacer(flex: 2),
+                      Spacer(flex: 2),
 
                       // ── Animated Shield Icon ──
                       _buildShieldIcon(),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40.w),
 
                       // ── Title ──
                       Text(
@@ -141,7 +141,7 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
                         ),
                       ),
 
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16.w),
 
                       // ── Subtitle ──
                       Text(
@@ -155,22 +155,22 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40.w),
 
                       // ── Info Card ──
                       _buildInfoCard(),
 
                       if (widget.packageName != null) ...[
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20.w),
                         _buildAskForMoreTimeButton(),
                       ],
 
-                      const Spacer(flex: 3),
+                      Spacer(flex: 3),
 
                       // ── Go Home Button ──
                       _buildGoHomeButton(),
 
-                      const SizedBox(height: 32),
+                      SizedBox(height: 32.w),
                     ],
                   ),
                 ),
@@ -187,44 +187,44 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
       animation: _pulseAnimation,
       builder: (context, child) {
         return Container(
-          width: 140,
-          height: 140,
+          width: 140.w,
+          height: 140.w,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                const Color(
+                Color(
                   0xFFE94560,
                 ).withValues(alpha: 0.3 * _pulseAnimation.value),
                 Colors.transparent,
               ],
-              radius: 1.2,
+              radius: 1.2.w,
             ),
           ),
           child: Center(
             child: Container(
-              width: 100,
-              height: 100,
+              width: 100.w,
+              height: 100.w,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [Color(0xFFE94560), Color(0xFFC23152)],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(
+                    color: Color(
                       0xFFE94560,
                     ).withValues(alpha: 0.4 * _pulseAnimation.value),
-                    blurRadius: 30,
-                    spreadRadius: 5,
+                    blurRadius: 30.w,
+                    spreadRadius: 5.w,
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.shield_rounded,
-                size: 48,
+                size: 48.w,
                 color: Colors.white,
               ),
             ),
@@ -237,13 +237,13 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
   Widget _buildInfoCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.w),
         color: Colors.white.withValues(alpha: 0.08),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.12),
-          width: 1,
+          width: 1.w,
         ),
       ),
       child: Column(
@@ -253,9 +253,9 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
             'Time limit reached',
             'Ask your parent to unlock this app.',
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.w),
           Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.w),
           _buildInfoRow(
             Icons.family_restroom_rounded,
             'Parental control active',
@@ -270,15 +270,15 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
     return Row(
       children: [
         Container(
-          width: 44,
-          height: 44,
+          width: 44.w,
+          height: 44.w,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12.w),
             color: Colors.white.withValues(alpha: 0.1),
           ),
-          child: Icon(icon, size: 22, color: const Color(0xFFE94560)),
+          child: Icon(icon, size: 22.w, color: Color(0xFFE94560)),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: 16.w),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,7 +291,7 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 2),
+              SizedBox(height: 2),
               Text(
                 subtitle,
                 style: TextStyle(
@@ -309,7 +309,7 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
   Widget _buildAskForMoreTimeButton() {
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: 52.w,
       child: ElevatedButton(
         onPressed: (_requestingExtension || _extensionRequestSent)
             ? null
@@ -317,19 +317,19 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
         style: ElevatedButton.styleFrom(
           backgroundColor: _extensionRequestSent
               ? Colors.white.withValues(alpha: 0.08)
-              : const Color(0xFFE94560),
+              : Color(0xFFE94560),
           foregroundColor: Colors.white,
           disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
           disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.w),
           ),
         ),
         child: _requestingExtension
-            ? const SizedBox(
-                width: 22,
-                height: 22,
+            ? SizedBox(
+                width: 22.w,
+                height: 22.w,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: Colors.white,
@@ -342,9 +342,9 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
                     _extensionRequestSent
                         ? Icons.check_circle_outline_rounded
                         : Icons.timer_outlined,
-                    size: 20,
+                    size: 20.w,
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10.w),
                   Text(
                     _extensionRequestSent
                         ? 'Request Sent'
@@ -364,7 +364,7 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
   Widget _buildGoHomeButton() {
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: 56.w,
       child: ElevatedButton(
         onPressed: () async {
           // Do NOT pop the block screen here.
@@ -386,15 +386,15 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.w),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.home_rounded, size: 22),
-            const SizedBox(width: 10),
+            Icon(Icons.home_rounded, size: 22.w),
+            SizedBox(width: 10.w),
             Text(
               'Go Home',
               style: TextStyle(

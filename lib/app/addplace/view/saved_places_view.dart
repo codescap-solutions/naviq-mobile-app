@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/app/addplace/model/saved_place_model.dart';
 import 'package:child_track/app/addplace/service/saved_places_service.dart';
 import 'package:child_track/app/addplace/add_and_saveplace.dart';
@@ -43,17 +44,17 @@ class _SavedPlacesViewState extends State<SavedPlacesView> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Place'),
+        title: Text('Delete Place'),
         content: Text('Are you sure you want to delete "${place.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -63,7 +64,7 @@ class _SavedPlacesViewState extends State<SavedPlacesView> {
       final success = await _savedPlacesService.deletePlace(place.id ?? "");
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Place deleted successfully'),
             backgroundColor: AppColors.success,
           ),
@@ -83,16 +84,16 @@ class _SavedPlacesViewState extends State<SavedPlacesView> {
         elevation: 0,
         title: Text('Saved Places', style: AppTextStyles.headline5),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+          icon: Icon(Icons.arrow_back_ios_new, size: 18.w),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add, color: AppColors.primaryColor),
+            icon: Icon(Icons.add, color: AppColors.primaryColor),
             onPressed: () async {
               final result = await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AddandSavePlace()),
+                MaterialPageRoute(builder: (_) => AddandSavePlace()),
               );
               if (result == true) {
                 _loadSavedPlaces();
@@ -102,7 +103,7 @@ class _SavedPlacesViewState extends State<SavedPlacesView> {
         ],
       ),
       body: _isLoading
-          ? const SavedPlacesShimmer()
+          ? SavedPlacesShimmer()
           : _savedPlaces.isEmpty
           ? Center(
               child: Column(
@@ -110,17 +111,17 @@ class _SavedPlacesViewState extends State<SavedPlacesView> {
                 children: [
                   Icon(
                     Icons.bookmark_border,
-                    size: 64,
+                    size: 64.w,
                     color: AppColors.textSecondary,
                   ),
-                  const SizedBox(height: AppSizes.spacingM),
+                  SizedBox(height: AppSizes.spacingM.w),
                   Text(
                     'No saved places yet',
                     style: AppTextStyles.headline6.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: AppSizes.spacingS),
+                  SizedBox(height: AppSizes.spacingS.w),
                   Text(
                     'Tap the + button to add a place',
                     style: AppTextStyles.body2.copyWith(
@@ -133,7 +134,7 @@ class _SavedPlacesViewState extends State<SavedPlacesView> {
           : RefreshIndicator(
               onRefresh: _loadSavedPlaces,
               child: ListView.builder(
-                padding: const EdgeInsets.all(AppSizes.paddingM),
+                padding: EdgeInsets.all(AppSizes.paddingM.w),
                 itemCount: _savedPlaces.length,
                 itemBuilder: (context, index) {
                   final place = _savedPlaces[index];
@@ -146,35 +147,35 @@ class _SavedPlacesViewState extends State<SavedPlacesView> {
 
   Widget _buildPlaceCard(SavedPlace place) {
     return Card(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacingM),
+      margin: EdgeInsets.only(bottom: AppSizes.spacingM.w),
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        borderRadius: BorderRadius.circular(AppSizes.radiusM.w),
       ),
       child: InkWell(
         onTap: () {
           // Navigate to map view or detail view
           Navigator.pop(context, place);
         },
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        borderRadius: BorderRadius.circular(AppSizes.radiusM.w),
         child: Padding(
-          padding: const EdgeInsets.all(AppSizes.paddingM),
+          padding: EdgeInsets.all(AppSizes.paddingM.w),
           child: Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 48.w,
+                height: 48.w,
                 decoration: BoxDecoration(
                   color: AppColors.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM.w),
                 ),
                 child: Icon(
                   Icons.place,
                   color: AppColors.primaryColor,
-                  size: 24,
+                  size: 24.w,
                 ),
               ),
-              const SizedBox(width: AppSizes.spacingM),
+              SizedBox(width: AppSizes.spacingM.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,7 +186,7 @@ class _SavedPlacesViewState extends State<SavedPlacesView> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: AppSizes.spacingXS),
+                    SizedBox(height: AppSizes.spacingXS.w),
                     Text(
                       place.address,
                       style: AppTextStyles.caption.copyWith(
@@ -194,7 +195,7 @@ class _SavedPlacesViewState extends State<SavedPlacesView> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: AppSizes.spacingXS),
+                    SizedBox(height: AppSizes.spacingXS.w),
                     Text(
                       'Saved on ${DateFormat('MMM dd, yyyy').format(place.savedAt ?? DateTime.now())}',
                       style: AppTextStyles.overline.copyWith(
@@ -205,7 +206,7 @@ class _SavedPlacesViewState extends State<SavedPlacesView> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                icon: Icon(Icons.delete_outline, color: AppColors.error),
                 onPressed: () => _deletePlace(place),
               ),
             ],

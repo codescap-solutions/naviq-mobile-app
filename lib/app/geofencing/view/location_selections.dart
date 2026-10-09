@@ -54,7 +54,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
   String? _selectedAddress;
   BitmapDescriptor? _centerDotIcon;
 
-  static const LatLng _initialPosition = LatLng(12.9716, 77.5946); // Bengaluru
+  static LatLng _initialPosition = LatLng(12.9716, 77.5946); // Bengaluru
 
   @override
   void initState() {
@@ -72,7 +72,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
 
         _markers.add(
           Marker(
-            markerId: const MarkerId('selected_location'),
+            markerId: MarkerId('selected_location'),
             position: position,
             infoWindow: InfoWindow(title: g.name ?? 'Selected Location'),
             icon: BitmapDescriptor.defaultMarkerWithHue(
@@ -103,7 +103,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
     canvas.drawCircle(
-      const Offset(size / 2, size / 2),
+      Offset(size / 2, size / 2),
       size / 2,
       Paint()..color = const Color(0xFF0069F9),
     );
@@ -116,7 +116,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
     final canvas3 = Canvas(recorder3);
     canvas3.scale(3);
     canvas3.drawCircle(
-      const Offset(size / 2, size / 2),
+      Offset(size / 2, size / 2),
       size / 2,
       Paint()..color = const Color(0xFF0069F9),
     );
@@ -138,7 +138,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
           .map(
             (m) => m.copyWith(
               iconParam: _centerDotIcon,
-              anchorParam: const Offset(0.5, 0.5),
+              anchorParam: Offset(0.5.w, 0.5.w),
             ),
           )
           .toList();
@@ -187,10 +187,10 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
       _circles.clear();
       _circles.add(
         Circle(
-          circleId: const CircleId('geofence_fill'),
+          circleId: CircleId('geofence_fill'),
           center: position,
           radius: radius,
-          fillColor: const Color(0xFF0069F9).withValues(alpha: 0.12),
+          fillColor: Color(0xFF0069F9).withValues(alpha: 0.12),
           strokeColor: Colors.transparent,
         ),
       );
@@ -198,9 +198,9 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
       _polylines.clear();
       _polylines.add(
         Polyline(
-          polylineId: const PolylineId('geofence_dashed_border'),
+          polylineId: PolylineId('geofence_dashed_border'),
           points: points,
-          color: const Color(0xFF0069F9),
+          color: Color(0xFF0069F9),
           width: 2,
           patterns: [PatternItem.dash(12), PatternItem.gap(8)],
         ),
@@ -213,13 +213,13 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
       _markers.clear();
       _markers.add(
         Marker(
-          markerId: const MarkerId('selected_location'),
+          markerId: MarkerId('selected_location'),
           position: position,
-          infoWindow: const InfoWindow(title: 'Selected Location'),
+          infoWindow: InfoWindow(title: 'Selected Location'),
           icon:
               _centerDotIcon ??
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-          anchor: const Offset(0.5, 0.5),
+          anchor: Offset(0.5.w, 0.5.w),
           onTap: () => _openFormSheet(position),
         ),
       );
@@ -268,12 +268,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: const Color(0xFFE2E8F0),
-      appBar: figmaAppBar(
-        context,
-        title: 'Geoguard',
-        titleColor: const Color(0xFF2D3035),
-      ),
+      backgroundColor: Color(0xFFE2E8F0),
+      appBar: figmaAppBar(context, title: 'Geoguard'),
       body: BlocListener<GeofenceBloc, GeofenceState>(
         listener: (context, state) {
           if (state is GeofenceError) {
@@ -308,7 +304,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
         child: Stack(
           children: [
             MapViewWidget(
-              key: const ValueKey('location_map_selection'),
+              key: ValueKey('location_map_selection'),
               width: double.infinity,
               height: double.infinity,
               interactive: true,
@@ -326,7 +322,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                     _isMapReady = true;
                   });
                   final geofenceBloc = context.read<GeofenceBloc>();
-                  await Future.delayed(const Duration(milliseconds: 500));
+                  await Future.delayed(Duration(milliseconds: 500));
                   if (!mounted) return;
 
                   final state = geofenceBloc.state;
@@ -354,29 +350,29 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
               },
               onMapTap: (position) async {
                 _addMarker(position);
-                await Future.delayed(const Duration(milliseconds: 150));
+                await Future.delayed(Duration(milliseconds: 150));
                 _openFormSheet(position);
               },
             ),
 
             /// Search Bar
             Positioned(
-              top: 7,
-              left: 14,
-              right: 14,
+              top: 7.w,
+              left: 14.w,
+              right: 14.w,
               child: Column(
                 children: [
                   Container(
-                    height: 48,
-                    padding: const EdgeInsets.symmetric(horizontal: 19),
+                    height: 48.w,
+                    padding: EdgeInsets.symmetric(horizontal: 19.w),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(44),
+                      borderRadius: BorderRadius.circular(44.w),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 2,
-                          offset: const Offset(0, 4),
+                          blurRadius: 2.w,
+                          offset: Offset(0, 4.w),
                         ),
                       ],
                     ),
@@ -384,10 +380,10 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                       children: [
                         SvgPicture.asset(
                           'assets/icons/geo_search.svg',
-                          width: 15,
-                          height: 15,
+                          width: 15.w,
+                          height: 15.w,
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10.w),
                         Expanded(
                           child: TextField(
                             controller: _searchController,
@@ -396,7 +392,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                               fontWeight: FontWeight.w400,
                               height: 20 / 12,
                               letterSpacing: 0.2,
-                              color: const Color(0xFF2D3035),
+                              color: Color(0xFF2D3035),
                             ),
                             decoration: InputDecoration(
                               hintText: "search location",
@@ -405,7 +401,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                                 fontWeight: FontWeight.w400,
                                 height: 20 / 12,
                                 letterSpacing: 0.2,
-                                color: const Color(0xFF9BA4B5),
+                                color: Color(0xFF9BA4B5),
                               ),
                               border: InputBorder.none,
                               enabledBorder: InputBorder.none,
@@ -443,24 +439,24 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                       builder: (context, state) {
                         if (state is LocationSuggestionsLoaded) {
                           return Container(
-                            margin: const EdgeInsets.only(top: 8),
+                            margin: EdgeInsets.only(top: 8.w),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(16.w),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(
+                                  color: Color(
                                     0xFF0C1D37,
                                   ).withValues(alpha: 0.08),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
+                                  blurRadius: 20.w,
+                                  offset: Offset(0, 8.w),
                                 ),
                               ],
                             ),
-                            constraints: const BoxConstraints(maxHeight: 200),
+                            constraints: BoxConstraints(maxHeight: 200.w),
                             child: ListView.builder(
                               shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              padding: EdgeInsets.symmetric(vertical: 8.w),
                               itemCount: state.suggestions.length,
                               itemBuilder: (context, index) {
                                 final suggestion = state.suggestions[index];
@@ -470,7 +466,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                                     style: GoogleFonts.poppins(
                                       fontSize: 14.0.sp,
                                       fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF0C1D37),
+                                      color: Color(0xFF0C1D37),
                                     ),
                                   ),
                                   subtitle: Text(
@@ -478,7 +474,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                                         "Unknown location",
                                     style: GoogleFonts.poppins(
                                       fontSize: 12.0.sp,
-                                      color: const Color(0xFF64748B),
+                                      color: Color(0xFF64748B),
                                     ),
                                   ),
                                   onTap: () {
@@ -502,7 +498,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                             ),
                           );
                         }
-                        return const SizedBox.shrink();
+                        return SizedBox.shrink();
                       },
                     ),
                 ],
@@ -512,14 +508,14 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
         ),
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+        padding: EdgeInsets.symmetric(vertical: 18.w, horizontal: 20.w),
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0C1D37).withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
+              color: Color(0xFF0C1D37).withValues(alpha: 0.06),
+              blurRadius: 10.w,
+              offset: Offset(0, -4.w),
             ),
           ],
         ),
@@ -530,7 +526,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
             style: GoogleFonts.poppins(
               fontSize: 13.0.sp,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF64748B),
+              color: Color(0xFF64748B),
             ),
           ),
         ),
@@ -661,25 +657,25 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
     final cat = category?.toLowerCase();
     final name = customName?.toLowerCase() ?? '';
     if (cat == 'school' || name.contains('school')) {
-      return const Color(0xFF22C55E);
+      return Color(0xFF22C55E);
     } else if (cat == 'tuition' || name.contains('coaching')) {
-      return const Color(0xFFF59E0B);
+      return Color(0xFFF59E0B);
     } else if (name.contains("grandma")) {
-      return const Color(0xFFEF4444);
+      return Color(0xFFEF4444);
     } else if (name.contains("temple") ||
         name.contains("masjid") ||
         name.contains("church")) {
-      return const Color(0xFF8B5CF6);
+      return Color(0xFF8B5CF6);
     } else if (name.contains("sports") ||
         name.contains("ground") ||
         name.contains("play")) {
-      return const Color(0xFF0066FF);
+      return Color(0xFF0066FF);
     } else if (name.contains("location") || name.contains("current")) {
-      return const Color(0xFF64748B);
+      return Color(0xFF64748B);
     } else if (cat == 'home' || name.contains('home')) {
-      return const Color(0xFF0066FF);
+      return Color(0xFF0066FF);
     }
-    return const Color(0xFF64748B);
+    return Color(0xFF64748B);
   }
 
   Widget _buildToggleRow({
@@ -688,7 +684,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
     required ValueChanged<bool> onChanged,
   }) {
     return SizedBox(
-      height: 40,
+      height: 40.w,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -699,14 +695,14 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
               fontWeight: FontWeight.w400,
               height: 24 / 16,
               letterSpacing: 0.2,
-              color: const Color(0xFF0F1320),
+              color: Color(0xFF0F1320),
             ),
           ),
           FigmaToggle(
             value: value,
             onChanged: onChanged,
-            width: 48,
-            height: 28,
+            width: 48.w,
+            height: 28.w,
             knob: 22,
           ),
         ],
@@ -749,15 +745,15 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: Container(
-          padding: const EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 12,
-            bottom: 24,
+          padding: EdgeInsets.only(
+            left: 20.w,
+            right: 20.w,
+            top: 12.w,
+            bottom: 24.w,
           ),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24.w)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -767,12 +763,12 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
               Align(
                 alignment: Alignment.center,
                 child: Container(
-                  width: 40,
-                  height: 4,
-                  color: const Color(0xFF9BA4B5),
+                  width: 40.w,
+                  height: 4.w,
+                  color: Color(0xFF9BA4B5),
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14.w),
 
               // Title: Poppins Bold 24/28 — still editable, just styled as
               // plain text like Figma (no underline, no icon badge).
@@ -782,7 +778,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                   fontSize: 24.0.sp,
                   fontWeight: FontWeight.w700,
                   height: 28 / 24,
-                  color: const Color(0xFF0F1320),
+                  color: Color(0xFF0F1320),
                 ),
                 decoration: InputDecoration(
                   hintText: "Place Name",
@@ -790,7 +786,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                     fontSize: 24.0.sp,
                     fontWeight: FontWeight.w700,
                     height: 28 / 24,
-                    color: const Color(0xFF9BA4B5),
+                    color: Color(0xFF9BA4B5),
                   ),
                   isDense: true,
                   filled: false,
@@ -807,12 +803,12 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                   fontWeight: FontWeight.w400,
                   height: 20 / 12,
                   letterSpacing: 0.2,
-                  color: const Color(0xFF9BA4B5),
+                  color: Color(0xFF9BA4B5),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14.w),
 
               // Radius Slider Section
               Text(
@@ -821,27 +817,25 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                   fontSize: 14.0.sp,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.2,
-                  color: const Color(0xFF0F1320),
+                  color: Color(0xFF0F1320),
                 ),
               ),
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
                   trackHeight: 6,
-                  activeTrackColor: const Color(0xFF0069F9),
-                  inactiveTrackColor: const Color(0xFFDDE1EA),
-                  thumbColor: const Color(0xFF0069F9),
-                  thumbShape: const RoundSliderThumbShape(
+                  activeTrackColor: Color(0xFF0069F9),
+                  inactiveTrackColor: Color(0xFFDDE1EA),
+                  thumbColor: Color(0xFF0069F9),
+                  thumbShape: RoundSliderThumbShape(
                     enabledThumbRadius: 11,
                     elevation: 0,
                     pressedElevation: 0,
                   ),
-                  overlayColor: const Color(0xFF0069F9).withValues(alpha: 0.12),
-                  overlayShape: const RoundSliderOverlayShape(
-                    overlayRadius: 16,
-                  ),
+                  overlayColor: Color(0xFF0069F9).withValues(alpha: 0.12),
+                  overlayShape: RoundSliderOverlayShape(overlayRadius: 16),
                   activeTickMarkColor: Colors.transparent,
                   inactiveTickMarkColor: Colors.transparent,
-                  trackShape: const RoundedRectSliderTrackShape(),
+                  trackShape: RoundedRectSliderTrackShape(),
                 ),
                 child: Slider(
                   value: _sliderIndex.toDouble(),
@@ -858,7 +852,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                padding: EdgeInsets.symmetric(horizontal: 4.0.w),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: radiusSteps.map((step) {
@@ -876,15 +870,13 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                             : FontWeight.w400,
                         height: 20 / 12,
                         letterSpacing: 0.2,
-                        color: isSelected
-                            ? Colors.black
-                            : const Color(0xFF9BA4B5),
+                        color: isSelected ? Colors.black : Color(0xFF9BA4B5),
                       ),
                     );
                   }).toList(),
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14.w),
 
               // Alerts — three plain rows, no heading or dividers (Figma)
               _buildToggleRow(
@@ -914,7 +906,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                   });
                 },
               ),
-              const SizedBox(height: 28),
+              SizedBox(height: 28.w),
 
               // Save Button
               BlocBuilder<GeofenceBloc, GeofenceState>(
@@ -922,21 +914,21 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                   final isLoading = state is GeofenceLoading;
                   return SizedBox(
                     width: double.infinity,
-                    height: 52,
+                    height: 52.w,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0069F9),
+                        backgroundColor: Color(0xFF0069F9),
                         elevation: 0,
                         shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(14.w),
                         ),
                       ),
                       onPressed: isLoading ? null : _handleSaveGeofence,
                       child: isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
+                          ? SizedBox(
+                              height: 20.w,
+                              width: 20.w,
                               child: CircularProgressIndicator(
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   Colors.white,
@@ -960,19 +952,16 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
               ),
 
               if (widget.geofence != null) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: 12.w),
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 52.w,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFEF4444),
-                      side: const BorderSide(
-                        color: Color(0xFFFCA5A5),
-                        width: 1.5,
-                      ),
+                      foregroundColor: Color(0xFFEF4444),
+                      side: BorderSide(color: Color(0xFFFCA5A5), width: 1.5.w),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(14.w),
                       ),
                     ),
                     onPressed: () {
@@ -983,7 +972,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                       style: GoogleFonts.poppins(
                         fontSize: 16.0.sp,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFFEF4444),
+                        color: Color(0xFFEF4444),
                       ),
                     ),
                   ),
@@ -1001,13 +990,15 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
       context: context,
       builder: (dlgContext) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18.w),
+        ),
         title: Text(
           'Delete Geofence',
           style: GoogleFonts.poppins(
             fontSize: 18.0.sp,
             fontWeight: FontWeight.w800,
-            color: const Color(0xFF0C1D37),
+            color: Color(0xFF0C1D37),
           ),
         ),
         content: Text(
@@ -1015,7 +1006,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
           style: GoogleFonts.poppins(
             fontSize: 14.0.sp,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF475569),
+            color: Color(0xFF475569),
           ),
         ),
         actions: [
@@ -1026,7 +1017,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
               style: GoogleFonts.poppins(
                 fontSize: 14.0.sp,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF64748B),
+                color: Color(0xFF64748B),
               ),
             ),
           ),
@@ -1044,7 +1035,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
               style: GoogleFonts.poppins(
                 fontSize: 14.0.sp,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFFEF4444),
+                color: Color(0xFFEF4444),
               ),
             ),
           ),

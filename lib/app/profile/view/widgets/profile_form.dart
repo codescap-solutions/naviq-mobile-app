@@ -1,3 +1,4 @@
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
@@ -39,13 +40,17 @@ class _ProfileFormState extends State<ProfileForm> {
   void initState() {
     super.initState();
     _sharedPrefsService = injector<SharedPrefsService>();
-    _nameController = TextEditingController(text: widget.initialName ?? 'VANCHAI');
+    _nameController = TextEditingController(
+      text: widget.initialName ?? 'VANCHAI',
+    );
     _emailController = TextEditingController(text: 'yanchu@gmail.com');
     _phoneController = TextEditingController(text: '+14867888899');
     _genderController = TextEditingController(text: 'Male');
     _dobController = TextEditingController(text: '12/12/2000');
     _passwordController = TextEditingController(text: 'eWTrByvGc4');
-    _idController = TextEditingController(text: widget.initialCode ?? '2723-202408282');
+    _idController = TextEditingController(
+      text: widget.initialCode ?? '2723-202408282',
+    );
   }
 
   @override
@@ -66,7 +71,7 @@ class _ProfileFormState extends State<ProfileForm> {
       key: _formKey,
       child: Column(
         children: [
-          const SizedBox(height: 16),
+          SizedBox(height: 16.w),
           _label('Name'),
           CommonTextField(
             controller: _nameController,
@@ -78,27 +83,27 @@ class _ProfileFormState extends State<ProfileForm> {
               return null;
             },
           ),
-          const SizedBox(height: AppSizes.spacingM),
+          SizedBox(height: AppSizes.spacingM),
           _label('Email Id'),
           CommonTextField(
             controller: _emailController,
             hintText: 'Email',
             keyboardType: TextInputType.emailAddress,
           ),
-          const SizedBox(height: AppSizes.spacingM),
+          SizedBox(height: AppSizes.spacingM),
           _label('Phone Number'),
           CommonTextField(
             controller: _phoneController,
             hintText: 'Phone',
             keyboardType: TextInputType.phone,
           ),
-          const SizedBox(height: AppSizes.spacingM),
+          SizedBox(height: AppSizes.spacingM),
           _label('Gender'),
           _GenderField(controller: _genderController),
-          const SizedBox(height: AppSizes.spacingM),
+          SizedBox(height: AppSizes.spacingM),
           _label('Date of Birth ( DD/MM/YR )'),
           _DobField(controller: _dobController),
-          const SizedBox(height: AppSizes.spacingM),
+          SizedBox(height: AppSizes.spacingM),
           _label('Password'),
           CommonTextField(
             controller: _passwordController,
@@ -106,7 +111,7 @@ class _ProfileFormState extends State<ProfileForm> {
             obscureText: true,
           ),
           if (!widget.isEdit) ...[
-            const SizedBox(height: AppSizes.spacingM),
+            SizedBox(height: AppSizes.spacingM),
             _label('ID Number / Child Code'),
             CommonTextField(
               controller: _idController,
@@ -119,7 +124,7 @@ class _ProfileFormState extends State<ProfileForm> {
               },
             ),
           ],
-          const SizedBox(height: AppSizes.spacingXL),
+          SizedBox(height: AppSizes.spacingXL),
           CommonButton(
             text: widget.isEdit ? 'Update' : 'Add',
             onPressed: () async {
@@ -132,7 +137,8 @@ class _ProfileFormState extends State<ProfileForm> {
                 if (widget.isEdit) {
                   // Find child by matching their old name/code and update
                   final updatedList = children.map((c) {
-                    if (c.childName == widget.initialName || c.childCode == widget.initialCode) {
+                    if (c.childName == widget.initialName ||
+                        c.childCode == widget.initialCode) {
                       return c.copyWith(childName: name);
                     }
                     return c;
@@ -140,13 +146,15 @@ class _ProfileFormState extends State<ProfileForm> {
                   await _sharedPrefsService.saveChildren(updatedList);
 
                   // Also check if we updated the currently active child name
-                  final activeName = _sharedPrefsService.getString('child_name') ?? '';
+                  final activeName =
+                      _sharedPrefsService.getString('child_name') ?? '';
                   if (activeName == widget.initialName) {
                     await _sharedPrefsService.setString('child_name', name);
                   }
                 } else {
                   // Add a new child profile
-                  final childId = 'child_${DateTime.now().millisecondsSinceEpoch}';
+                  final childId =
+                      'child_${DateTime.now().millisecondsSinceEpoch}';
                   final newChild = ChildProfile(
                     childId: childId,
                     childCode: code,
@@ -161,17 +169,20 @@ class _ProfileFormState extends State<ProfileForm> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        widget.isEdit 
-                            ? 'Profile updated successfully' 
-                            : 'Added child profile successfully'
+                        widget.isEdit
+                            ? 'Profile updated successfully'
+                            : 'Added child profile successfully',
                       ),
                     ),
                   );
-                  Navigator.pop(context, true); // Return true to trigger refresh
+                  Navigator.pop(
+                    context,
+                    true,
+                  ); // Return true to trigger refresh
                 }
               }
             },
-            height: 44,
+            height: 44.w,
             width: double.infinity,
           ),
         ],
@@ -183,7 +194,7 @@ class _ProfileFormState extends State<ProfileForm> {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 6),
+        padding: EdgeInsets.only(bottom: 6.w),
         child: Text(
           text,
           style: AppTextStyles.caption.copyWith(
@@ -204,24 +215,24 @@ class _GenderField extends StatelessWidget {
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
       initialValue: controller.text,
-      items: const [
+      items: [
         DropdownMenuItem(value: 'Male', child: Text('Male')),
         DropdownMenuItem(value: 'Female', child: Text('Female')),
         DropdownMenuItem(value: 'Other', child: Text('Other')),
       ],
       onChanged: (v) => controller.text = v ?? 'Male',
       decoration: InputDecoration(
-        contentPadding: const EdgeInsets.symmetric(
+        contentPadding: EdgeInsets.symmetric(
           horizontal: AppSizes.paddingM,
           vertical: AppSizes.paddingM,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          borderSide: const BorderSide(color: AppColors.borderColor),
+          borderSide: BorderSide(color: AppColors.borderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          borderSide: const BorderSide(color: AppColors.borderColor),
+          borderSide: BorderSide(color: AppColors.borderColor),
         ),
       ),
     );

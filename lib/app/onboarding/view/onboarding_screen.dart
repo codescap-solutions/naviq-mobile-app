@@ -24,34 +24,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFFFF),
+      backgroundColor: Color(0xFFFFFFFF),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: AppColors.onboardingBackgroundGradient,
         ),
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) => SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: BouncingScrollPhysics(),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.paddingL,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingL.w,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 56),
+                        SizedBox(height: 56.w),
 
                         // Brand Logo
                         Image.asset(
                           'assets/images/NaviQ Logo.png',
-                          height: 50,
+                          height: 50.w,
                           fit: BoxFit.contain,
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20.w),
 
                         // Heading
                         Text(
@@ -61,10 +61,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             fontSize: 24.0.sp,
                             fontWeight: FontWeight.w700,
                             height: 28 / 24,
-                            color: const Color(0xFF0F172A),
+                            color: Color(0xFF0F172A),
                           ),
                         ),
-                        const SizedBox(height: 37),
+                        SizedBox(height: 37.w),
 
                         // 2x2 Feature Grid using Row + Column with IntrinsicHeight
                         Column(
@@ -72,7 +72,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             IntrinsicHeight(
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: const [
+                                children: [
                                   Expanded(
                                     child: FeatureCard(
                                       title: 'Live Location',
@@ -83,7 +83,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                       borderColor: Color(0xFFC2D9FF),
                                     ),
                                   ),
-                                  SizedBox(width: 8),
+                                  SizedBox(width: 8.w),
                                   Expanded(
                                     child: FeatureCard(
                                       title: 'GeoGuard',
@@ -98,11 +98,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8.w),
                             IntrinsicHeight(
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: const [
+                                children: [
                                   Expanded(
                                     child: FeatureCard(
                                       title: 'Scroll',
@@ -113,7 +113,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                       borderColor: Color(0xFFEEF0F4),
                                     ),
                                   ),
-                                  SizedBox(width: 8),
+                                  SizedBox(width: 8.w),
                                   Expanded(
                                     child: FeatureCard(
                                       title: 'Route History',
@@ -131,7 +131,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 25),
+                        SizedBox(height: 25.w),
 
                         // Quick setup description
                         Text(
@@ -142,13 +142,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             fontWeight: FontWeight.w400,
                             height: 20 / 12,
                             letterSpacing: 0.2,
-                            color: const Color(0xFF4A5267),
+                            color: Color(0xFF4A5267),
                           ),
                         ),
                         // Figma gap is 70; shrinks on shorter screens so the CTA stays
                         // on-screen.
-                        const SizedBox(height: 16),
-                        const Spacer(),
+                        SizedBox(height: 16.w),
+                        Spacer(),
 
                         // Role Selector (Kid/Parent switcher)
                         RoleSelector(
@@ -159,21 +159,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             });
                           },
                         ),
-                        const SizedBox(height: 26),
+                        SizedBox(height: 26.w),
 
                         // Let's Get Started Action Button
                         ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 346),
+                          constraints: BoxConstraints(maxWidth: 346.w),
                           child: SizedBox(
                             width: double.infinity,
-                            height: 60,
+                            height: 60.w,
                             child: ElevatedButton(
                               onPressed: () {
                                 if (_selectedRole == 'Kid') {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                          const ConnectToParentScreen(),
+                                      builder: (_) => ConnectToParentScreen(),
                                     ),
                                   );
                                 } else {
@@ -183,15 +182,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0069F9),
+                                backgroundColor: Color(0xFF0069F9),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 16,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 24.w,
+                                  vertical: 16.w,
                                 ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(14.w),
                                 ),
                               ),
                               child: Row(
@@ -207,20 +206,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                       color: Colors.white,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 8.w),
                                   SizedBox(
-                                    width: 24,
-                                    height: 24,
+                                    width: 24.w,
+                                    height: 24.w,
                                     child: Stack(
                                       clipBehavior: Clip.none,
                                       children: [
                                         Positioned(
-                                          left: 7,
-                                          top: 4,
+                                          left: 7.w,
+                                          top: 4.w,
                                           child: SvgPicture.asset(
                                             'assets/icons/onboarding_cta_arrow.svg',
-                                            width: 10.4621,
-                                            height: 17,
+                                            width: 10.4621.w,
+                                            height: 17.w,
                                           ),
                                         ),
                                       ],
@@ -231,7 +230,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12.w),
 
                         // Already have an account? Sign In Link
                         Text.rich(
@@ -242,7 +241,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               fontWeight: FontWeight.w400,
                               height: 20 / 12,
                               letterSpacing: 0.2,
-                              color: const Color(0xFF707784),
+                              color: Color(0xFF707784),
                             ),
                             children: [
                               TextSpan(
@@ -252,7 +251,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   fontWeight: FontWeight.w400,
                                   height: 20 / 12,
                                   letterSpacing: 0.2,
-                                  color: const Color(0xFF0069F9),
+                                  color: Color(0xFF0069F9),
                                 ),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
@@ -266,7 +265,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16.w),
                       ],
                     ),
                   ),

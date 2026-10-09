@@ -6,9 +6,9 @@ import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/utils/app_logger.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/constants/app_colors.dart';
-import 'package:child_track/core/constants/app_sizes.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
+import 'package:child_track/core/widgets/figma_primary_button.dart';
 import 'package:child_track/core/widgets/common_textfield.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -107,16 +107,12 @@ class _AddKidViewState extends State<AddKidView> {
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.childToEdit != null;
     return Scaffold(
       backgroundColor: const Color(0xFFEDF4FE),
       // Figma: white header band with the 52px back circle and a centred Bold
       // title; the soft blue gradient only starts below it.
-      appBar: figmaAppBar(
-        context,
-        title: widget.childToEdit != null ? 'Edit Kid' : 'Add Kid',
-        titleSize: 22,
-        titleColor: const Color(0xFF16181A),
-      ),
+      appBar: figmaAppBar(context, title: isEdit ? 'Edit Kid' : 'Add Kid'),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -129,23 +125,30 @@ class _AddKidViewState extends State<AddKidView> {
           top: false,
           child: SingleChildScrollView(
             physics: const ClampingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 28),
-                  _buildHeader(),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 27.w),
+                  _buildHeader(isEdit),
+                  SizedBox(height: 21.w),
                   _buildAvatarSelector(),
-                  const SizedBox(height: 20),
-                  _buildDetailsSection(),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 21.w),
+                  _buildDetailsSection(isEdit),
+                  SizedBox(height: 24.w),
                   _buildTravelModeSelector(),
-                  const SizedBox(height: 64),
-                  _buildSubmitButton(),
-                  const SizedBox(height: AppSizes.spacingXL),
+                  SizedBox(height: 64.w),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
+                    child: FigmaPrimaryButton(
+                      label: isEdit ? 'Update' : 'Continue',
+                      isLoading: _isLoading,
+                      onPressed: _onSubmit,
+                    ),
+                  ),
+                  SizedBox(height: 33.w),
                 ],
               ),
             ),
@@ -155,41 +158,25 @@ class _AddKidViewState extends State<AddKidView> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool isEdit) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.childToEdit != null ? 'EDIT CHILD DETAILS' : 'CHILD DETAILS',
-          style: GoogleFonts.poppins(
-            fontSize: 12.0.sp,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 0.2,
-            color: const Color(0xFF0069F9),
-          ),
+          isEdit ? 'EDIT CHILD DETAILS' : 'CHILD DETAILS',
+          style: FigmaText.eyebrow,
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 8.w),
         Text(
-          widget.childToEdit != null
-              ? 'Update child information'
-              : 'Tell us about your child',
-          style: GoogleFonts.poppins(
-            fontSize: 24.0.sp,
-            fontWeight: FontWeight.w700,
-            height: 1.5,
-            color: const Color(0xFF16181A),
-          ),
+          isEdit ? 'Update child information' : 'Tell us about your child',
+          style: FigmaText.pageTitle,
         ),
-        const SizedBox(height: 2),
+        SizedBox(height: 4.w),
         Text(
-          widget.childToEdit != null
+          isEdit
               ? 'Update the profile name or choose a new avatar.'
               : 'This personalises tracking alerts for their age & routine.',
-          style: GoogleFonts.poppins(
-            fontSize: 12.0.sp,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF4A5267),
-          ),
+          style: FigmaText.caption,
         ),
       ],
     );
@@ -219,23 +206,40 @@ class _AddKidViewState extends State<AddKidView> {
     }
   }
 
+  /// Figma avatar / travel-mode tile: 48px circle (or rounded square) with a
+  /// blue ring when selected.
+  Widget _avatarRing({
+    required bool selected,
+    required Widget child,
+    required BorderRadius radius,
+    Color? color,
+  }) => Container(
+    width: 48.w,
+    height: 48.w,
+    decoration: BoxDecoration(color: color, borderRadius: radius),
+    foregroundDecoration: BoxDecoration(
+      borderRadius: radius,
+      border: Border.all(
+        color: selected ? FigmaColors.primary : Colors.transparent,
+        width: 2.5,
+      ),
+    ),
+    child: child,
+  );
+
   Widget _buildAvatarSelector() {
+    final hasCustom = _customAvatarFile != null;
+    final squareRadius = BorderRadius.circular(16.w);
+    final circle = BorderRadius.circular(48.w);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Choose Avatar',
-          style: GoogleFonts.poppins(
-            fontSize: 12.0.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF16181A),
-          ),
-        ),
-        const SizedBox(height: 10),
+        Text('Choose Avatar', style: FigmaText.sectionLabel),
+        SizedBox(height: 8.w),
         // Figma: 48px circles filling the avatar art (no white ring), a grey
         // rounded-square "+" for a custom photo pinned to the right.
         Padding(
-          padding: const EdgeInsets.only(right: 20),
+          padding: EdgeInsets.only(right: 20.w),
           child: Row(
             children: [
               Expanded(
@@ -244,79 +248,46 @@ class _AddKidViewState extends State<AddKidView> {
                   physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: [
-                      ..._presetAvatars.map((avatar) {
-                        final isSelected =
-                            _selectedAvatar == avatar &&
-                            _customAvatarFile == null;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 16),
+                      for (final avatar in _presetAvatars)
+                        Padding(
+                          padding: EdgeInsets.only(right: 16.w),
                           child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedAvatar = avatar;
-                                _customAvatarFile = null;
-                              });
-                            },
-                            child: Container(
-                              width: 48,
-                              height: 48,
-                              foregroundDecoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? const Color(0xFF0069F9)
-                                      : Colors.transparent,
-                                  width: 2.5,
-                                ),
-                              ),
+                            onTap: () => setState(() {
+                              _selectedAvatar = avatar;
+                              _customAvatarFile = null;
+                            }),
+                            child: _avatarRing(
+                              selected: _selectedAvatar == avatar && !hasCustom,
+                              radius: circle,
                               child: ClipOval(
                                 child: Image.asset(avatar, fit: BoxFit.cover),
                               ),
                             ),
                           ),
-                        );
-                      }),
+                        ),
                     ],
                   ),
                 ),
               ),
               GestureDetector(
                 onTap: _pickImage,
-                child: Builder(
-                  builder: (context) {
-                    final hasCustom = _customAvatarFile != null;
-                    final isSelected = _selectedAvatar == '+' && hasCustom;
-                    return Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDDE1EA),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      foregroundDecoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFF0069F9)
-                              : Colors.transparent,
-                          width: 2.5,
+                child: _avatarRing(
+                  selected: _selectedAvatar == '+' && hasCustom,
+                  radius: squareRadius,
+                  color: FigmaColors.border,
+                  child: hasCustom
+                      ? ClipRRect(
+                          borderRadius: squareRadius,
+                          child: Image.file(
+                            _customAvatarFile!,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Icon(
+                          Icons.add_rounded,
+                          color: FigmaColors.ink,
+                          size: 30.w,
                         ),
-                      ),
-                      child: hasCustom
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Image.file(
-                                _customAvatarFile!,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.add_rounded,
-                              color: Color(0xFF16181A),
-                              size: 30,
-                            ),
-                    );
-                  },
                 ),
               ),
             ],
@@ -326,288 +297,189 @@ class _AddKidViewState extends State<AddKidView> {
     );
   }
 
-  TextStyle get _figmaHint => GoogleFonts.poppins(
-    fontSize: 16.0.sp,
-    fontWeight: FontWeight.w400,
-    color: const Color(0xFF6B7280),
+  /// Plain white dropdown (Figma: 38px high, 8px radius, no outline).
+  InputDecoration get _dropdownDecoration {
+    OutlineInputBorder border([BorderSide side = BorderSide.none]) =>
+        OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.w),
+          borderSide: side,
+        );
+    return InputDecoration(
+      filled: true,
+      fillColor: Colors.white,
+      constraints: BoxConstraints.tightFor(height: 38.w),
+      contentPadding: EdgeInsets.symmetric(horizontal: 12.w),
+      border: border(),
+      enabledBorder: border(),
+      focusedBorder: border(
+        const BorderSide(color: FigmaColors.primary, width: 1.5),
+      ),
+      errorBorder: border(const BorderSide(color: AppColors.error)),
+      focusedErrorBorder: border(
+        const BorderSide(color: AppColors.error, width: 1.5),
+      ),
+    );
+  }
+
+  Widget _dropdown<T>({
+    required String hint,
+    required T? value,
+    required List<T> options,
+    required ValueChanged<T?> onChanged,
+    required String requiredMessage,
+  }) => DropdownButtonFormField<T>(
+    initialValue: value,
+    isExpanded: true,
+    hint: Text(hint, style: FigmaText.input),
+    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: FigmaColors.ink),
+    decoration: _dropdownDecoration,
+    style: FigmaText.input,
+    items: [
+      for (final o in options)
+        DropdownMenuItem<T>(value: o, child: Text(o.toString())),
+    ],
+    onChanged: onChanged,
+    validator: (v) => v == null ? requiredMessage : null,
   );
 
-  TextStyle get _figmaDropdownStyle => GoogleFonts.poppins(
-    fontSize: 16.0.sp,
-    fontWeight: FontWeight.w400,
-    color: const Color(0xFF16181A),
-  );
-
-  InputDecoration get _figmaDropdownDecoration => InputDecoration(
-    filled: true,
+  /// White outlined text field used for the name / age inputs.
+  Widget _outlinedField({
+    required TextEditingController controller,
+    required String hint,
+    required TextInputType keyboardType,
+    required String? Function(String?) validator,
+  }) => CommonTextField(
+    controller: controller,
+    hintText: hint,
+    keyboardType: keyboardType,
     fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide.none,
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide.none,
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: const BorderSide(color: Color(0xFF0069F9), width: 1.5),
-    ),
-    errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: const BorderSide(color: AppColors.error),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-    ),
+    borderColor: FigmaColors.fieldBorder,
+    borderRadius: 16.w,
+    contentPadding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 18.w),
+    hintStyle: FigmaText.inputHint,
+    validator: validator,
   );
 
-  Widget _buildFigmaLabel(String text) => Text(
-    text,
-    style: GoogleFonts.poppins(
-      fontSize: 16.0.sp,
-      fontWeight: FontWeight.w500,
-      color: const Color(0xFF4A5267),
-    ),
-  );
-
-  Widget _buildDetailsSection() {
-    final isEditMode = widget.childToEdit != null;
+  Widget _buildDetailsSection(bool isEdit) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Enter Details',
-          style: GoogleFonts.poppins(
-            fontSize: 12.0.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF16181A),
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Name field — Figma: 58px white pill, 1px dark outline, hint only
-        // (no label above, no leading icon).
-        CommonTextField(
+        Text('Enter Details', style: FigmaText.sectionLabel),
+        SizedBox(height: 12.w),
+        // Figma: 58px white pill, 1px dark outline, hint only (no label above,
+        // no leading icon).
+        _outlinedField(
           controller: _nameController,
-          hintText: 'Name of the Kid',
+          hint: 'Name of the Kid',
           keyboardType: TextInputType.name,
-          fillColor: Colors.white,
-          borderColor: const Color(0xFF404040),
-          borderRadius: 16,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 40,
-            vertical: 18,
-          ),
-          hintStyle: _figmaHint,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter child name';
-            }
-            return null;
-          },
+          validator: (v) =>
+              v == null || v.isEmpty ? 'Please enter child name' : null,
         ),
-        const SizedBox(height: 25),
-        if (isEditMode) ...[
-          _buildFigmaLabel('Age'),
-          const SizedBox(height: 16),
-          CommonTextField(
+        SizedBox(height: 25.w),
+        Text('Age', style: FigmaText.fieldLabel),
+        SizedBox(height: 16.w),
+        if (isEdit)
+          _outlinedField(
             controller: _ageController,
-            hintText: 'Enter child age',
+            hint: 'Enter child age',
             keyboardType: TextInputType.number,
-            fillColor: Colors.white,
-            borderColor: const Color(0xFF404040),
-            borderRadius: 16,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 40,
-              vertical: 18,
-            ),
-            hintStyle: _figmaHint,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter child age';
-              }
-              final ageVal = int.tryParse(value);
-              if (ageVal == null || ageVal <= 0) {
-                return 'Please enter a valid age';
-              }
-              return null;
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please enter child age';
+              final age = int.tryParse(v);
+              return age == null || age <= 0
+                  ? 'Please enter a valid age'
+                  : null;
             },
-          ),
-        ] else ...[
-          // Figma: one "Age" label over a Year / Month pair of plain white
-          // dropdowns (the per-field "Birth Year/Month" captions are gone).
-          _buildFigmaLabel('Age'),
-          const SizedBox(height: 16),
+          )
+        else
+          // Figma: one "Age" label over a Year / Month pair of white dropdowns.
           Padding(
-            padding: const EdgeInsets.only(right: 38),
+            padding: EdgeInsets.only(right: 38.w),
             child: Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<int>(
-                    initialValue: _selectedYear,
-                    isExpanded: true,
-                    hint: Text('Year', style: _figmaDropdownStyle),
-                    icon: const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xFF16181A),
-                    ),
-                    decoration: _figmaDropdownDecoration,
-                    style: _figmaDropdownStyle,
-                    items: _years.map((year) {
-                      return DropdownMenuItem<int>(
-                        value: year,
-                        child: Text(year.toString()),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedYear = val;
-                      });
-                    },
-                    validator: (val) => val == null ? 'Year required' : null,
+                  child: _dropdown<int>(
+                    hint: 'Year',
+                    value: _selectedYear,
+                    options: _years,
+                    onChanged: (v) => setState(() => _selectedYear = v),
+                    requiredMessage: 'Year required',
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedMonth,
-                    isExpanded: true,
-                    hint: Text('Month', style: _figmaDropdownStyle),
-                    icon: const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xFF16181A),
-                    ),
-                    decoration: _figmaDropdownDecoration,
-                    style: _figmaDropdownStyle,
-                    items: _months.map((month) {
-                      return DropdownMenuItem<String>(
-                        value: month,
-                        child: Text(month),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedMonth = val;
-                      });
-                    },
-                    validator: (val) => val == null ? 'Month required' : null,
+                  child: _dropdown<String>(
+                    hint: 'Month',
+                    value: _selectedMonth,
+                    options: _months,
+                    onChanged: (v) => setState(() => _selectedMonth = v),
+                    requiredMessage: 'Month required',
                   ),
                 ),
               ],
             ),
           ),
-        ],
       ],
     );
   }
 
+  static const _travelModes = [
+    (emoji: '🚐', label: 'Van'),
+    (emoji: '🚌', label: 'Bus'),
+    (emoji: '🚶', label: 'Walk'),
+    (emoji: '🚗', label: 'Car'),
+    (emoji: '🛺', label: 'Auto'),
+  ];
+
   Widget _buildTravelModeSelector() {
-    final modes = [
-      {'emoji': '🚐', 'label': 'Van'},
-      {'emoji': '🚌', 'label': 'Bus'},
-      {'emoji': '🚶', 'label': 'Walk'},
-      {'emoji': '🚗', 'label': 'Car'},
-      {'emoji': '🛺', 'label': 'Auto'},
-    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'How does your child travel to school?',
-          style: GoogleFonts.poppins(
-            fontSize: 12.0.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF16181A),
-          ),
+          style: FigmaText.sectionLabel,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.w),
         Wrap(
-          spacing: 5,
-          children: modes.map((mode) {
-            final emoji = mode['emoji']!;
-            final label = mode['label']!;
-            final isSelected = _selectedTravelMode == emoji;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedTravelMode = emoji;
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 63,
-                height: 66,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFFA9B4C8)
-                        : const Color(0xFFDDE1EA),
-                    width: isSelected ? 2.0 : 1.0,
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(emoji, style: TextStyle(fontSize: 20.0.sp)),
-                    const SizedBox(height: 4),
-                    Text(
-                      label,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12.0.sp,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF4A5267),
-                      ),
-                    ),
-                  ],
+          spacing: 5.w,
+          children: [
+            for (final mode in _travelModes)
+              GestureDetector(
+                onTap: () => setState(() => _selectedTravelMode = mode.emoji),
+                child: _travelTile(
+                  mode.emoji,
+                  mode.label,
+                  _selectedTravelMode == mode.emoji,
                 ),
               ),
-            );
-          }).toList(),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildSubmitButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: InkWell(
-        onTap: _isLoading ? null : _onSubmit,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          height: 60,
-          decoration: BoxDecoration(
-            color: _isLoading
-                ? const Color(0xFF0069F9).withValues(alpha: 0.5)
-                : const Color(0xFF0069F9),
-            borderRadius: BorderRadius.circular(16),
+  Widget _travelTile(String emoji, String label, bool selected) =>
+      AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 63.w,
+        height: 66.w,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12.w),
+          border: Border.all(
+            color: selected ? const Color(0xFFA9B4C8) : FigmaColors.border,
+            width: selected ? 2.0 : 1.0,
           ),
-          alignment: Alignment.center,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2.5,
-                  ),
-                )
-              : Text(
-                  widget.childToEdit != null ? 'Update' : 'Continue',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20.0.sp,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white,
-                  ),
-                ),
         ),
-      ),
-    );
-  }
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(emoji, style: TextStyle(fontSize: 20.0.sp)),
+            SizedBox(height: 4.w),
+            Text(label, style: FigmaText.poppins(12, color: FigmaColors.body)),
+          ],
+        ),
+      );
 
   void _onSubmit() {
     if (_formKey.currentState?.validate() ?? false) {

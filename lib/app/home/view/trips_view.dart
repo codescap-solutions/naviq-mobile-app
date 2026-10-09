@@ -1,4 +1,5 @@
 import 'package:child_track/app/home/model/trip_list_model.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:child_track/app/home/view_model/bloc/homepage_bloc.dart';
 import 'package:child_track/app/home/view_model/bloc/homepage_state.dart';
 import 'package:child_track/core/di/injector.dart';
@@ -128,20 +129,7 @@ class _TripsViewState extends State<TripsView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: Text(
-          'Trips',
-          style: AppTextStyles.headline5.copyWith(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: AppColors.surfaceColor,
-        elevation: 0,
-        foregroundColor: AppColors.textPrimary,
-        centerTitle: true,
-      ),
+      appBar: figmaAppBar(context, title: 'Trips'),
       body: BlocBuilder<HomepageBloc, HomepageState>(
         bloc: _homepageBloc,
         builder: (context, state) {

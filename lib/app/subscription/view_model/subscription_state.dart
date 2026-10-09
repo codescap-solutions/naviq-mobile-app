@@ -67,7 +67,8 @@ class SubscriptionRestoring extends SubscriptionState {
 class SubscriptionError extends SubscriptionState {
   final String message;
   final bool isCancelled; // true when user dismissed the payment sheet
-  final bool isLoadError; // true when offerings failed to load (vs purchase error)
+  final bool
+  isLoadError; // true when offerings failed to load (vs purchase error)
 
   const SubscriptionError(
     this.message, {

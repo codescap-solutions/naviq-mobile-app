@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 
-import '../../../core/constants/app_sizes.dart';
 import '../../../core/utils/responsive_font.dart';
 import '../../../core/services/shared_prefs_service.dart';
 import '../../../core/services/subscription_feature_gate.dart';
@@ -20,6 +19,8 @@ import '../view_model/bloc/geofence_event.dart';
 import '../view_model/bloc/geofence_state.dart';
 import '../model/geofence_model.dart';
 import 'widgets/geoplace_card.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'widgets/preset_place_card_body.dart';
 import 'package:child_track/core/widgets/geo_fencing_shimmer.dart';
 
@@ -84,45 +85,8 @@ class _GeoFencingViewState extends State<GeoFencingView> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        leadingWidth: 72,
-        leading: Align(
-          alignment: Alignment.centerLeft,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).maybePop(),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: const Icon(
-                  CupertinoIcons.chevron_left,
-                  color: Colors.black,
-                  size: 18,
-                ),
-              ),
-            ),
-          ),
-        ),
-        title: Text(
-          'Geofencing',
-          style: GoogleFonts.poppins(
-            fontSize: 20.0.sp,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF0C1D37),
-          ),
-        ),
-      ),
+      backgroundColor: Color(0xFFF8FAFC),
+      appBar: figmaAppBar(context, title: 'Geofencing'),
       body: Column(
         children: [
           _buildChildHeaderRow(activeCount),
@@ -138,9 +102,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
                     _geofences.add(state.geofence);
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Geofence created successfully'),
-                    ),
+                    SnackBar(content: Text('Geofence created successfully')),
                   );
                 } else if (state is GeofenceUpdated) {
                   setState(() {
@@ -150,18 +112,14 @@ class _GeoFencingViewState extends State<GeoFencingView> {
                     if (index != -1) _geofences[index] = state.geofence;
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Geofence updated successfully'),
-                    ),
+                    SnackBar(content: Text('Geofence updated successfully')),
                   );
                 } else if (state is GeofenceDeleted) {
                   setState(() {
                     _geofences.removeWhere((g) => g.id == state.geofenceId);
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Geofence deleted successfully'),
-                    ),
+                    SnackBar(content: Text('Geofence deleted successfully')),
                   );
                 } else if (state is GeofenceLockToggled) {
                   setState(() {
@@ -178,23 +136,23 @@ class _GeoFencingViewState extends State<GeoFencingView> {
               },
               builder: (context, state) {
                 if (state is GeofenceLoading) {
-                  return const GeoFencingShimmer();
+                  return GeoFencingShimmer();
                 }
 
                 if (state is GeofenceError) {
                   final message = state.message;
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      padding: EdgeInsets.symmetric(horizontal: 24.0.w),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             message,
-                            style: const TextStyle(color: Colors.red),
+                            style: TextStyle(color: Colors.red),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12.w),
                           ElevatedButton(
                             onPressed: () {
                               if (widget.childId != null) {
@@ -206,7 +164,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
                                 );
                               }
                             },
-                            child: const Text('Retry'),
+                            child: Text('Retry'),
                           ),
                         ],
                       ),
@@ -215,13 +173,11 @@ class _GeoFencingViewState extends State<GeoFencingView> {
                 }
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.paddingM,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 14.w),
                   child: ListView(
-                    physics: const BouncingScrollPhysics(),
+                    physics: BouncingScrollPhysics(),
                     children: [
-                      const SizedBox(height: 14),
+                      SizedBox(height: 24.w),
 
                       // Fences List
                       if (_geofences.isNotEmpty) ...[
@@ -256,7 +212,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
                                 );
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                     content: Text('Invalid geofence ID'),
                                   ),
                                 );
@@ -266,32 +222,32 @@ class _GeoFencingViewState extends State<GeoFencingView> {
                         ),
                       ] else ...[
                         // Professional Quick Add / Preset Grid directly on main page
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16.w),
                         _buildPresetGridHeader(),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 8.w),
                         _buildPresetGridContent(),
-                        const SizedBox(height: 24),
+                        SizedBox(height: 24.w),
                       ],
 
-                      const SizedBox(height: 16),
+                      SizedBox(height: 24.w),
 
                       // Suggested Fences Section
                       _buildSuggestedFencesHeader(),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8.w),
                       if (currentLatLng != null) ...[
                         _buildSuggestedFenceTile(
                           "Current Location (${_formatAddress(currentAddress)})",
                           currentLatLng,
                           isCurrentLocation: true,
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 8.w),
                       ],
                       _buildSuggestedFenceTile(
                         "${_getChildName()}'s School",
-                        const LatLng(12.9698, 77.7500),
+                        LatLng(12.9698, 77.7500),
                       ),
 
-                      const SizedBox(height: 80), // spacer for FAB
+                      SizedBox(height: 80.w), // spacer for FAB
                     ],
                   ),
                 );
@@ -303,95 +259,102 @@ class _GeoFencingViewState extends State<GeoFencingView> {
       // Plain circular "+" FAB (60px, #0069F9) — matches the Figma shape
       // family instead of a labeled pill button.
       floatingActionButton: _isPrimaryParent
-          ? SizedBox(
-              width: 60,
-              height: 60,
-              child: FloatingActionButton(
-                onPressed: _navigateToPlaceSelection,
-                backgroundColor: const Color(0xFF0069F9),
-                foregroundColor: Colors.white,
-                elevation: 4,
-                shape: const CircleBorder(),
-                child: const Icon(Icons.add_rounded, size: 28),
+          ? Padding(
+              padding: EdgeInsets.only(right: 8.w),
+              child: SizedBox(
+                width: 60.w,
+                height: 60.w,
+                child: FloatingActionButton(
+                  onPressed: _navigateToPlaceSelection,
+                  backgroundColor: Color(0xFF0069F9),
+                  foregroundColor: Colors.white,
+                  elevation: 4,
+                  shape: CircleBorder(),
+                  child: Icon(Icons.add_rounded, size: 28.w),
+                ),
               ),
             )
           : null,
     );
   }
 
+  /// Figma "Frame 2425": 42px band holding two 28px pills at x12 / gap 12.
   Widget _buildChildHeaderRow(int activeCount) {
+    final pillText = FigmaText.poppins(14, weight: FontWeight.w700);
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      height: 42.w,
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      alignment: Alignment.topLeft,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Child selector pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF), // soft blue tint
-              borderRadius: BorderRadius.circular(20),
-            ),
+          _headerPill(
+            color: Color(0xFFEFF6FF),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   "${_getChildEmoji()} ${_getChildName()}",
-                  style: GoogleFonts.poppins(
-                    fontSize: 14.0.sp,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF0066FF),
-                  ),
+                  style: pillText.copyWith(color: FigmaColors.primary),
                 ),
-                const SizedBox(width: 4),
-                const Icon(
+                SizedBox(width: 4.w),
+                Icon(
                   Icons.arrow_drop_down_rounded,
-                  color: Color(0xFF0066FF),
-                  size: 20,
+                  color: FigmaColors.primary,
+                  size: 20.w,
                 ),
               ],
             ),
           ),
-          // Active fences count
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "$activeCount active ${activeCount == 1 ? 'fence' : 'fences'}",
-                style: GoogleFonts.poppins(
-                  fontSize: 14.0.sp,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF22C55E),
+          SizedBox(width: 12.w),
+          _headerPill(
+            color: Color(0xFFEAF8F0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "$activeCount active ${activeCount == 1 ? 'fence' : 'fences'}",
+                  style: pillText.copyWith(color: Color(0xFF22C55E)),
                 ),
-              ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.check_rounded,
-                color: Color(0xFF22C55E),
-                size: 16,
-              ),
-            ],
+                SizedBox(width: 4.w),
+                Icon(Icons.check_rounded, color: Color(0xFF22C55E), size: 16.w),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSuggestedFencesHeader() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8, top: 12),
-      child: Text(
-        "SUGGESTED FENCES",
-        style: GoogleFonts.poppins(
-          fontSize: 11.0.sp,
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF94A3B8),
-          letterSpacing: 0.8,
-        ),
+  Widget _headerPill({required Color color, required Widget child}) {
+    return Container(
+      height: 28.w,
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(14.w),
       ),
+      child: child,
     );
   }
+
+  /// Figma "SUGGESTED FENCES": 18px caption line, aligned with the cards.
+  Widget _buildSuggestedFencesHeader() => _sectionCaption("SUGGESTED FENCES");
+
+  Widget _sectionCaption(String text) => SizedBox(
+    height: 18.w,
+    child: Text(
+      text,
+      style: FigmaText.poppins(
+        11,
+        weight: FontWeight.w800,
+        color: Color(0xFF94A3B8),
+        lineHeight: 18,
+        letterSpacing: 0.8,
+      ),
+    ),
+  );
 
   Widget _buildSuggestedFenceTile(
     String name,
@@ -399,19 +362,22 @@ class _GeoFencingViewState extends State<GeoFencingView> {
     bool isCurrentLocation = false,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: EdgeInsets.only(bottom: 8.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.w),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0C1D37).withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Color(0xFF0C1D37).withValues(alpha: 0.02),
+            blurRadius: 10.w,
+            offset: Offset(0, 2.w),
           ),
         ],
       ),
       child: ListTile(
+        minTileHeight: 50.w,
+        dense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: 14.w),
         onTap: () {
           if (!_isPrimaryParent) {
             AppSnackbar.showError(
@@ -448,36 +414,21 @@ class _GeoFencingViewState extends State<GeoFencingView> {
                 ),
               );
             }
-            injector<HomepageBloc>().add(const GetHomepageData());
+            injector<HomepageBloc>().add(GetHomepageData());
           });
         },
-        leading: Container(
-          height: 36,
-          width: 36,
-          decoration: const BoxDecoration(
-            color: Color(0xFFFFF1F2), // soft rose background
-            shape: BoxShape.circle,
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.location_on_rounded,
-              color: Color(0xFFF43F5E), // rose pin color
-              size: 18,
-            ),
-          ),
-        ),
         title: Text(
           name,
           style: GoogleFonts.poppins(
             fontSize: 14.0.sp,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF0C1D37),
+            color: Color(0xFF0C1D37),
           ),
         ),
-        trailing: const Icon(
+        trailing: Icon(
           CupertinoIcons.chevron_right,
           color: Color(0xFF94A3B8),
-          size: 16,
+          size: 16.w,
         ),
       ),
     );
@@ -541,7 +492,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
         }
       }
 
-      injector<HomepageBloc>().add(const GetHomepageData());
+      injector<HomepageBloc>().add(GetHomepageData());
     });
   }
 
@@ -566,7 +517,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
           ),
         );
       }
-      injector<HomepageBloc>().add(const GetHomepageData());
+      injector<HomepageBloc>().add(GetHomepageData());
     });
   }
 
@@ -579,64 +530,51 @@ class _GeoFencingViewState extends State<GeoFencingView> {
     return address;
   }
 
-  Widget _buildPresetGridHeader() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        "QUICK ADD GEOFENCE",
-        style: GoogleFonts.poppins(
-          fontSize: 11.0.sp,
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF94A3B8),
-          letterSpacing: 0.8,
-        ),
-      ),
-    );
-  }
+  Widget _buildPresetGridHeader() => _sectionCaption("QUICK ADD GEOFENCE");
 
   Widget _buildPresetGridContent() {
     return GridView.count(
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      physics: NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 12,
-      childAspectRatio: (MediaQuery.of(context).size.width - 12) / 2 / 102,
+      mainAxisSpacing: 10.w,
+      crossAxisSpacing: 12.w,
+      childAspectRatio: (MediaQuery.of(context).size.width - 40.w) / 2 / 100.w,
       children: [
         _buildPresetGridCard(
           label: "School",
           emoji: '🏫',
-          circleBg: const Color(0xFF0DBF75),
+          circleBg: Color(0xFF0DBF75),
           category: "school",
         ),
         _buildPresetGridCard(
           label: "Coaching",
           emoji: '🎓',
-          circleBg: const Color(0xFFF5A623),
+          circleBg: Color(0xFFF5A623),
           category: "tuition",
         ),
         _buildPresetGridCard(
           label: "Grandma's",
           emoji: '👵',
-          circleBg: const Color(0xFFF03E3E),
+          circleBg: Color(0xFFF03E3E),
           category: "other",
         ),
         _buildPresetGridCard(
           label: "Temple/Masjid",
           emoji: '⛪',
-          circleBg: const Color(0xFF0069F9),
+          circleBg: Color(0xFF0069F9),
           category: "other",
         ),
         _buildPresetGridCard(
           label: "Sports Ground",
           emoji: '🏏',
-          circleBg: const Color(0xFF003A8C),
+          circleBg: Color(0xFF003A8C),
           category: "other",
         ),
         _buildPresetGridCard(
           label: "Current Location",
           emoji: '📍',
-          circleBg: const Color(0xFF9BA4B5),
+          circleBg: Color(0xFF9BA4B5),
           category: "other",
           isCurrentLocation: true,
         ),
@@ -701,7 +639,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
               ),
             );
           }
-          injector<HomepageBloc>().add(const GetHomepageData());
+          injector<HomepageBloc>().add(GetHomepageData());
         });
       },
       child: PresetPlaceCardBody(label: label, emoji: emoji, color: circleBg),

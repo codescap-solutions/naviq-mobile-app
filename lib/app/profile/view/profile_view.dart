@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/di/injector.dart';
@@ -10,6 +9,9 @@ import 'package:child_track/core/models/child_profile.dart';
 import 'package:child_track/app/home/view_model/bloc/homepage_bloc.dart';
 import 'package:child_track/app/home/view_model/home_repo.dart';
 import 'package:child_track/app/auth/view/onboarding/add_kid_view.dart';
+import 'package:child_track/app/profile/view/widgets/add_kid_sheet.dart';
+import 'package:child_track/app/profile/view/widgets/profile_card.dart';
+import 'package:child_track/app/settings/view/devices_view.dart';
 
 class ProfileView extends StatefulWidget {
   final VoidCallback onNavigateToHome;
@@ -71,7 +73,7 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       final now = DateTime.now();
       if (_lastResumeRefreshAt != null &&
-          now.difference(_lastResumeRefreshAt!) < const Duration(seconds: 5)) {
+          now.difference(_lastResumeRefreshAt!) < Duration(seconds: 5)) {
         return;
       }
       _lastResumeRefreshAt = now;
@@ -137,127 +139,124 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
         'Switched active profile to ${child.childName}',
       );
       // Return to home map tab after brief delay
-      Future.delayed(const Duration(milliseconds: 300), () {
+      Future.delayed(Duration(milliseconds: 300), () {
         widget.onNavigateToHome();
       });
     }
   }
 
-  void _showMoreActions(ChildProfile child) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.edit_rounded),
-                title: Text('Edit profile of ${child.childName}'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final updated = await Navigator.push<bool>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AddKidView(childToEdit: child),
-                    ),
-                  );
-                  if (updated == true) {
-                    _loadChildren();
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.delete_outline_rounded,
-                  color: Colors.red,
-                ),
-                title: Text(
-                  'Delete profile of ${child.childName}',
-                  style: const TextStyle(color: Colors.red),
-                ),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final repo = injector<HomeRepository>();
-                  final response = await repo.deleteChild(child.childId);
-
-                  if (response.isSuccess) {
-                    final list = _sharedPrefsService.getChildren();
-                    list.removeWhere((c) => c.childId == child.childId);
-                    await _sharedPrefsService.saveChildren(list);
-
-                    // If we deleted the active child, switch to another child or clear
-                    final activeChildId = _sharedPrefsService.getString(
-                      'child_id',
-                    );
-                    if (activeChildId == child.childId) {
-                      if (list.isNotEmpty) {
-                        await _sharedPrefsService.switchChild(
-                          list.first.childId,
-                        );
-                        injector<HomepageBloc>().add(GetHomepageData());
-                      } else {
-                        await _sharedPrefsService.removeChildId();
-                        await _sharedPrefsService.setString('child_name', '');
-                      }
-                    }
-
-                    _loadChildren();
-                    if (context.mounted) {
-                      AppSnackbar.showSuccess(
-                        context,
-                        'Profile of ${child.childName} deleted successfully',
-                      );
-                    }
-                  } else {
-                    if (context.mounted) {
-                      AppSnackbar.showError(
-                        context,
-                        response.message.isEmpty
-                            ? 'Failed to delete child profile'
-                            : response.message,
-                      );
-                    }
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
+  Future<void> _editChild(ChildProfile child) async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => AddKidView(childToEdit: child)),
     );
+    if (updated == true) _loadChildren();
+  }
+
+  Future<void> _confirmRemove(ChildProfile child) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Remove ${child.childName}?'),
+        content: Text(
+          "This deletes ${child.childName}'s profile and stops tracking.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Remove', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _removeChild(child);
+  }
+
+  Future<void> _removeChild(ChildProfile child) async {
+    final repo = injector<HomeRepository>();
+    final response = await repo.deleteChild(child.childId);
+
+    if (response.isSuccess) {
+      final list = _sharedPrefsService.getChildren();
+      list.removeWhere((c) => c.childId == child.childId);
+      await _sharedPrefsService.saveChildren(list);
+
+      // If we deleted the active child, switch to another child or clear
+      final activeChildId = _sharedPrefsService.getString('child_id');
+      if (activeChildId == child.childId) {
+        if (list.isNotEmpty) {
+          await _sharedPrefsService.switchChild(list.first.childId);
+          injector<HomepageBloc>().add(GetHomepageData());
+        } else {
+          await _sharedPrefsService.removeChildId();
+          await _sharedPrefsService.setString('child_name', '');
+        }
+      }
+
+      _loadChildren();
+      if (mounted) {
+        AppSnackbar.showSuccess(
+          context,
+          'Profile of ${child.childName} deleted successfully',
+        );
+      }
+    } else if (mounted) {
+      AppSnackbar.showError(
+        context,
+        response.message.isEmpty
+            ? 'Failed to delete child profile'
+            : response.message,
+      );
+    }
+  }
+
+  /// Selected (active) child first, the rest in their existing order.
+  List<ChildProfile> get _sortedChildren {
+    final selectedId = _sharedPrefsService.getString('child_id');
+    return [
+      ..._children.where((c) => c.childId == selectedId),
+      ..._children.where((c) => c.childId != selectedId),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
+    final children = _sortedChildren;
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FA),
+      backgroundColor: Color(0xFFF6F8FA),
       // Figma: white header band, 52px back / add circles, centred Bold
       // title. The old manual-refresh circle is now pull-to-refresh on the
       // list (same _loadChildren), so the header matches the single "+".
       appBar: figmaAppBar(
         context,
         title: 'Profiles',
-        titleSize: 32,
-        titleColor: const Color(0xFF0F1320),
         onBack: widget.onNavigateToHome,
-        circleColor: const Color(0xFFDFE2E8),
         trailing: FigmaCircleButton(
-          color: const Color(0xFFDFE2E8),
-          onTap: () async {
-            await Navigator.push(
+          color: Colors.white,
+          onTap: () => showAddKidSheet(
+            context,
+            onAddKid: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => AddKidView()),
+              );
+              _loadChildren();
+            },
+            onPurchaseDevice: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const AddKidView()),
-            );
-            _loadChildren();
-          },
-          child: const Icon(
+              MaterialPageRoute(
+                builder: (_) => DevicesView(showPurchasePitch: true),
+              ),
+            ),
+          ),
+          child: Icon(
             Icons.add_circle_outline_rounded,
             color: Color(0xFF0F1320),
-            size: 24,
+            size: 24.w,
           ),
         ),
       ),
@@ -267,11 +266,11 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
               child: RefreshIndicator(
                 onRefresh: _loadChildren,
                 child: ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: _children.length,
+                  physics: AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.symmetric(vertical: 8.w),
+                  itemCount: children.length,
                   itemBuilder: (context, index) {
-                    final child = _children[index];
+                    final child = children[index];
 
                     final status = child.isActive
                         ? 'online & tracking'
@@ -283,11 +282,11 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                         '${child.todayRouteKm.toStringAsFixed(1)} km';
 
                     return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14.0,
-                        vertical: 0,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14.0.w,
+                        vertical: 0.w,
                       ),
-                      child: _buildProfileCard(
+                      child: ProfileCard(
                         name: child.childName,
                         childCode: child.childCode,
                         avatar: child.avatar,
@@ -295,9 +294,14 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                         screenTime: screenTime,
                         maxSpeed: maxSpeed,
                         entireRoute: entireRoute,
-                        isActive: child.isActive,
+                        isSelected:
+                            child.childId ==
+                            _sharedPrefsService.getString('child_id'),
                         onTap: () => _setActiveChild(child),
-                        onMorePressed: () => _showMoreActions(child),
+                        onAction: (action) => switch (action) {
+                          ProfileCardAction.edit => _editChild(child),
+                          ProfileCardAction.remove => _confirmRemove(child),
+                        },
                       ),
                     );
                   },
@@ -317,429 +321,69 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
     return '${diff.inDays}d ago';
   }
 
-  Widget _buildProfileCard({
-    required String name,
-    required String childCode,
-    required String? avatar,
-    required String status,
-    required String screenTime,
-    required String maxSpeed,
-    required String entireRoute,
-    required bool isActive,
-    required VoidCallback onTap,
-    required VoidCallback onMorePressed,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2E5476).withValues(alpha: 0.12),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          children: [
-            // Top Section — steel-blue vertical gradient from the Figma
-            // profile card (#6C8EA9 top -> #2E5476 bottom; the active child's
-            // card ends in the bluer #3F6296).
-            GestureDetector(
-              onTap: onTap,
-              child: Container(
-                height: 216,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFF6C8EA9),
-                      isActive
-                          ? const Color(0xFF3F6296)
-                          : const Color(0xFF2E5476),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    // Decorative Circle 1 (behind avatar)
-                    Positioned(
-                      top: -40,
-                      right: -20,
-                      child: Container(
-                        width: 176,
-                        height: 176,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.1),
-                        ),
-                      ),
-                    ),
-                    // Decorative Circle 2
-                    Positioned(
-                      top: 64,
-                      left: -60,
-                      child: Container(
-                        width: 208,
-                        height: 208,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withValues(alpha: 0.1),
-                        ),
-                      ),
-                    ),
-                    // Decorative Circle 3
-                    Positioned(
-                      top: 24,
-                      left: 32,
-                      child: Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.1),
-                        ),
-                      ),
-                    ),
-                    // Active Badge — hidden per request (commented out, not deleted).
-                    // if (isActive)
-                    //   Positioned(
-                    //     top: 16,
-                    //     left: 16,
-                    //     child: Container(
-                    //       padding: const EdgeInsets.symmetric(
-                    //         horizontal: 10,
-                    //         vertical: 4,
-                    //       ),
-                    //       decoration: BoxDecoration(
-                    //         color: const Color(0xFFDCFCE7),
-                    //         borderRadius: BorderRadius.circular(6),
-                    //       ),
-                    //       child: Text(
-                    //         'active',
-                    //         style: GoogleFonts.poppins(
-                    //           color: const Color(0xFF15803D),
-                    //           fontSize: 12.0.sp,
-                    //           fontWeight: FontWeight.w700,
-                    //         ),
-                    //       ),
-                    //     ),
-                    //   ),
-                    // More Button
-                    Positioned(
-                      top: 15,
-                      right: 15,
-                      child: GestureDetector(
-                        onTap: onMorePressed,
-                        child: Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.more_horiz_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Avatar & Text info
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 27),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Profile Avatar image/placeholder — white outer
-                            // ring (112px, 3.5px padding) around the actual
-                            // 105px avatar, matching the Figma frame.
-                            GestureDetector(
-                              onTap: onTap,
-                              child: Container(
-                                width: 94,
-                                height: 94,
-                                padding: const EdgeInsets.all(3.5),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: Container(
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFF3F4F6),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: _buildAvatarWidget(avatar),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 28),
-                            // Name text + tap-to-copy child code — parents
-                            // previously had to retype/screenshot the code by
-                            // hand to share it with a guardian or re-pair a
-                            // device; same Clipboard pattern already used in
-                            // child_code_screen.dart's onboarding flow.
-                            GestureDetector(
-                              onTap: () {
-                                Clipboard.setData(
-                                  ClipboardData(text: childCode),
-                                );
-                                AppSnackbar.showSuccess(
-                                  context,
-                                  'Child code copied: $childCode',
-                                );
-                              },
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      '$name ($childCode)',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 24.0.sp,
-                                        fontWeight: FontWeight.w700,
-                                        height: 1.0,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Icon(
-                                    Icons.copy_rounded,
-                                    size: 16,
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Status text
-                            Text(
-                              status,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14.0.sp,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white.withValues(alpha: 0.9),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Bottom Section (Stats Row)
-            GestureDetector(
-              onTap: onTap,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: const BoxDecoration(color: Colors.white),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatItem(
-                        icon: Icons.access_time_outlined,
-                        value: screenTime,
-                        label: 'screen time',
-                      ),
-                    ),
-                    Container(
-                      height: 25,
-                      width: 1,
-                      color: const Color(0xFFE2E8F0),
-                    ),
-                    Expanded(
-                      child: _buildStatItem(
-                        icon: Icons.bolt_rounded,
-                        value: maxSpeed,
-                        label: 'max speed',
-                      ),
-                    ),
-                    Container(
-                      height: 25,
-                      width: 1,
-                      color: const Color(0xFFE2E8F0),
-                    ),
-                    Expanded(
-                      child: _buildStatItem(
-                        icon: Icons.location_on_outlined,
-                        value: entireRoute,
-                        label: 'entire route',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem({
-    required IconData icon,
-    required String value,
-    required String label,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: const Color(0xFF0C1D37), size: 16),
-            const SizedBox(width: 6),
-            Text(
-              value,
-              style: GoogleFonts.poppins(
-                fontSize: 14.0.sp,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF16181A),
-              ),
-            ),
-          ],
-        ),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 13.0.sp,
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFF4A5267),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAvatarWidget(String? avatar) {
-    if (avatar == null || avatar.isEmpty) {
-      return Center(
-        child: Icon(
-          Icons.person_rounded,
-          color: Colors.blue.shade300,
-          size: 48,
-        ),
-      );
-    }
-    if (avatar.startsWith('http')) {
-      return ClipOval(
-        child: Image.network(
-          avatar,
-          width: 105,
-          height: 105,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) =>
-              Icon(Icons.person_rounded, color: Colors.blue.shade300, size: 48),
-        ),
-      );
-    }
-
-    final isPng =
-        avatar.endsWith('.png') ||
-        avatar.contains('Boy') ||
-        avatar.contains('Girl');
-    final finalPath = isPng
-        ? 'assets/images/childavatar/${avatar.replaceAll('.svg', '.png')}'
-        : 'assets/images/childavatar/$avatar';
-
-    return ClipOval(
-      child: Image.asset(
-        finalPath,
-        width: 105,
-        height: 105,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            Icon(Icons.person_rounded, color: Colors.blue.shade300, size: 48),
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
+        padding: EdgeInsets.symmetric(horizontal: 24.0.w, vertical: 48.0.w),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
+              padding: EdgeInsets.all(24.w),
+              decoration: BoxDecoration(
                 color: Color(0xFFEFF6FF),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.child_care_rounded,
-                size: 64,
+                size: 64.w,
                 color: Color(0xFF3B82F6),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.w),
             Text(
               "No Connected Kids",
               style: GoogleFonts.poppins(
                 fontSize: 20.0.sp,
                 fontWeight: FontWeight.w800,
-                color: const Color(0xFF0C1D37),
+                color: Color(0xFF0C1D37),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             Text(
               "Add a child profile to start tracking and managing their screen time.",
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 14.0.sp,
-                color: const Color(0xFF64748B),
+                color: Color(0xFF64748B),
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: 32.w),
             SizedBox(
-              width: 200,
-              height: 48,
+              width: 200.w,
+              height: 48.w,
               child: ElevatedButton(
                 onPressed: () async {
                   await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const AddKidView()),
+                    MaterialPageRoute(builder: (_) => AddKidView()),
                   );
                   _loadChildren();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0066FF),
+                  backgroundColor: Color(0xFF0066FF),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16.w),
                   ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.add_rounded, size: 20),
-                    const SizedBox(width: 8),
+                    Icon(Icons.add_rounded, size: 20.w),
+                    SizedBox(width: 8.w),
                     Text(
                       "Add Kid",
                       style: GoogleFonts.poppins(

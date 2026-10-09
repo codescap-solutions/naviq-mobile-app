@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -35,7 +36,7 @@ class _AddContactViewState extends State<AddContactView> {
   @override
   void initState() {
     super.initState();
-    
+
     String initialName = '';
     String initialRelation = '';
     String initialPhone = '';
@@ -89,8 +90,10 @@ class _AddContactViewState extends State<AddContactView> {
     if (widget.contactIndex != null) {
       final index = widget.contactIndex!;
       final bool isDefault = updatedList[index]['is_default'] == true;
-      final String id = updatedList[index]['id'] ?? 'contact_${DateTime.now().millisecondsSinceEpoch}';
-      
+      final String id =
+          updatedList[index]['id'] ??
+          'contact_${DateTime.now().millisecondsSinceEpoch}';
+
       if (!id.startsWith('contact_') && !id.startsWith('default_')) {
         final response = await injector<HomeRepository>().editParentContact(
           id: id,
@@ -99,7 +102,12 @@ class _AddContactViewState extends State<AddContactView> {
           phone: phone,
         );
         if (!response.isSuccess) {
-          AppSnackbar.showError(context, response.message.isNotEmpty ? response.message : 'Failed to update contact on server');
+          AppSnackbar.showError(
+            context,
+            response.message.isNotEmpty
+                ? response.message
+                : 'Failed to update contact on server',
+          );
           return;
         }
       }
@@ -122,7 +130,7 @@ class _AddContactViewState extends State<AddContactView> {
         relation: relation,
         phone: phone,
       );
-      
+
       String newId = 'contact_${DateTime.now().millisecondsSinceEpoch}';
       if (response.isSuccess && response.data != null) {
         final data = response.data;
@@ -130,7 +138,12 @@ class _AddContactViewState extends State<AddContactView> {
           newId = data['id'].toString();
         }
       } else if (!response.isSuccess) {
-        AppSnackbar.showError(context, response.message.isNotEmpty ? response.message : 'Failed to save contact to server');
+        AppSnackbar.showError(
+          context,
+          response.message.isNotEmpty
+              ? response.message
+              : 'Failed to save contact to server',
+        );
         return;
       }
 
@@ -152,7 +165,7 @@ class _AddContactViewState extends State<AddContactView> {
           ? 'Contact updated successfully'
           : 'Contact saved successfully',
     );
-    
+
     Navigator.of(context).pop(true);
   }
 
@@ -161,105 +174,72 @@ class _AddContactViewState extends State<AddContactView> {
     final bool isEditMode = widget.contactIndex != null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        leadingWidth: 56,
-        leading: Center(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).maybePop(),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  CupertinoIcons.chevron_left,
-                  color: Colors.black,
-                  size: 18,
-                ),
-              ),
-            ),
-          ),
-        ),
-        title: Text(
-          isEditMode ? 'Edit Contact' : 'Add Contact',
-          style: GoogleFonts.poppins(
-            fontSize: 20.0.sp,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF0C1D37),
-          ),
-        ),
+      backgroundColor: Color(0xFFF8FAFC),
+      appBar: figmaAppBar(
+        context,
+        title: isEditMode ? 'Edit Contact' : 'Add Contact',
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(24.0.w),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 8),
+                SizedBox(height: 8.w),
                 Text(
                   'Name',
                   style: GoogleFonts.poppins(
                     fontSize: 14.0.sp,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0C1D37),
+                    color: Color(0xFF0C1D37),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.w),
                 TextFormField(
                   controller: _nameController,
                   style: GoogleFonts.poppins(
                     fontSize: 15.0.sp,
-                    color: const Color(0xFF0C1D37),
+                    color: Color(0xFF0C1D37),
                     fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Enter Name',
-                    hintStyle: GoogleFonts.poppins(color: const Color(0xFF94A3B8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    hintStyle: GoogleFonts.poppins(color: Color(0xFF94A3B8)),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 14.w,
+                    ),
                     filled: true,
                     fillColor: Colors.white,
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       CupertinoIcons.person,
                       color: Color(0xFF94A3B8),
-                      size: 20,
+                      size: 20.w,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(color: Color(0xFFE2E8F0)),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(color: Color(0xFFE2E8F0)),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFF0066FF), width: 1.5),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(
+                        color: Color(0xFF0066FF),
+                        width: 1.5.w,
+                      ),
                     ),
                     errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Colors.red, width: 1.0),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(color: Colors.red, width: 1.0.w),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(color: Colors.red, width: 1.5.w),
                     ),
                   ),
                   validator: (value) {
@@ -269,53 +249,59 @@ class _AddContactViewState extends State<AddContactView> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20.w),
                 Text(
                   'Relation with Child',
                   style: GoogleFonts.poppins(
                     fontSize: 14.0.sp,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0C1D37),
+                    color: Color(0xFF0C1D37),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.w),
                 TextFormField(
                   controller: _relationController,
                   style: GoogleFonts.poppins(
                     fontSize: 15.0.sp,
-                    color: const Color(0xFF0C1D37),
+                    color: Color(0xFF0C1D37),
                     fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
                     hintText: 'e.g. Mother, Father',
-                    hintStyle: GoogleFonts.poppins(color: const Color(0xFF94A3B8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    hintStyle: GoogleFonts.poppins(color: Color(0xFF94A3B8)),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 14.w,
+                    ),
                     filled: true,
                     fillColor: Colors.white,
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       CupertinoIcons.group,
                       color: Color(0xFF94A3B8),
-                      size: 20,
+                      size: 20.w,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(color: Color(0xFFE2E8F0)),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(color: Color(0xFFE2E8F0)),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFF0066FF), width: 1.5),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(
+                        color: Color(0xFF0066FF),
+                        width: 1.5.w,
+                      ),
                     ),
                     errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Colors.red, width: 1.0),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(color: Colors.red, width: 1.0.w),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(color: Colors.red, width: 1.5.w),
                     ),
                   ),
                   validator: (value) {
@@ -325,54 +311,60 @@ class _AddContactViewState extends State<AddContactView> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20.w),
                 Text(
                   'Phone Number',
                   style: GoogleFonts.poppins(
                     fontSize: 14.0.sp,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0C1D37),
+                    color: Color(0xFF0C1D37),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.w),
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   style: GoogleFonts.poppins(
                     fontSize: 15.0.sp,
-                    color: const Color(0xFF0C1D37),
+                    color: Color(0xFF0C1D37),
                     fontWeight: FontWeight.w500,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Enter Phone Number',
-                    hintStyle: GoogleFonts.poppins(color: const Color(0xFF94A3B8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    hintStyle: GoogleFonts.poppins(color: Color(0xFF94A3B8)),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 14.w,
+                    ),
                     filled: true,
                     fillColor: Colors.white,
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       CupertinoIcons.phone,
                       color: Color(0xFF94A3B8),
-                      size: 20,
+                      size: 20.w,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(color: Color(0xFFE2E8F0)),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(color: Color(0xFFE2E8F0)),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFF0066FF), width: 1.5),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(
+                        color: Color(0xFF0066FF),
+                        width: 1.5.w,
+                      ),
                     ),
                     errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Colors.red, width: 1.0),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(color: Colors.red, width: 1.0.w),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                      borderRadius: BorderRadius.circular(16.w),
+                      borderSide: BorderSide(color: Colors.red, width: 1.5.w),
                     ),
                   ),
                   validator: (value) {
@@ -382,23 +374,23 @@ class _AddContactViewState extends State<AddContactView> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 40),
+                SizedBox(height: 40.w),
                 SizedBox(
                   width: double.infinity,
-                  height: 54,
+                  height: 54.w,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0066FF),
+                      backgroundColor: Color(0xFF0066FF),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(16.w),
                       ),
                       elevation: 0,
                     ),
                     onPressed: _isSubmitting ? null : _saveContact,
                     child: _isSubmitting
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
+                        ? SizedBox(
+                            width: 22.w,
+                            height: 22.w,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
                               color: Colors.white,

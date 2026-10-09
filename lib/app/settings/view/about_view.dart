@@ -1,3 +1,4 @@
+import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
@@ -13,17 +14,17 @@ class AboutView extends StatelessWidget {
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+          icon: Icon(Icons.arrow_back_ios_new, size: 18.w),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: const Text('About'),
+        title: Text('About'),
         backgroundColor: AppColors.surfaceColor,
         elevation: 0,
         foregroundColor: AppColors.textPrimary,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppSizes.paddingL),
-        children: const [
+        padding: EdgeInsets.all(AppSizes.paddingL),
+        children: [
           SectionCard(
             child: Column(
               children: [
