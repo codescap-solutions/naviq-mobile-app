@@ -2,7 +2,6 @@ import 'package:child_track/app/home/view_model/bloc/homepage_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 
 import '../../../core/utils/responsive_font.dart';
@@ -44,12 +43,6 @@ class _GeoFencingViewState extends State<GeoFencingView> {
     return SharedPrefsService().getString('child_name') ?? 'Ananya';
   }
 
-  String _getChildEmoji() {
-    final name = _getChildName().toLowerCase();
-    if (name.contains('rohan')) return '👦';
-    return '👧';
-  }
-
   @override
   void initState() {
     super.initState();
@@ -85,8 +78,8 @@ class _GeoFencingViewState extends State<GeoFencingView> {
     }
 
     return Scaffold(
-      backgroundColor: Color(0xFFF8FAFC),
-      appBar: figmaAppBar(context, title: 'Geofencing'),
+      backgroundColor: Color(0xFFF7F8FA),
+      appBar: figmaAppBar(context, title: 'Geoguard'),
       body: Column(
         children: [
           _buildChildHeaderRow(activeCount),
@@ -278,9 +271,13 @@ class _GeoFencingViewState extends State<GeoFencingView> {
     );
   }
 
-  /// Figma "Frame 2425": 42px band holding two 28px pills at x12 / gap 12.
+  /// Two small white pills under the header: child name, active-fence count.
   Widget _buildChildHeaderRow(int activeCount) {
-    final pillText = FigmaText.poppins(14, weight: FontWeight.w700);
+    final pillText = FigmaText.poppins(
+      12,
+      weight: FontWeight.w500,
+      lineHeight: 20,
+    );
     return Container(
       color: Colors.white,
       height: 42.w,
@@ -288,37 +285,12 @@ class _GeoFencingViewState extends State<GeoFencingView> {
       alignment: Alignment.topLeft,
       child: Row(
         children: [
-          _headerPill(
-            color: Color(0xFFEFF6FF),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "${_getChildEmoji()} ${_getChildName()}",
-                  style: pillText.copyWith(color: FigmaColors.primary),
-                ),
-                SizedBox(width: 4.w),
-                Icon(
-                  Icons.arrow_drop_down_rounded,
-                  color: FigmaColors.primary,
-                  size: 20.w,
-                ),
-              ],
-            ),
-          ),
+          _headerPill(Text(_getChildName(), style: pillText)),
           SizedBox(width: 12.w),
           _headerPill(
-            color: Color(0xFFEAF8F0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "$activeCount active ${activeCount == 1 ? 'fence' : 'fences'}",
-                  style: pillText.copyWith(color: Color(0xFF22C55E)),
-                ),
-                SizedBox(width: 4.w),
-                Icon(Icons.check_rounded, color: Color(0xFF22C55E), size: 16.w),
-              ],
+            Text(
+              "$activeCount active ${activeCount == 1 ? 'fence' : 'fences'}",
+              style: pillText,
             ),
           ),
         ],
@@ -326,13 +298,13 @@ class _GeoFencingViewState extends State<GeoFencingView> {
     );
   }
 
-  Widget _headerPill({required Color color, required Widget child}) {
+  Widget _headerPill(Widget child) {
     return Container(
       height: 28.w,
-      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      padding: EdgeInsets.symmetric(horizontal: 14.w),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: color,
+        color: Color(0xFFF7F8FA),
         borderRadius: BorderRadius.circular(14.w),
       ),
       child: child,
@@ -340,18 +312,18 @@ class _GeoFencingViewState extends State<GeoFencingView> {
   }
 
   /// Figma "SUGGESTED FENCES": 18px caption line, aligned with the cards.
-  Widget _buildSuggestedFencesHeader() => _sectionCaption("SUGGESTED FENCES");
+  Widget _buildSuggestedFencesHeader() => _sectionCaption("Suggested Fences");
 
   Widget _sectionCaption(String text) => SizedBox(
-    height: 18.w,
+    height: 24.w,
     child: Text(
       text,
       style: FigmaText.poppins(
-        11,
-        weight: FontWeight.w800,
-        color: Color(0xFF94A3B8),
-        lineHeight: 18,
-        letterSpacing: 0.8,
+        16,
+        weight: FontWeight.w600,
+        color: Color(0xFF0F1320),
+        lineHeight: 24,
+        letterSpacing: 0.2,
       ),
     ),
   );
@@ -365,14 +337,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
       margin: EdgeInsets.only(bottom: 8.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16.w),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF0C1D37).withValues(alpha: 0.02),
-            blurRadius: 10.w,
-            offset: Offset(0, 2.w),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12.w),
       ),
       child: ListTile(
         minTileHeight: 50.w,
@@ -419,16 +384,17 @@ class _GeoFencingViewState extends State<GeoFencingView> {
         },
         title: Text(
           name,
-          style: GoogleFonts.poppins(
-            fontSize: 14.0.sp,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF0C1D37),
+          style: FigmaText.poppins(
+            16,
+            weight: FontWeight.w400,
+            color: Color(0xFF0F1320),
+            lineHeight: 24,
           ),
         ),
         trailing: Icon(
           CupertinoIcons.chevron_right,
-          color: Color(0xFF94A3B8),
-          size: 16.w,
+          color: Color(0xFF0F1320),
+          size: 14.w,
         ),
       ),
     );
@@ -530,7 +496,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
     return address;
   }
 
-  Widget _buildPresetGridHeader() => _sectionCaption("QUICK ADD GEOFENCE");
+  Widget _buildPresetGridHeader() => _sectionCaption("Quick Add Geofence");
 
   Widget _buildPresetGridContent() {
     return GridView.count(

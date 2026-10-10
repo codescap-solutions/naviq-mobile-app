@@ -23,28 +23,22 @@ class GeoPlaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color iconBgColor;
-    IconData iconData;
-
-    final cat = (category ?? title).toLowerCase();
+    final cat = '${category ?? ''} $title'.toLowerCase();
+    final IconData iconData;
     if (cat.contains('home')) {
-      iconBgColor = const Color(0xFF0C80E0); // Solid blue
-      iconData = Icons.home_rounded;
+      iconData = Icons.home_outlined;
     } else if (cat.contains('school')) {
-      iconBgColor = const Color(0xFF10B981); // Solid green
-      iconData = Icons.school_rounded;
+      iconData = Icons.menu_book_outlined;
     } else if (cat.contains('cricket') ||
         cat.contains('ground') ||
         cat.contains('play') ||
         cat.contains('sport')) {
-      iconBgColor = const Color(0xFF6366F1); // Solid indigo/purple
-      iconData = Icons.sports_cricket_rounded;
+      iconData = Icons.sports_basketball_outlined;
     } else {
-      iconBgColor = const Color(0xFFF59E0B); // Solid amber
-      iconData = Icons.location_on_rounded;
+      iconData = Icons.location_on_outlined;
     }
 
-    // Figma "CARD": 400x94, 46px icon at (16,24), text column 12px right of it,
+    // Figma "CARD": 94 high, 46 icon tile at (16,24), text 12px right of it,
     // 48x28 toggle at the right edge, 8px between cards.
     return Container(
       height: 94.w,
@@ -52,14 +46,7 @@ class GeoPlaceCard extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20.w),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF0C1D37).withValues(alpha: 0.03),
-            blurRadius: 12.w,
-            offset: Offset(0, 4.w),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12.w),
       ),
       child: Row(
         children: [
@@ -67,12 +54,10 @@ class GeoPlaceCard extends StatelessWidget {
             height: 46.w,
             width: 46.w,
             decoration: BoxDecoration(
-              color: iconBgColor,
+              color: Color(0xFFF7F8FA),
               shape: BoxShape.circle,
             ),
-            child: Center(
-              child: Icon(iconData, color: Colors.white, size: 24.w),
-            ),
+            child: Icon(iconData, color: Color(0xFF0F1320), size: 22.w),
           ),
           SizedBox(width: 12.w),
           Expanded(
@@ -86,8 +71,8 @@ class GeoPlaceCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: FigmaText.poppins(
                     16,
-                    weight: FontWeight.w800,
-                    color: Color(0xFF0C1D37),
+                    weight: FontWeight.w600,
+                    color: Color(0xFF0F1320),
                     lineHeight: 24,
                   ),
                 ),
@@ -95,13 +80,13 @@ class GeoPlaceCard extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      "${radius}m radius • ",
-                      style: _detail(Color(0xFF64748B), FontWeight.w500),
+                      "$radius m radius  ·  ",
+                      style: _detail(Color(0xFF4B5567), FontWeight.w400),
                     ),
                     if (toggleValue) ...[
                       Text(
                         "Active",
-                        style: _detail(Color(0xFF22C55E), FontWeight.w700),
+                        style: _detail(Color(0xFF34B27B), FontWeight.w600),
                       ),
                       SizedBox(width: 12.w),
                     ],
@@ -109,7 +94,7 @@ class GeoPlaceCard extends StatelessWidget {
                       onTap: onTap,
                       child: Text(
                         "Edit",
-                        style: _detail(FigmaColors.primary, FontWeight.w700),
+                        style: _detail(Color(0xFF2C67F0), FontWeight.w600),
                       ),
                     ),
                   ],
@@ -121,7 +106,7 @@ class GeoPlaceCard extends StatelessWidget {
           FigmaToggle(
             value: toggleValue,
             onChanged: onToggle ?? (value) {},
-            activeColor: Color(0xFF22C55E),
+            activeColor: Color(0xFF2C67F0),
             width: 48,
             height: 28,
             knob: 22,
@@ -132,5 +117,5 @@ class GeoPlaceCard extends StatelessWidget {
   }
 
   TextStyle _detail(Color color, FontWeight weight) =>
-      FigmaText.poppins(13, weight: weight, color: color, lineHeight: 18);
+      FigmaText.poppins(12, weight: weight, color: color, lineHeight: 16);
 }

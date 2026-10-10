@@ -128,7 +128,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
 
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      final yesterday = today.subtract(const Duration(days: 1));
+      final yesterday = today.subtract(Duration(days: 1));
       final dateToCheck = DateTime(dt.year, dt.month, dt.day);
 
       if (dateToCheck == today) {
@@ -165,10 +165,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
       value: injector<HomepageBloc>(),
       child: Scaffold(
         backgroundColor: AppColors.backgroundColor,
-        appBar: figmaAppBar(
-          context,
-          title: 'Kid Location Details',
-        ),
+        appBar: figmaAppBar(context, title: 'Kid Location Details'),
         body: BlocBuilder<HomepageBloc, HomepageState>(
           builder: (context, state) {
             if (state is HomepageSuccess) {
@@ -181,9 +178,9 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
 
               if (trip == null) {
                 if (state.isLoading || state.isLoadingTrips) {
-                  return const ChildLocationDetailShimmer();
+                  return ChildLocationDetailShimmer();
                 }
-                return const Center(child: Text('No trip data available'));
+                return Center(child: Text('No trip data available'));
               }
 
               return SingleChildScrollView(
@@ -195,23 +192,23 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
                         clipBehavior: Clip.none,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(
-                              left: AppSizes.paddingM,
-                              right: AppSizes.paddingM,
-                              //bottom: AppSizes.paddingM,
-                              top: AppSizes.paddingM,
+                            padding: EdgeInsets.only(
+                              left: AppSizes.paddingM.w,
+                              right: AppSizes.paddingM.w,
+                              //bottom: AppSizes.paddingM.w,
+                              top: AppSizes.paddingM.w,
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(
-                                AppSizes.radiusXL,
+                                AppSizes.radiusXL.w,
                               ),
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(
-                                    AppSizes.radiusXL,
+                                    AppSizes.radiusXL.w,
                                   ),
                                 ),
-                                // padding: const EdgeInsets.all(AppSizes.paddingM),
+                                // padding: EdgeInsets.all(AppSizes.paddingM.w),
                                 child: Stack(
                                   children: [
                                     MapViewWidget(
@@ -220,7 +217,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
                                         // Use a post-frame callback or small delay to ensure map size is calculated
                                         // before fitting bounds, though map is usually ready.
                                         Future.delayed(
-                                          const Duration(milliseconds: 300),
+                                          Duration(milliseconds: 300),
                                           () {
                                             if (mounted) _fitBounds(trip!);
                                           },
@@ -279,8 +276,8 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
                                     ),
                                     // Zoom Controls
                                     Positioned(
-                                      top: 10,
-                                      right: 10,
+                                      top: 10.w,
+                                      right: 10.w,
                                       child: Column(
                                         children: [
                                           _buildZoomButton(
@@ -291,7 +288,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
                                               );
                                             },
                                           ),
-                                          const SizedBox(height: 8),
+                                          SizedBox(height: 8.w),
                                           _buildZoomButton(
                                             icon: Icons.remove,
                                             onPressed: () {
@@ -310,9 +307,9 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
                           ),
 
                           Positioned(
-                            bottom: 10,
-                            right: 30,
-                            left: 30,
+                            bottom: 10.w,
+                            right: 30.w,
+                            left: 30.w,
                             child: _buildTripTodayCard(
                               context,
                               trip,
@@ -327,7 +324,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
                 ),
               );
             }
-            return const ChildLocationDetailShimmer();
+            return ChildLocationDetailShimmer();
           },
         ),
       ),
@@ -339,22 +336,22 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
     required VoidCallback onPressed,
   }) {
     return Container(
-      width: 36,
-      height: 36,
+      width: 36.w,
+      height: 36.w,
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            blurRadius: 4.w,
+            offset: Offset(0, 2.w),
           ),
         ],
       ),
       child: IconButton(
         padding: EdgeInsets.zero,
-        icon: Icon(icon, color: AppColors.textPrimary, size: 20),
+        icon: Icon(icon, color: AppColors.textPrimary, size: 20.w),
         onPressed: onPressed,
       ),
     );
@@ -366,19 +363,19 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
     bool withMargin = true,
   }) {
     return Container(
-      height: 85,
+      height: 85.w,
       margin: withMargin
-          ? const EdgeInsets.symmetric(horizontal: AppSizes.paddingL)
+          ? EdgeInsets.symmetric(horizontal: AppSizes.paddingL.w)
           : EdgeInsets.zero,
-      padding: const EdgeInsets.all(AppSizes.paddingS),
+      padding: EdgeInsets.all(AppSizes.paddingS.w),
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL.w),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 10.w,
+            offset: Offset(0, 4.w),
           ),
         ],
       ),
@@ -386,7 +383,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
         children: [
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: EdgeInsets.all(8.0.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -399,33 +396,37 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
                     overflow: TextOverflow.ellipsis,
                   ),
 
-                  // const SizedBox(height: AppSizes.spacingXS),
-                  const Spacer(),
+                  // SizedBox(height: AppSizes.spacingXS.w),
+                  Spacer(),
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSizes.paddingXS,
-                          vertical: AppSizes.paddingXS,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSizes.paddingXS.w,
+                          vertical: AppSizes.paddingXS.w,
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.backgroundColor,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusS.w,
+                          ),
                         ),
                         child: Text(
                           '${trip.eventsCount} Events',
                           style: AppTextStyles.caption,
                         ),
                       ),
-                      const SizedBox(width: AppSizes.spacingS),
+                      SizedBox(width: AppSizes.spacingS.w),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSizes.paddingS,
-                          vertical: AppSizes.paddingXS,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSizes.paddingS.w,
+                          vertical: AppSizes.paddingXS.w,
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryColor.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusS.w,
+                          ),
                         ),
                         child: Text(
                           _formatDate(trip.endTime),
@@ -441,18 +442,18 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
               ),
             ),
           ),
-          const SizedBox(width: AppSizes.spacingS),
+          SizedBox(width: AppSizes.spacingS.w),
           CommonButton(
             padding: EdgeInsets.zero,
-            width: 80,
+            width: 80.w,
             text: 'View all',
             fontSize: 12.0.sp,
             textColor: AppColors.surfaceColor,
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const TripsView()),
+              MaterialPageRoute(builder: (_) => TripsView()),
             ),
-            height: 30,
+            height: 30.w,
           ),
         ],
       ),
@@ -466,7 +467,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
     Cards? cards,
   ) {
     return Padding(
-      padding: const EdgeInsets.all(AppSizes.paddingM),
+      padding: EdgeInsets.all(AppSizes.paddingM.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -478,16 +479,16 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
 
               // Activity Today Card
               _buildActivityTodayCard(context, trip),
-              const SizedBox(height: AppSizes.spacingM),
+              SizedBox(height: AppSizes.spacingM.w),
 
               // // ScreentimeCard
               // if (cards?.screentimeYesterday != null)
               //   _buildScreentimeCard(context, cards!.screentimeYesterday),
-              // const SizedBox(height: AppSizes.spacingM),
+              // SizedBox(height: AppSizes.spacingM.w),
 
               // // Infinite Real-Time Tracking Card
               // _buildInfiniteTrackingCard(),
-              const SizedBox(height: AppSizes.spacingXL),
+              SizedBox(height: AppSizes.spacingXL.w),
             ],
           ),
         ],
@@ -498,16 +499,16 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
   // Activity Today Card
   Widget _buildActivityTodayCard(BuildContext context, TripSegment trip) {
     return Container(
-      // margin: const EdgeInsets.all(AppSizes.paddingM),
-      padding: const EdgeInsets.all(AppSizes.paddingM),
+      // margin: EdgeInsets.all(AppSizes.paddingM.w),
+      padding: EdgeInsets.all(AppSizes.paddingM.w),
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL.w),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 10.w,
+            offset: Offset(0, 4.w),
           ),
         ],
       ),
@@ -520,7 +521,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: AppSizes.spacingM),
+          SizedBox(height: AppSizes.spacingM.w),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -546,7 +547,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: AppSizes.spacingS),
+                    SizedBox(height: AppSizes.spacingS.w),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -580,13 +581,13 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
                       alignment: Alignment.center,
                       children: [
                         SizedBox(
-                          width: 60,
-                          height: 60,
+                          width: 60.w,
+                          height: 60.w,
                           child: CircularProgressIndicator(
                             value: trip.progress / 100,
                             strokeWidth: 8,
                             backgroundColor: AppColors.borderColor,
-                            valueColor: const AlwaysStoppedAnimation<Color>(
+                            valueColor: AlwaysStoppedAnimation<Color>(
                               AppColors.primaryColor,
                             ),
                           ),
@@ -601,7 +602,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
                         ),
                       ],
                     ),
-                    const SizedBox(width: AppSizes.spacingS),
+                    SizedBox(width: AppSizes.spacingS.w),
                     Expanded(
                       child: Text(
                         'more distance walked than last day',
@@ -617,9 +618,9 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.spacingM),
+          SizedBox(height: AppSizes.spacingM.w),
           Divider(color: AppColors.borderColor, thickness: 1),
-          const SizedBox(height: AppSizes.spacingXS),
+          SizedBox(height: AppSizes.spacingXS.w),
           Row(
             children: [
               Expanded(
@@ -630,19 +631,19 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
                   ),
                 ),
               ),
-              const SizedBox(width: AppSizes.spacingS),
+              SizedBox(width: AppSizes.spacingS.w),
               SizedBox(
-                height: 32,
+                height: 32.w,
                 child: OutlinedButton(
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const TripsView()),
+                    MaterialPageRoute(builder: (_) => TripsView()),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.textPrimary),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    side: BorderSide(color: AppColors.textPrimary),
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.w),
                     ),
                   ),
                   child: Text(
@@ -678,7 +679,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
           maxLines: isRoute ? 2 : 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 2), // Fixed width to height for Column
+        SizedBox(height: 2), // Fixed width to height for Column
         Text(
           label,
           style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
@@ -703,11 +704,11 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
   //   }
 
   //   return Container(
-  //     // margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
-  //     padding: const EdgeInsets.all(AppSizes.paddingM),
+  //     // margin: EdgeInsets.symmetric(horizontal: AppSizes.paddingL.w),
+  //     padding: EdgeInsets.all(AppSizes.paddingM.w),
   //     decoration: BoxDecoration(
   //       color: AppColors.primaryColor.withValues(alpha: 0.1),
-  //       borderRadius: BorderRadius.circular(AppSizes.radiusL),
+  //       borderRadius: BorderRadius.circular(AppSizes.radiusL.w),
   //     ),
   //     child: Row(
   //       children: [
@@ -716,15 +717,15 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
   //           height: 48,
   //           decoration: BoxDecoration(
   //             color: AppColors.surfaceColor,
-  //             borderRadius: BorderRadius.circular(AppSizes.radiusM),
+  //             borderRadius: BorderRadius.circular(AppSizes.radiusM.w),
   //           ),
-  //           child: const Icon(
+  //           child: Icon(
   //             Icons.grid_view,
   //             color: AppColors.primaryColor,
   //             size: 24,
   //           ),
   //         ),
-  //         const SizedBox(width: AppSizes.spacingXS),
+  //         SizedBox(width: AppSizes.spacingXS.w),
   //         Expanded(
   //           child: Column(
   //             crossAxisAlignment: CrossAxisAlignment.start,
@@ -735,7 +736,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
   //                   fontWeight: FontWeight.bold,
   //                 ),
   //               ),
-  //               const SizedBox(width: 2),
+  //               SizedBox(width: 2),
   //               Row(
   //                 children: [
   //                   // App icons placeholder
@@ -744,37 +745,37 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
   //                     height: 15,
   //                     decoration: BoxDecoration(
   //                       color: AppColors.success,
-  //                       borderRadius: BorderRadius.circular(AppSizes.radiusS),
+  //                       borderRadius: BorderRadius.circular(AppSizes.radiusS.w),
   //                     ),
   //                   ),
-  //                   const SizedBox(width: 2),
+  //                   SizedBox(width: 2),
   //                   Container(
   //                     width: 15,
   //                     height: 15,
   //                     decoration: BoxDecoration(
   //                       color: AppColors.error,
-  //                       borderRadius: BorderRadius.circular(AppSizes.radiusS),
+  //                       borderRadius: BorderRadius.circular(AppSizes.radiusS.w),
   //                     ),
   //                   ),
-  //                   const SizedBox(width: 2),
+  //                   SizedBox(width: 2),
   //                   Container(
   //                     width: 15,
   //                     height: 15,
   //                     decoration: BoxDecoration(
   //                       color: AppColors.warning,
-  //                       borderRadius: BorderRadius.circular(AppSizes.radiusS),
+  //                       borderRadius: BorderRadius.circular(AppSizes.radiusS.w),
   //                     ),
   //                   ),
-  //                   const SizedBox(width: 2),
+  //                   SizedBox(width: 2),
   //                   Container(
   //                     width: 15,
   //                     height: 15,
   //                     decoration: BoxDecoration(
   //                       color: AppColors.info,
-  //                       borderRadius: BorderRadius.circular(AppSizes.radiusS),
+  //                       borderRadius: BorderRadius.circular(AppSizes.radiusS.w),
   //                     ),
   //                   ),
-  //                   const SizedBox(width: AppSizes.spacingXS),
+  //                   SizedBox(width: AppSizes.spacingXS.w),
   //                   Text(
   //                     'and more yesterday',
   //                     style: AppTextStyles.caption.copyWith(
@@ -794,7 +795,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
   //           textColor: AppColors.surfaceColor,
   //           onPressed: () => Navigator.push(
   //             context,
-  //             MaterialPageRoute(builder: (_) => const TripsView()),
+  //             MaterialPageRoute(builder: (_) => TripsView()),
   //           ),
   //           height: 26,
   //         ),
@@ -806,11 +807,11 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
   // Infinite Real-Time Tracking Card (Bottom)
   //   Widget _buildInfiniteTrackingCard() {
   //     return Container(
-  //       // margin: const EdgeInsets.all(AppSizes.paddingL),
-  //       padding: const EdgeInsets.all(AppSizes.paddingL),
+  //       // margin: EdgeInsets.all(AppSizes.paddingL.w),
+  //       padding: EdgeInsets.all(AppSizes.paddingL.w),
   //       decoration: BoxDecoration(
   //         color: AppColors.primaryColor.withValues(alpha: 0.1),
-  //         borderRadius: BorderRadius.circular(AppSizes.radiusL),
+  //         borderRadius: BorderRadius.circular(AppSizes.radiusL.w),
   //       ),
   //       child: Column(
   //         crossAxisAlignment: CrossAxisAlignment.start,
@@ -822,7 +823,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
   //               color: AppColors.primaryColor,
   //             ),
   //           ),
-  //           const SizedBox(height: AppSizes.spacingM),
+  //           SizedBox(height: AppSizes.spacingM.w),
   //           Row(
   //             children: [
   //               Expanded(
@@ -831,8 +832,8 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
   //                   children: List.generate(
   //                     4,
   //                     (index) => Padding(
-  //                       padding: const EdgeInsets.only(
-  //                         bottom: AppSizes.spacingXS,
+  //                       padding: EdgeInsets.only(
+  //                         bottom: AppSizes.spacingXS.w,
   //                       ),
   //                       child: Row(
   //                         children: [
@@ -841,7 +842,7 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
   //                             size: 16,
   //                             color: AppColors.primaryColor,
   //                           ),
-  //                           const SizedBox(width: AppSizes.spacingXS),
+  //                           SizedBox(width: AppSizes.spacingXS.w),
   //                           Text(
   //                             'Unlimited Updated, just for you',
   //                             style: AppTextStyles.caption,
@@ -858,9 +859,9 @@ class _ChildLocationDetailViewState extends State<ChildLocationDetailView> {
   //                 height: 60,
   //                 decoration: BoxDecoration(
   //                   color: AppColors.surfaceColor,
-  //                   borderRadius: BorderRadius.circular(AppSizes.radiusM),
+  //                   borderRadius: BorderRadius.circular(AppSizes.radiusM.w),
   //                 ),
-  //                 child: const Icon(
+  //                 child: Icon(
   //                   Icons.card_giftcard,
   //                   color: AppColors.primaryColor,
   //                   size: 32,
@@ -961,15 +962,15 @@ class _RouteRendererState extends State<_RouteRenderer> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(
-            width: 14,
-            height: 14,
+          SizedBox(
+            width: 14.w,
+            height: 14.w,
             child: CircularProgressIndicator(
               strokeWidth: 2,
               color: AppColors.primaryColor,
             ),
           ),
-          const SizedBox(width: AppSizes.spacingXS),
+          SizedBox(width: AppSizes.spacingXS.w),
           Text(
             'Route',
             style: AppTextStyles.caption.copyWith(
@@ -996,7 +997,7 @@ class _RouteRendererState extends State<_RouteRenderer> {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(width: AppSizes.spacingXS),
+        SizedBox(width: AppSizes.spacingXS.w),
         Text(
           'Route',
           style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),

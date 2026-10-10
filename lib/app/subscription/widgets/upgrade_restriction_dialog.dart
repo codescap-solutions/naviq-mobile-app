@@ -121,49 +121,49 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 24.w),
-            SizedBox(
-              width: double.infinity,
-              height: 48.w,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF0066FF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14.w),
-                  ),
-                  elevation: 0,
+            // Min height (not a fixed one) + explicit padding so the label is
+            // never clipped when the system font size is larger.
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF0066FF),
+                minimumSize: Size(double.infinity, 48.w),
+                padding: EdgeInsets.symmetric(vertical: 14.w),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14.w),
                 ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  SubscriptionPopup.show(context, suggestedTier);
-                },
-                child: Text(
-                  ctaText,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14.5.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                elevation: 0,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                SubscriptionPopup.show(context, suggestedTier);
+              },
+              child: Text(
+                ctaText,
+                style: GoogleFonts.poppins(
+                  fontSize: 14.5.sp,
+                  fontWeight: FontWeight.bold,
+                  height: 1.3,
+                  color: Colors.white,
                 ),
               ),
             ),
             SizedBox(height: 8.w),
-            SizedBox(
-              width: double.infinity,
-              height: 44.w,
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14.w),
-                  ),
+            TextButton(
+              style: TextButton.styleFrom(
+                minimumSize: Size(double.infinity, 44.w),
+                padding: EdgeInsets.symmetric(vertical: 12.w),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14.w),
                 ),
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Not Now',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14.0.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
-                  ),
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Not Now',
+                style: GoogleFonts.poppins(
+                  fontSize: 14.0.sp,
+                  fontWeight: FontWeight.w600,
+                  height: 1.3,
+                  color: Color(0xFF64748B),
                 ),
               ),
             ),

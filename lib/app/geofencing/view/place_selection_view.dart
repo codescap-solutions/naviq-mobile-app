@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:google_fonts/google_fonts.dart';
 import 'location_selections.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../model/geofence_model.dart';
 import 'widgets/preset_place_card_body.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 
@@ -9,7 +11,16 @@ class PlaceSelectionScreen extends StatefulWidget {
   final String? childId;
   final String? parentId;
 
-  const PlaceSelectionScreen({super.key, this.childId, this.parentId});
+  /// When set (e.g. from a trip's start/end), the new fence is created at this
+  /// spot instead of letting the parent pick one on the map first.
+  final LatLng? location;
+
+  const PlaceSelectionScreen({
+    super.key,
+    this.childId,
+    this.parentId,
+    this.location,
+  });
 
   @override
   State<PlaceSelectionScreen> createState() => _PlaceSelectionScreenState();
@@ -51,7 +62,15 @@ class _PlaceSelectionScreenState extends State<PlaceSelectionScreen> {
           parentId: widget.parentId,
           selectedCategory: category,
           customName: customName,
-          isCurrentLocation: isCurrentLocation,
+          isCurrentLocation: isCurrentLocation && widget.location == null,
+          geofence: widget.location == null
+              ? null
+              : Geofence(
+                  name: customName,
+                  address: customName,
+                  latitude: widget.location!.latitude,
+                  longitude: widget.location!.longitude,
+                ),
         ),
       ),
     ).then((result) {

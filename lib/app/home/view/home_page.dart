@@ -30,6 +30,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../geofencing/view/geo_fencing_view.dart';
 import '../../geofencing/view_model/bloc/geofence_bloc.dart';
 import '../../geofencing/view_model/bloc/geofence_event.dart';
+import '../../settings/view/help_view.dart';
 import '../../settings/view/settings_view.dart';
 import '../../settings/view/devices_view.dart';
 import '../../notification/view/notification_page.dart';
@@ -292,12 +293,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               }
             });
           } else if (message.data['type'] == 'TIME_EXTENSION_REQUEST') {
+            injector<FirebaseNotificationService>().takePendingActionTap();
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 _showTimeExtensionApprovalSheet(message.data);
               }
             });
           } else if (message.data['type'] == 'LOGOUT_REQUEST') {
+            injector<FirebaseNotificationService>().takePendingActionTap();
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 _showLogoutApprovalSheet(message.data);
@@ -343,6 +346,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     // Check if there is a pending request on startup
     _checkAndShowPendingLocationRequest();
+    _showPendingActionTap();
 
     // Extract navigation arguments for pre-selected tab index
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -431,6 +435,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkAndShowPendingLocationRequest();
+      _showPendingActionTap();
       _refreshOnResume();
     }
   }
@@ -451,6 +456,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
     _lastResumeRefreshAt = now;
     injector<HomepageBloc>().add(const GetHomepageData(isSilentRefresh: true));
+  }
+
+  /// Open the approve / deny sheet for a "child wants to log out / needs more
+  /// time" notification that was tapped before this screen was listening.
+  void _showPendingActionTap() {
+    final message = injector<FirebaseNotificationService>()
+        .takePendingActionTap();
+    if (message == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (message.data['type'] == 'LOGOUT_REQUEST') {
+        _showLogoutApprovalSheet(message.data);
+      } else if (message.data['type'] == 'TIME_EXTENSION_REQUEST') {
+        _showTimeExtensionApprovalSheet(message.data);
+      }
+    });
   }
 
   void _checkAndShowPendingLocationRequest() {
@@ -2619,8 +2640,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         // Figma home: at rest the sheet shows the location card, Scroll /
         // Geo Guard and the WHOLE Today's Route Map card above the nav bar
         // (~575pt of content). The map gets whatever height is left above.
-        final double kRestSheetContent = 552
-            .w; // 548 of content + 4 so the route card's bottom border clears the nav bar
+        final double kRestSheetContent = 531
+            .w; // 527 of content (feature cards are 140 high) + 4 so the route card's bottom border clears the nav bar
         final double navHeight =
             MediaQueryData.fromView(View.of(context)).padding.bottom + 93.w;
         final double mapHeaderExtent =
@@ -2847,7 +2868,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                 colors: [
                                                   Color(0x00000000),
                                                   Color(0x00000000),
-                                                  Color(0x66000000),
+                                                  Color(0x33000000),
                                                 ],
                                                 stops: [0.0, 0.5, 1.0],
                                               ),
@@ -3320,46 +3341,64 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             Positioned(
                               top: mapHeaderExtent - 60,
                               right: 16,
-                              child: GestureDetector(
-                                onTap: () {
-                                  final target =
-                                      _viewingSharedChild &&
-                                          _activeSharedChildData != null
-                                      ? LatLng(
-                                          _activeSharedChildData!['lat'],
-                                          _activeSharedChildData!['lng'],
-                                        )
-                                      : (state.currentLocation != null
-                                            ? LatLng(
-                                                state.currentLocation!.lat,
-                                                state.currentLocation!.lng,
-                                              )
-                                            : null);
-                                  if (target != null) {
-                                    _mapBackgroundKey.currentState?._animateTo(
-                                      target,
-                                      zoom: 16.5,
-                                    );
-                                  }
-                                },
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.15),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
+                              // Only offered when the map is at its largest view
+                              // (sheet fully down); the Figma home hides it.
+                              child: ValueListenableBuilder<double?>(
+                                valueListenable: _sheetExtent,
+                                builder: (context, extent, child) {
+                                  final mapMax =
+                                      extent != null &&
+                                      extent <= minSheet + 0.02;
+                                  return IgnorePointer(
+                                    ignoring: !mapMax,
+                                    child: AnimatedOpacity(
+                                      duration: const Duration(
+                                        milliseconds: 150,
                                       ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.my_location_rounded,
-                                    color: Color(0xFF0C1D37),
-                                    size: 22,
+                                      opacity: mapMax ? 1 : 0,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: GestureDetector(
+                                  onTap: () {
+                                    final target =
+                                        _viewingSharedChild &&
+                                            _activeSharedChildData != null
+                                        ? LatLng(
+                                            _activeSharedChildData!['lat'],
+                                            _activeSharedChildData!['lng'],
+                                          )
+                                        : (state.currentLocation != null
+                                              ? LatLng(
+                                                  state.currentLocation!.lat,
+                                                  state.currentLocation!.lng,
+                                                )
+                                              : null);
+                                    if (target != null) {
+                                      _mapBackgroundKey.currentState
+                                          ?._animateTo(target, zoom: 16.5);
+                                    }
+                                  },
+                                  child: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.15),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.my_location_rounded,
+                                      color: Color(0xFF0C1D37),
+                                      size: 22,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -3448,8 +3487,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                 Expanded(
                                                   child: _buildFeatureCard(
                                                     title: 'Scroll',
-                                                    subtitle:
-                                                        'Social Media & Apps',
                                                     statusText:
                                                         state
                                                             .features
@@ -3472,12 +3509,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                                     },
                                                   ),
                                                 ),
-                                                SizedBox(width: 16.w),
+                                                SizedBox(width: 14.w),
                                                 Expanded(
                                                   child: _buildFeatureCard(
                                                     title: 'Geo Guard',
-                                                    subtitle:
-                                                        'Places & Geofencing',
                                                     statusText:
                                                         state
                                                             .features
@@ -3879,9 +3914,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.poppins(
                               fontSize: 24.0.sp,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                               height: 1.0,
-                              color: Color(0xFF707784),
+                              color: Color(0xFF16181A),
                             ),
                           ),
                         ),
@@ -4360,7 +4395,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Widget _buildFeatureCard({
     required String title,
-    required String subtitle,
+    String subtitle = '',
     required String statusText,
     required String iconAsset,
     required Color cardBg,
@@ -4372,8 +4407,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20.w),
         child: Container(
-          // Figma card is exactly 161 high (193 wide in the 2-column row).
-          height: 161.w,
+          // Figma card is exactly 140 high (193 wide in the 2-column row).
+          height: 140.w,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20.w),
@@ -4433,33 +4468,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         height: 24.w,
                       ),
                     ),
-                    SizedBox(height: 9.w),
+                    SizedBox(height: 8.w),
                     Text(
                       title,
+                      // Figma: Poppins Regular 16 / 24, 0.2px spacing.
                       style: GoogleFonts.poppins(
                         fontSize: 16.0.sp,
-                        fontWeight: FontWeight.w700,
-                        height: 23 / 16,
+                        fontWeight: FontWeight.w400,
+                        height: 24 / 16,
+                        letterSpacing: 0.2,
                         color: Color(0xFF0F1320),
                       ),
                     ),
+                    SizedBox(height: 2.w),
                     Text(
-                      subtitle,
+                      statusText,
+                      // Figma "Body Small": 12 / 20.
                       style: GoogleFonts.poppins(
                         fontSize: 12.0.sp,
                         fontWeight: FontWeight.w400,
                         height: 20 / 12,
-                        letterSpacing: 0.2,
-                        color: Color(0xFF2D3035),
-                      ),
-                    ),
-                    SizedBox(height: 4.w),
-                    Text(
-                      statusText,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12.0.sp,
-                        fontWeight: FontWeight.w600,
-                        height: 18 / 12,
                         letterSpacing: 0.2,
                         color: statusTextCol,
                       ),
@@ -4521,13 +4549,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         children: [
                           Text(
                             "Today's Route Map",
+                            // Figma "Body Medium": 16 / 24.
                             style: GoogleFonts.poppins(
                               fontSize: 16.0.sp,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w400,
+                              height: 24 / 16,
                               color: Color(0xFF16181A),
                             ),
                           ),
-                          SizedBox(height: 4.w),
                           Row(
                             children: [
                               Text(distance, style: subStyle),
@@ -4550,11 +4579,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         ],
                       ),
                     ),
+                    // Arrow opens the Trips list (Kid Location Details is no
+                    // longer reachable from here).
                     GestureDetector(
                       onTap: () {
-                        Navigator.of(
-                          context,
-                        ).pushNamed(RouteNames.childLocationDetail);
+                        Navigator.of(context).pushNamed(RouteNames.trips);
                       },
                       child: Container(
                         width: 40.w,
@@ -4626,7 +4655,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // is a 76-wide box with its 22-wide circle centered in it, so the 27px
     // either side of the circle renders nothing at all. Without this, the
     // tail visibly stopped short of the first circle instead of touching it.
-    final bool firstActive = listNodes.isNotEmpty && listNodes[0].isActive;
+    final bool firstActive = latestActiveIndex >= 0;
     children.add(
       Padding(
         padding: EdgeInsets.only(
@@ -4666,15 +4695,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
 
       if (i < listNodes.length - 1) {
-        final nextNode = listNodes[i + 1];
-        final bool connectorActive = node.isActive && nextNode.isActive;
+        final bool connectorActive = i + 1 <= latestActiveIndex;
         children.add(_buildTimelineConnector(connectorActive));
       }
     }
 
     // Right Tail (matches color of last node) — extended into the last
     // node's box on the left side, matching the left tail above.
-    final bool lastActive = listNodes.isNotEmpty && listNodes.last.isActive;
     children.add(
       Padding(
         padding: EdgeInsets.only(top: 10.w),
@@ -4688,7 +4715,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             child: Container(
               width: 12.w + _kNodeDeadSpace,
               height: 2,
-              color: lastActive ? Color(0xFF0069F9) : Color(0xFFDDE1EA),
+              color: Color(0xFFDDE1EA),
             ),
           ),
         ),
@@ -4726,9 +4753,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     required bool isActive,
     required bool isHighlighted,
   }) {
-    // Fixed width so ~3-4 stops stay visible in the scrollable stepper's
-    // viewport at once, with long labels ellipsizing instead of forcing
-    // every node wider (which used to squeeze the whole unscrollable row).
+    final bool unknown = label.toLowerCase().startsWith('unknown');
+    // The latest stop is orange while it is not a saved place, blue once it
+    // matches one; earlier stops are plain white rings.
+    final Color accent = unknown ? Color(0xFFF78635) : Color(0xFF0069F9);
+    final labelStyle = GoogleFonts.poppins(
+      fontSize: 12.0.sp,
+      fontWeight: FontWeight.w400,
+      letterSpacing: 0.2,
+      color: isHighlighted ? accent : Color(0xFF4A5267),
+    );
     return SizedBox(
       width: 76.w,
       child: Column(
@@ -4738,18 +4772,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             width: 22.w,
             height: 22.w,
             decoration: BoxDecoration(
-              color: isActive ? Color(0xFF0069F9) : Colors.white,
+              color: isHighlighted ? accent : Colors.white,
               shape: BoxShape.circle,
               border: isHighlighted
-                  ? Border.all(
-                      color: Color(0xFF0069F9).withValues(alpha: 0.25),
-                      width: 3.w,
-                    )
-                  : (isActive
-                        ? null
-                        : Border.all(color: Color(0xFFDDE1EA), width: 2)),
+                  ? null
+                  : Border.all(color: Color(0xFF6B7280), width: 2.w),
             ),
-            child: isActive
+            child: isHighlighted
                 ? Center(
                     child: Container(
                       width: 8.w,
@@ -4763,29 +4792,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 : null,
           ),
           SizedBox(height: 8.w),
-          _TimelineStopLabel(
-            label: label,
-            lat: lat,
-            lng: lng,
-            style: GoogleFonts.poppins(
-              fontSize: 10.0.sp,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
-              color: isHighlighted ? Color(0xFF0069F9) : Color(0xFF4A5267),
-            ),
-          ),
-          SizedBox(height: 0),
-          Text(
-            time.isNotEmpty ? time : ' ',
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
-              fontSize: 9.0.sp,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF9BA4B5),
-            ),
-          ),
+          // An unsaved place is just "Unknown" (no address lookup).
+          unknown
+              ? Text('Unknown', maxLines: 1, style: labelStyle)
+              : _TimelineStopLabel(
+                  label: label,
+                  lat: lat,
+                  lng: lng,
+                  style: labelStyle,
+                ),
         ],
       ),
     );
@@ -4876,9 +4891,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             children: [
                               Text(
                                 totalText,
+                                // Figma "Body Medium": 16 / 24.
                                 style: GoogleFonts.poppins(
                                   fontSize: 16.0.sp,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w400,
+                                  height: 24 / 16,
                                   color: Color(0xFF0069F9),
                                 ),
                               ),
@@ -4932,7 +4949,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   /// Section title used by Screentime / Shortcuts / Help Centre — Figma:
-  /// 40px-high row, 10px inset from the card edge, Poppins Bold 20/20.
+  /// 10px inset from the card edge, Poppins SemiBold 16.
   Widget _buildSectionHeading(
     String text, {
     Color color = const Color(0xFF16181A),
@@ -4946,8 +4963,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           child: Text(
             text,
             style: GoogleFonts.poppins(
-              fontSize: 20.0.sp,
-              fontWeight: FontWeight.w700,
+              fontSize: 16.0.sp,
+              fontWeight: FontWeight.w600,
               height: 1.0,
               color: color,
             ),
@@ -5161,14 +5178,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 },
               ),
               _buildShortcutItem(
-                'Notifications',
-                icon: Icons.notifications_outlined,
-                iconColor: Color(0xFFF78635),
+                'Help',
+                icon: Icons.chat_bubble_outline_rounded,
+                iconColor: Color(0xFFF59E0B),
                 tileColor: Color(0xFFF7F8FA),
                 onTap: () {
                   Navigator.of(
                     context,
-                  ).push(MaterialPageRoute(builder: (_) => NotificationPage()));
+                  ).push(MaterialPageRoute(builder: (_) => HelpView()));
                 },
               ),
               _buildShortcutItem(
@@ -5311,17 +5328,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.w),
         child: Row(
           children: [
-            Container(
-              width: 40.w,
-              height: 40.w,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Color(0xFFF7F8FA),
-                borderRadius: BorderRadius.circular(14.w),
+            SizedBox(
+              width: 24.w,
+              child: Center(
+                child: SvgPicture.asset(
+                  iconAsset,
+                  width: 20.w,
+                  height: 20.w,
+                  colorFilter: ColorFilter.mode(
+                    Color(0xFF16181A),
+                    BlendMode.srcIn,
+                  ),
+                ),
               ),
-              child: SvgPicture.asset(iconAsset, width: 20.w, height: 20.w),
             ),
-            SizedBox(width: 12.w),
+            SizedBox(width: 16.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -5802,20 +5823,22 @@ class _DynamicLocationTextState extends State<_DynamicLocationText> {
     // childName now renders separately, on the same row as the
     // refresh/notification/share icons (see _buildLocationCardOnly) — this
     // widget only owns the "is at <place>" line underneath it.
-    // Poppins Bold 20, one line (trimmed down from Figma's 24). A long street address keeps that
-    // size and scrolls sideways (marquee) instead of shrinking or wrapping;
-    // a short place name like "Tuition Class" just sits still.
+    // Poppins Bold 20, one line (trimmed down from Figma's 24). A long street
+    // address is cut with an ellipsis instead of scrolling, so it never shows
+    // half-clipped letters at the card edges.
     // Wrapped in a fixed 36px line box (Figma: name row 32 + this 36 = 68),
     // text vertically centred in it.
     return SizedBox(
       height: 36.w,
       child: Align(
         alignment: Alignment.centerLeft,
-        child: _MarqueeText(
+        child: Text(
           'is at $displayText',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.poppins(
-            fontSize: 20.0.sp,
-            fontWeight: FontWeight.w700,
+            fontSize: 24.0.sp,
+            fontWeight: FontWeight.w500,
             height: 1.0,
             color: const Color(0xFF16181A),
           ),

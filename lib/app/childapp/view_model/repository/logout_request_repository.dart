@@ -13,9 +13,23 @@ class LogoutRequestRepository extends BaseService {
   /// out (always scoped to the calling child's own token server-side).
   Future<BaseResponse> requestLogout() async {
     final response = await post(ApiEndpoints.logoutRequests);
-    AppLogger.info('requestLogout response: ${response.isSuccess}, ${response.message}');
+    AppLogger.info(
+      'requestLogout response: ${response.isSuccess}, ${response.message}',
+    );
     return response;
   }
+
+  /// GET /logout-requests — the parent's pending requests (newest first).
+  Future<BaseResponse<List<dynamic>>> listPending() =>
+      get<List<dynamic>>(ApiEndpoints.logoutRequests);
+
+  /// GET /logout-requests?status=approved|denied — requests the parent already
+  /// decided (the server drops every request 24 h after it was made).
+  Future<BaseResponse<List<dynamic>>> listByStatus(String status) =>
+      get<List<dynamic>>(
+        ApiEndpoints.logoutRequests,
+        queryParameters: {'status': status},
+      );
 
   /// POST /logout-requests/:id/resolve — parent approves/denies.
   Future<BaseResponse> resolveLogoutRequest({
@@ -26,7 +40,9 @@ class LogoutRequestRepository extends BaseService {
       ApiEndpoints.resolveLogoutRequest(requestId),
       data: {'approve': approve},
     );
-    AppLogger.info('resolveLogoutRequest response: ${response.isSuccess}, ${response.message}');
+    AppLogger.info(
+      'resolveLogoutRequest response: ${response.isSuccess}, ${response.message}',
+    );
     return response;
   }
 }

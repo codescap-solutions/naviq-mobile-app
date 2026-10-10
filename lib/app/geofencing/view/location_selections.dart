@@ -951,7 +951,8 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                 },
               ),
 
-              if (widget.geofence != null) ...[
+              // Delete only makes sense for an already-saved fence (has an id).
+              if (widget.geofence?.id != null) ...[
                 SizedBox(height: 12.w),
                 SizedBox(
                   width: double.infinity,

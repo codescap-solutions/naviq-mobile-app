@@ -1,4 +1,7 @@
+import 'package:child_track/app/geofencing/view/place_selection_view.dart';
 import 'package:child_track/app/home/model/last_trip_model.dart';
+import 'package:child_track/app/home/view/widget/trip_summary_timeline.dart';
+import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:child_track/app/home/model/trip_detail_model.dart';
 import 'package:child_track/app/home/view_model/bloc/homepage_bloc.dart';
@@ -20,6 +23,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:child_track/core/widgets/resolved_place_label.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 
 /// Trip Detail View - Shows detailed trip with map and timeline
 class TripDetailView extends StatefulWidget {
@@ -46,6 +50,9 @@ class _TripDetailViewState extends State<TripDetailView> {
   List<LatLng> _smoothedPoints = [];
   List<TimelineEvent> _timelineEvents = [];
   bool _detailPointsFitted = false; // prevents repeated camera fits
+
+  // Trip ends ('start' / 'end') the parent has just turned into a geofence.
+  final Set<String> _fenced = {};
 
   // Playback values to rebuild UI
   LatLng? _currentPlaybackPosition;
@@ -368,15 +375,15 @@ class _TripDetailViewState extends State<TripDetailView> {
   Color _colorForActivityType(String type) {
     switch (type.toLowerCase()) {
       case 'walking':
-        return const Color(0xFF22C55E); // green
+        return Color(0xFF22C55E); // green
       case 'running':
-        return const Color(0xFFF59E0B); // amber
+        return Color(0xFFF59E0B); // amber
       case 'cycling':
-        return const Color(0xFF8B5CF6); // purple
+        return Color(0xFF8B5CF6); // purple
       case 'vehicle':
-        return const Color(0xFF3B82F6); // blue
+        return Color(0xFF3B82F6); // blue
       case 'stationary':
-        return const Color(0xFF94A3B8); // grey
+        return Color(0xFF94A3B8); // grey
       default:
         return AppColors.tripPolyline;
     }
@@ -415,68 +422,70 @@ class _TripDetailViewState extends State<TripDetailView> {
                 // grey "Lost location" node per gap, not two).
                 .where((e) => e.eventType.toLowerCase() != 'location_resumed')
                 .map((e) {
-              // NOTE: these case strings match TimelineEvent.model.js's actual
-              // eventType enum values (verified against the backend schema).
-              // Several previously didn't (e.g. 'trip_start' vs the real
-              // 'trip_started', 'walking'/'started_walking' vs the real
-              // 'start_walking', 'left_place' vs the real 'left',
-              // 'geofence_entered'/'geofence_exited' vs the real
-              // 'geofence_enter'/'geofence_exit') — silently falling through
-              // to the tripStart default for every one of those event types.
-              TimelineEventType type = TimelineEventType.tripStart;
-              switch (e.eventType.toLowerCase()) {
-                case 'trip_started':
-                  type = TimelineEventType.tripStart;
-                  break;
-                case 'start_walking':
-                  type = TimelineEventType.startedWalking;
-                  break;
-                case 'start_running':
-                  type = TimelineEventType.startedRunning;
-                  break;
-                case 'start_cycling':
-                  type = TimelineEventType.startedCycling;
-                  break;
-                case 'start_vehicle':
-                  type = TimelineEventType.startedVehicle;
-                  break;
-                case 'stopped':
-                  type = TimelineEventType.stopped;
-                  break;
-                case 'arrived':
-                  type = TimelineEventType.arrived;
-                  break;
-                case 'left':
-                  type = TimelineEventType.leftPlace;
-                  break;
-                case 'geofence_enter':
-                  type = TimelineEventType.geofenceEntered;
-                  break;
-                case 'geofence_exit':
-                  type = TimelineEventType.geofenceExited;
-                  break;
-                case 'lost_location':
-                  type = TimelineEventType.lostLocation;
-                  break;
-              }
+                  // NOTE: these case strings match TimelineEvent.model.js's actual
+                  // eventType enum values (verified against the backend schema).
+                  // Several previously didn't (e.g. 'trip_start' vs the real
+                  // 'trip_started', 'walking'/'started_walking' vs the real
+                  // 'start_walking', 'left_place' vs the real 'left',
+                  // 'geofence_entered'/'geofence_exited' vs the real
+                  // 'geofence_enter'/'geofence_exit') — silently falling through
+                  // to the tripStart default for every one of those event types.
+                  TimelineEventType type = TimelineEventType.tripStart;
+                  switch (e.eventType.toLowerCase()) {
+                    case 'trip_started':
+                      type = TimelineEventType.tripStart;
+                      break;
+                    case 'start_walking':
+                      type = TimelineEventType.startedWalking;
+                      break;
+                    case 'start_running':
+                      type = TimelineEventType.startedRunning;
+                      break;
+                    case 'start_cycling':
+                      type = TimelineEventType.startedCycling;
+                      break;
+                    case 'start_vehicle':
+                      type = TimelineEventType.startedVehicle;
+                      break;
+                    case 'stopped':
+                      type = TimelineEventType.stopped;
+                      break;
+                    case 'arrived':
+                      type = TimelineEventType.arrived;
+                      break;
+                    case 'left':
+                      type = TimelineEventType.leftPlace;
+                      break;
+                    case 'geofence_enter':
+                      type = TimelineEventType.geofenceEntered;
+                      break;
+                    case 'geofence_exit':
+                      type = TimelineEventType.geofenceExited;
+                      break;
+                    case 'lost_location':
+                      type = TimelineEventType.lostLocation;
+                      break;
+                  }
 
-              return TimelineEvent(
-                type: type,
-                time: DateTime.tryParse(e.time)?.toLocal() ?? DateTime.now(),
-                // Short, fixed label for lost-location cards (matches the
-                // reference UI's "Lost location" node) rather than the
-                // backend's duration-embedding description, which would
-                // otherwise duplicate the duration line rendered below it.
-                label: type == TimelineEventType.lostLocation
-                    ? 'Lost location'
-                    : e.title,
-                stopDuration: e.durationMinutes != null
-                    ? Duration(minutes: e.durationMinutes!)
-                    : null,
-                speedKmh: e.maxSpeedKmph,
-                distanceKm: e.distanceKm,
-              );
-            }).toList();
+                  return TimelineEvent(
+                    type: type,
+                    time:
+                        DateTime.tryParse(e.time)?.toLocal() ?? DateTime.now(),
+                    // Short, fixed label for lost-location cards (matches the
+                    // reference UI's "Lost location" node) rather than the
+                    // backend's duration-embedding description, which would
+                    // otherwise duplicate the duration line rendered below it.
+                    label: type == TimelineEventType.lostLocation
+                        ? 'Lost location'
+                        : e.title,
+                    stopDuration: e.durationMinutes != null
+                        ? Duration(minutes: e.durationMinutes!)
+                        : null,
+                    speedKmh: e.maxSpeedKmph,
+                    distanceKm: e.distanceKm,
+                  );
+                })
+                .toList();
           }
 
           final markers = <Marker>{};
@@ -487,7 +496,7 @@ class _TripDetailViewState extends State<TripDetailView> {
           if (_currentPlaybackPosition != null) {
             markers.add(
               Marker(
-                markerId: const MarkerId('playback_marker'),
+                markerId: MarkerId('playback_marker'),
                 position: _currentPlaybackPosition!,
                 icon: BitmapDescriptor.defaultMarkerWithHue(
                   BitmapDescriptor.hueAzure,
@@ -585,7 +594,7 @@ class _TripDetailViewState extends State<TripDetailView> {
           } else if (activePoints.isNotEmpty) {
             polylines.add(
               Polyline(
-                polylineId: const PolylineId('route'),
+                polylineId: PolylineId('route'),
                 points: activePoints,
                 color: AppColors.tripPolyline,
                 width: 6,
@@ -603,7 +612,7 @@ class _TripDetailViewState extends State<TripDetailView> {
             final fitPoints = activePoints.isNotEmpty
                 ? activePoints
                 : polylines.expand((p) => p.points).toList();
-            Future.delayed(const Duration(milliseconds: 500), () {
+            Future.delayed(Duration(milliseconds: 500), () {
               if (mounted) _fitBounds(fitPoints);
             });
           }
@@ -624,35 +633,35 @@ class _TripDetailViewState extends State<TripDetailView> {
                 // Playback info overlay (top-mid)
                 if (_isPlaying || _playbackProgress > 0.0)
                   Positioned(
-                    top: 110,
-                    left: 20,
-                    right: 20,
+                    top: 110.w,
+                    left: 20.w,
+                    right: 20.w,
                     child: Card(
                       color: AppColors.surfaceColor.withOpacity(0.95),
                       elevation: 4,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.w),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 12.w,
                         ),
                         child: Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: EdgeInsets.all(8.w),
                               decoration: BoxDecoration(
                                 color: AppColors.primaryColor.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.speed,
                                 color: AppColors.primaryColor,
-                                size: 20,
+                                size: 20.w,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12.w),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,7 +683,7 @@ class _TripDetailViewState extends State<TripDetailView> {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.close),
+                              icon: Icon(Icons.close),
                               onPressed: () {
                                 _playbackController?.pause();
                                 _playbackController?.seekTo(0.0);
@@ -688,112 +697,39 @@ class _TripDetailViewState extends State<TripDetailView> {
 
                 // Draggable Bottom Sheet
                 DraggableScrollableSheet(
-                  initialChildSize: 0.4,
-                  minChildSize: 0.25,
+                  initialChildSize: 0.5,
+                  minChildSize: 0.3,
                   maxChildSize: 0.75,
                   builder: (context, scrollController) {
                     return Container(
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceColor,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(AppSizes.radiusXL),
-                          topRight: Radius.circular(AppSizes.radiusXL),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(32.w),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, -4),
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 10.w,
+                            offset: Offset(0, -4.w),
                           ),
                         ],
                       ),
-                      child: Column(
+                      child: ListView(
+                        controller: scrollController,
+                        padding: EdgeInsets.fromLTRB(
+                          24.w,
+                          28.w,
+                          24.w,
+                          24.w + MediaQuery.paddingOf(context).bottom,
+                        ),
                         children: [
-                          Center(
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(
-                                vertical: AppSizes.spacingM,
-                              ),
-                              width: 40,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: AppColors.borderColor,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
+                          TripSummarySheetBody(
+                            trip: widget.trip,
+                            distanceKm: totalDistance,
+                            durationMinutes: durationMinutes,
                           ),
-
-                          // Playback Controls Panel (Always visible at the top of bottom sheet)
-                          if (_playbackController != null)
-                            _buildPlaybackControlPanel(),
-
-                          const Divider(height: 1),
-
-                          Expanded(
-                            child: ListView(
-                              controller: scrollController,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSizes.paddingL,
-                                vertical: AppSizes.paddingM,
-                              ),
-                              children: [
-                                _buildTripHeaderStats(
-                                  totalDistance,
-                                  durationMinutes,
-                                  maxSpeed,
-                                  detail: state is HomepageSuccess
-                                      ? state.selectedTripDetail
-                                      : null,
-                                ),
-
-                                // Activities Used: compact chip row derived from segments[].type
-                                if (state is HomepageSuccess &&
-                                    state.selectedTripDetail != null &&
-                                    state
-                                        .selectedTripDetail!
-                                        .segments
-                                        .isNotEmpty) ...[
-                                  const SizedBox(height: AppSizes.spacingL),
-                                  _buildActivitiesUsedSummary(
-                                    state.selectedTripDetail!.segments,
-                                  ),
-                                ],
-
-                                const SizedBox(height: AppSizes.spacingL),
-                                const Divider(),
-                                const SizedBox(height: AppSizes.spacingM),
-                                Text(
-                                  'Trip Timeline',
-                                  style: AppTextStyles.subtitle1.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSizes.spacingM),
-                                if (state is HomepageSuccess &&
-                                    state.isLoadingTripDetail)
-                                  const Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.all(24.0),
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  )
-                                else
-                                  // Unified, chronologically-ordered stepper:
-                                  // activity segments (walk/ride, colored) +
-                                  // lost-location gaps (grey) + notable place
-                                  // events (arrived/left/geofence), matching
-                                  // the reference UI's single continuous
-                                  // timeline rather than two separate lists.
-                                  ..._buildUnifiedTimeline(
-                                    state is HomepageSuccess &&
-                                            state.selectedTripDetail != null
-                                        ? state.selectedTripDetail!.segments
-                                        : const [],
-                                    displayEvents,
-                                  ),
-                              ],
-                            ),
-                          ),
+                          _buildAddFencing(),
                         ],
                       ),
                     );
@@ -813,20 +749,17 @@ class _TripDetailViewState extends State<TripDetailView> {
   Widget _buildPlaybackPromoScreen(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      appBar: figmaAppBar(
-        context,
-        title: 'Trip Playback',
-      ),
+      appBar: figmaAppBar(context, title: 'Trip Playback'),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+          padding: EdgeInsets.symmetric(horizontal: 32.w),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 88,
-                height: 88,
-                decoration: const BoxDecoration(
+                width: 88.w,
+                height: 88.w,
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [Color(0xFF0066FF), Color(0xFF6F9EFF)],
@@ -834,13 +767,13 @@ class _TripDetailViewState extends State<TripDetailView> {
                     end: Alignment.bottomRight,
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.route_rounded,
                   color: Colors.white,
-                  size: 40,
+                  size: 40.w,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20.w),
               Text(
                 'Full Route Playback is a Paid Feature',
                 textAlign: TextAlign.center,
@@ -848,23 +781,21 @@ class _TripDetailViewState extends State<TripDetailView> {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.w),
               Text(
                 'Upgrade your plan to watch this trip\'s route play back on the map, step by step.',
                 textAlign: TextAlign.center,
-                style: AppTextStyles.body2.copyWith(
-                  color: const Color(0xFF64748B),
-                ),
+                style: AppTextStyles.body2.copyWith(color: Color(0xFF64748B)),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.w),
               SizedBox(
                 width: double.infinity,
-                height: 48,
+                height: 48.w,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0066FF),
+                    backgroundColor: Color(0xFF0066FF),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(14.w),
                     ),
                     elevation: 0,
                   ),
@@ -891,7 +822,7 @@ class _TripDetailViewState extends State<TripDetailView> {
 
   Widget _buildPlaybackControlPanel() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.w),
       child: Column(
         children: [
           Row(
@@ -916,17 +847,13 @@ class _TripDetailViewState extends State<TripDetailView> {
                   }
                 },
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
               Expanded(
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     trackHeight: 4,
-                    thumbShape: const RoundSliderThumbShape(
-                      enabledThumbRadius: 8,
-                    ),
-                    overlayShape: const RoundSliderOverlayShape(
-                      overlayRadius: 16,
-                    ),
+                    thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
+                    overlayShape: RoundSliderOverlayShape(overlayRadius: 16),
                   ),
                   child: Slider(
                     value: _playbackProgress,
@@ -936,10 +863,10 @@ class _TripDetailViewState extends State<TripDetailView> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
               DropdownButton<double>(
                 value: _currentPlaybackSpeed,
-                underline: const SizedBox(),
+                underline: SizedBox(),
                 style: AppTextStyles.caption.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.primaryColor,
@@ -983,9 +910,9 @@ class _TripDetailViewState extends State<TripDetailView> {
           iconColor: Colors.grey.shade400,
         ),
         Container(
-          margin: const EdgeInsets.only(left: 3.5),
-          height: 12,
-          width: 1,
+          margin: EdgeInsets.only(left: 3.5.w),
+          height: 12.w,
+          width: 1.w,
           color: AppColors.textSecondary.withValues(alpha: 0.3),
         ),
         ResolvedPlaceLabel(
@@ -1012,7 +939,7 @@ class _TripDetailViewState extends State<TripDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildRouteSummary(),
-        const SizedBox(height: AppSizes.spacingM),
+        SizedBox(height: AppSizes.spacingM.w),
         if (detail?.hasDangerousDriving == true)
           _buildDangerousDrivingBanner(detail!),
         Row(
@@ -1028,7 +955,7 @@ class _TripDetailViewState extends State<TripDetailView> {
               // context.
               subtitle: showSplit
                   ? '${detail!.distanceConfirmedKm.toStringAsFixed(1)} confirmed + '
-                      '${detail.distanceEstimatedKm.toStringAsFixed(1)} est.'
+                        '${detail.distanceEstimatedKm.toStringAsFixed(1)} est.'
                   : null,
             ),
             _buildStatItem(
@@ -1051,17 +978,17 @@ class _TripDetailViewState extends State<TripDetailView> {
     final eventLabels = detail.drivingEvents.map((e) => e.label).toSet();
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: AppSizes.spacingM),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: EdgeInsets.only(bottom: AppSizes.spacingM.w),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.w),
       decoration: BoxDecoration(
         color: Colors.orange.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.w),
         border: Border.all(color: Colors.orange.withOpacity(0.4)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
-          const SizedBox(width: 8),
+          Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20.w),
+          SizedBox(width: 8.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1096,8 +1023,8 @@ class _TripDetailViewState extends State<TripDetailView> {
   }) {
     return Column(
       children: [
-        Icon(icon, color: AppColors.primaryColor, size: 24),
-        const SizedBox(height: 4),
+        Icon(icon, color: AppColors.primaryColor, size: 24.w),
+        SizedBox(height: 4.w),
         Text(
           value,
           style: AppTextStyles.subtitle2.copyWith(
@@ -1110,7 +1037,7 @@ class _TripDetailViewState extends State<TripDetailView> {
           style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
         ),
         if (subtitle != null) ...[
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Text(
             subtitle,
             textAlign: TextAlign.center,
@@ -1136,7 +1063,7 @@ class _TripDetailViewState extends State<TripDetailView> {
       if (seen.add(t)) types.add(t);
     }
 
-    if (types.isEmpty) return const SizedBox.shrink();
+    if (types.isEmpty) return SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1145,17 +1072,17 @@ class _TripDetailViewState extends State<TripDetailView> {
           'Activities Used',
           style: AppTextStyles.subtitle1.copyWith(fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: AppSizes.spacingS),
+        SizedBox(height: AppSizes.spacingS.w),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: types.map((type) {
             final data = _activityData(type);
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.w),
               decoration: BoxDecoration(
                 color: (data['color'] as Color).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(24.w),
                 border: Border.all(
                   color: (data['color'] as Color).withOpacity(0.4),
                 ),
@@ -1167,7 +1094,7 @@ class _TripDetailViewState extends State<TripDetailView> {
                     data['emoji'] as String,
                     style: TextStyle(fontSize: 16.0.sp),
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6.w),
                   Text(
                     data['label'] as String,
                     style: AppTextStyles.caption.copyWith(
@@ -1215,7 +1142,8 @@ class _TripDetailViewState extends State<TripDetailView> {
     for (final seg in segments) {
       final startTime = DateTime.tryParse(seg.startTime);
       if (startTime == null) continue;
-      final isTrivialStop = seg.type.toLowerCase() == 'stationary' &&
+      final isTrivialStop =
+          seg.type.toLowerCase() == 'stationary' &&
           seg.durationSeconds < minStationarySeconds;
       if (isTrivialStop) continue;
       items.add((
@@ -1234,7 +1162,7 @@ class _TripDetailViewState extends State<TripDetailView> {
 
     items.sort((a, b) => a.$1.compareTo(b.$1));
 
-    if (items.isEmpty) return const [];
+    if (items.isEmpty) return [];
     return List.generate(
       items.length,
       (i) => items[i].$2(i == items.length - 1),
@@ -1255,7 +1183,7 @@ class _TripDetailViewState extends State<TripDetailView> {
         : '';
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSizes.spacingL),
+      padding: EdgeInsets.only(bottom: AppSizes.spacingL.w),
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1263,8 +1191,8 @@ class _TripDetailViewState extends State<TripDetailView> {
             Column(
               children: [
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 32.w,
+                  height: 32.w,
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.12),
                     shape: BoxShape.circle,
@@ -1275,11 +1203,11 @@ class _TripDetailViewState extends State<TripDetailView> {
                 ),
                 if (!isLast)
                   Expanded(
-                    child: Container(width: 2, color: color.withOpacity(0.3)),
+                    child: Container(width: 2.w, color: color.withOpacity(0.3)),
                   ),
               ],
             ),
-            const SizedBox(width: AppSizes.spacingM),
+            SizedBox(width: AppSizes.spacingM.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1303,7 +1231,7 @@ class _TripDetailViewState extends State<TripDetailView> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     seg.type.toLowerCase() == 'stationary'
                         ? '$durationMin min'
@@ -1312,7 +1240,7 @@ class _TripDetailViewState extends State<TripDetailView> {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: AppSizes.spacingS),
+                  SizedBox(height: AppSizes.spacingS.w),
                 ],
               ),
             ),
@@ -1362,7 +1290,10 @@ class _TripDetailViewState extends State<TripDetailView> {
     return 'Duration: $rounded h';
   }
 
-  Widget _buildEnhancedTimelineItem(TimelineEvent event, {bool isLast = false}) {
+  Widget _buildEnhancedTimelineItem(
+    TimelineEvent event, {
+    bool isLast = false,
+  }) {
     Color color = AppColors.primaryColor;
     IconData icon = Icons.directions_walk;
 
@@ -1416,7 +1347,7 @@ class _TripDetailViewState extends State<TripDetailView> {
     final timeStr = DateFormat('h:mm a').format(event.time).toLowerCase();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSizes.spacingL),
+      padding: EdgeInsets.only(bottom: AppSizes.spacingL.w),
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1424,22 +1355,22 @@ class _TripDetailViewState extends State<TripDetailView> {
             Column(
               children: [
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 32.w,
+                  height: 32.w,
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
                     shape: BoxShape.circle,
                     border: Border.all(color: color, width: 2),
                   ),
-                  child: Icon(icon, color: color, size: 16),
+                  child: Icon(icon, color: color, size: 16.w),
                 ),
                 if (!isLast)
                   Expanded(
-                    child: Container(width: 2, color: AppColors.borderColor),
+                    child: Container(width: 2.w, color: AppColors.borderColor),
                   ),
               ],
             ),
-            const SizedBox(width: AppSizes.spacingM),
+            SizedBox(width: AppSizes.spacingM.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1465,7 +1396,7 @@ class _TripDetailViewState extends State<TripDetailView> {
                     ],
                   ),
                   if (event.stopDuration != null) ...[
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       _formatEventDuration(event.stopDuration!),
                       style: AppTextStyles.caption.copyWith(
@@ -1474,7 +1405,7 @@ class _TripDetailViewState extends State<TripDetailView> {
                     ),
                   ],
                   if (event.speedKmh != null && event.speedKmh! > 0) ...[
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       'Max speed: ${event.speedKmh!.toStringAsFixed(1)} km/h',
                       style: AppTextStyles.caption.copyWith(
@@ -1483,7 +1414,7 @@ class _TripDetailViewState extends State<TripDetailView> {
                     ),
                   ],
                   if (event.distanceKm != null && event.distanceKm! > 0) ...[
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       'Distance: ${event.distanceKm!.toStringAsFixed(2)} km',
                       style: AppTextStyles.caption.copyWith(
@@ -1491,7 +1422,7 @@ class _TripDetailViewState extends State<TripDetailView> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: AppSizes.spacingS),
+                  SizedBox(height: AppSizes.spacingS.w),
                 ],
               ),
             ),
@@ -1499,6 +1430,75 @@ class _TripDetailViewState extends State<TripDetailView> {
         ),
       ),
     );
+  }
+
+  /// "Unknown Location" / empty means the backend found no saved place there.
+  bool _isUnsaved(String place, LatLng at, String key) =>
+      !_fenced.contains(key) &&
+      (place.isEmpty || place == 'Unknown Location') &&
+      (at.latitude != 0 || at.longitude != 0);
+
+  /// Figma "Add fencing": offered for the trip's start and/or end when it is
+  /// not a saved place yet, so the primary parent can fence it from here.
+  Widget _buildAddFencing() {
+    if (!SharedPrefsService().isPrimaryParent) return SizedBox.shrink();
+    final trip = widget.trip;
+    final ends = <(String, String, LatLng)>[
+      if (_isUnsaved(trip.startPlace, trip.startLocation, 'start'))
+        ('start', 'start', trip.startLocation),
+      if (_isUnsaved(trip.endPlace, trip.endLocation, 'end'))
+        ('end', 'end', trip.endLocation),
+    ];
+    if (ends.isEmpty) return SizedBox.shrink();
+    return Padding(
+      padding: EdgeInsets.only(top: 16.w, bottom: 24.w),
+      child: Wrap(
+        spacing: 12.w,
+        runSpacing: 12.w,
+        children: [
+          for (final (key, where, at) in ends)
+            GestureDetector(
+              onTap: () => _addFencing(key, at),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 15.w),
+                decoration: BoxDecoration(
+                  color: Color(0xFF0069F9),
+                  borderRadius: BorderRadius.circular(16.w),
+                ),
+                child: Text(
+                  ends.length > 1 ? 'Add fencing at $where' : 'Add fencing',
+                  style: FigmaText.poppins(
+                    16,
+                    weight: FontWeight.w500,
+                    color: Colors.white,
+                    lineHeight: 24,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addFencing(String key, LatLng at) async {
+    final prefs = SharedPrefsService();
+    final result = await showModalBottomSheet<Object?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => PlaceSelectionScreen(
+        childId: prefs.getString('child_id'),
+        parentId: prefs.getString('parent_id'),
+        location: at,
+      ),
+    );
+    // A non-null result means the geofence was saved: hide this button and
+    // refresh the home data so the new place shows up.
+    if (result != null && mounted) {
+      setState(() => _fenced.add(key));
+      injector<HomepageBloc>().add(GetHomepageData());
+    }
   }
 
   Widget _buildMapSection(
@@ -1526,43 +1526,23 @@ class _TripDetailViewState extends State<TripDetailView> {
                 ? _smoothedPoints.first
                 : (widget.markers.isNotEmpty
                       ? widget.markers.first.position
-                      : const LatLng(0, 0)),
+                      : LatLng(0, 0)),
             markers: markers,
             useEagerGestures: true,
             polylines: polylines,
             isPolyLines: true,
           ),
         ),
+        // Same header as every other screen; the trip's date is the title.
         Positioned(
-          top: 50,
-          left: 20,
-          child: IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          ),
-        ),
-        Positioned(
-          top: 50,
-          left: 120,
-          right: 120,
-          child: Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.paddingM,
-              vertical: AppSizes.paddingS,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceColor.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            ),
-            child: const Text(
-              'Trip Details',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
+          top: 0,
+          left: 0,
+          right: 0,
+          child: SizedBox(
+            height: MediaQuery.paddingOf(context).top + 68.w,
+            child: figmaAppBar(
+              context,
+              title: TripSummarySheetBody.dateTitle(widget.trip.startTime),
             ),
           ),
         ),

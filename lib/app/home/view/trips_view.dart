@@ -1,3 +1,6 @@
+import 'package:child_track/core/utils/responsive_font.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
+import 'package:child_track/app/home/view/widget/trip_summary_timeline.dart';
 import 'package:child_track/app/home/model/trip_list_model.dart';
 import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:child_track/app/home/view_model/bloc/homepage_bloc.dart';
@@ -6,7 +9,6 @@ import 'package:child_track/core/di/injector.dart';
 import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
-import 'package:child_track/core/constants/app_text_styles.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:child_track/app/home/view/trip_detail_view.dart';
 import 'package:child_track/app/home/model/last_trip_model.dart';
@@ -66,7 +68,14 @@ class _TripsViewState extends State<TripsView> {
     super.dispose();
   }
 
+  String? _shownTitle;
+
   void _onScroll() {
+    final title = _titleFor(_homepageBloc.state);
+    if (title != _shownTitle) {
+      _shownTitle = title;
+      setState(() {});
+    }
     if (_isBottom) {
       final state = _homepageBloc.state;
       if (state is HomepageSuccess &&
@@ -125,48 +134,66 @@ class _TripsViewState extends State<TripsView> {
     return currentScroll >= (maxScroll * 0.9);
   }
 
+  /// Height of one list item: 90 map + 185 details + 19 gap (Figma map card).
+  double get _itemExtent => 294.w;
+
+  /// App-bar title: the date ("Today" / "Yesterday" / "07 Oct 2026") of the
+  /// card currently at the top of the list, "Trips" until trips are loaded.
+  String _titleFor(HomepageState state) {
+    if (state is! HomepageSuccess || state.trips.isEmpty) return 'Trips';
+    final offset = _scrollController.hasClients ? _scrollController.offset : 0;
+    final i = ((offset + 19.w) / _itemExtent).floor().clamp(
+      0,
+      state.trips.length - 1,
+    );
+    return TripSummarySheetBody.dateTitle(state.trips[i].startTime);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
-      appBar: figmaAppBar(context, title: 'Trips'),
-      body: BlocBuilder<HomepageBloc, HomepageState>(
-        bloc: _homepageBloc,
-        builder: (context, state) {
-          if (state is HomepageSuccess) {
-            if (state.isLoadingTrips && state.trips.isEmpty) {
-              return const TripsShimmer();
-            }
+    return BlocBuilder<HomepageBloc, HomepageState>(
+      bloc: _homepageBloc,
+      builder: (context, state) {
+        return Scaffold(
+          backgroundColor: AppColors.backgroundColor,
+          appBar: figmaAppBar(context, title: _titleFor(state)),
+          body: _buildBody(state),
+        );
+      },
+    );
+  }
 
-            if (!state.isLoadingTrips && state.trips.isEmpty) {
-              return const Center(child: Text("No trips found"));
-            }
-
-            return ListView.builder(
-              controller: _scrollController,
-              shrinkWrap: true,
-              padding: const EdgeInsets.all(AppSizes.paddingL),
-              // Add +1 for loader if loading more
-              itemCount: state.hasReachedMax
-                  ? state.trips.length
-                  : state.trips.length + 1,
-              itemBuilder: (context, index) {
-                if (index >= state.trips.length) {
-                  return const TripsShimmer(itemCount: 1);
-                }
-                final trip = state.trips[index];
-                return _SimpleTripCard(
-                  trip: trip,
-                  sourceIcon: _sourceIcon,
-                  destinationIcon: _destinationIcon,
-                );
-              },
+  Widget _buildBody(HomepageState state) {
+    if (state is HomepageSuccess) {
+      if (state.isLoadingTrips && state.trips.isEmpty) return TripsShimmer();
+      if (!state.isLoadingTrips && state.trips.isEmpty) {
+        return Center(child: Text("No trips found"));
+      }
+      return ListView.builder(
+        controller: _scrollController,
+        shrinkWrap: true,
+        // Figma: 401px cards at x14, first card 19px under the header.
+        padding: EdgeInsets.fromLTRB(14.w, 19.w, 14.w, 24.w),
+        // +1 row for the "loading more" spinner, only while a page is
+        // actually loading (the list used to end in an empty nested
+        // scrollable that swallowed touches and blocked scrolling back up).
+        itemCount: state.trips.length + (state.isLoadingTrips ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index >= state.trips.length) {
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: 24.w),
+              child: Center(child: CircularProgressIndicator()),
             );
           }
-          return const TripsShimmer();
+          return _SimpleTripCard(
+            trip: state.trips[index],
+            sourceIcon: _sourceIcon,
+            destinationIcon: _destinationIcon,
+          );
         },
-      ),
-    );
+      );
+    }
+    return TripsShimmer();
   }
 }
 
@@ -185,26 +212,6 @@ class _SimpleTripCard extends StatelessWidget {
   String _truncatePlaceLabel(String name) {
     const maxLen = 18;
     return name.length > maxLen ? '${name.substring(0, maxLen - 1)}…' : name;
-  }
-
-  IconData _getRideModeIcon(String rideMode) {
-    switch (rideMode.toLowerCase()) {
-      case 'walking':
-        return Icons.directions_walk;
-      case 'running':
-        return Icons.directions_run;
-      case 'cycling':
-        return Icons.directions_bike;
-      case 'stationary':
-        return Icons.location_on;
-      case 'vehicle':
-        return Icons.directions_car;
-      default:
-        // Was falling through to directions_car — an unrecognized/missing
-        // mode would show a car icon exactly like a real ride, which is the
-        // same misleading-as-a-ride bug fixed elsewhere for this field.
-        return Icons.help_outline;
-    }
   }
 
   Set<Polyline> _createPolylines() {
@@ -240,7 +247,7 @@ class _SimpleTripCard extends StatelessWidget {
 
     return {
       Marker(
-        markerId: const MarkerId('start'),
+        markerId: MarkerId('start'),
         position: LatLng(startPoint.lat, startPoint.lng),
         icon:
             startIconOverride ??
@@ -248,7 +255,7 @@ class _SimpleTripCard extends StatelessWidget {
             BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
       ),
       Marker(
-        markerId: const MarkerId('end'),
+        markerId: MarkerId('end'),
         position: LatLng(endPoint.lat, endPoint.lng),
         icon:
             endIconOverride ??
@@ -260,7 +267,7 @@ class _SimpleTripCard extends StatelessWidget {
 
   CameraPosition _getInitialCameraPosition() {
     if (trip.points.isEmpty) {
-      return const CameraPosition(target: LatLng(0, 0), zoom: 1);
+      return CameraPosition(target: LatLng(0, 0), zoom: 1);
     }
     final midIndex = trip.points.length ~/ 2;
     return CameraPosition(
@@ -282,7 +289,7 @@ class _SimpleTripCard extends StatelessWidget {
 
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      final yesterday = today.subtract(const Duration(days: 1));
+      final yesterday = today.subtract(Duration(days: 1));
       final dateToCheck = DateTime(dt.year, dt.month, dt.day);
 
       if (dateToCheck == today) {
@@ -299,17 +306,16 @@ class _SimpleTripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = _formatDateLabel(trip.startTime);
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spacingL),
+      margin: EdgeInsets.only(bottom: 19.w),
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL.w),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 10.w,
+            offset: Offset(0, 4.w),
           ),
         ],
       ),
@@ -317,12 +323,12 @@ class _SimpleTripCard extends StatelessWidget {
         children: [
           // Map Section
           SizedBox(
-            height: 150,
+            height: 90.w,
             width: double.infinity,
             child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppSizes.radiusL),
-                topRight: Radius.circular(AppSizes.radiusL),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(AppSizes.radiusL.w),
+                topRight: Radius.circular(AppSizes.radiusL.w),
               ),
               child: trip.points.isNotEmpty
                   ? GoogleMap(
@@ -330,245 +336,269 @@ class _SimpleTripCard extends StatelessWidget {
                       liteModeEnabled: true,
                       mapToolbarEnabled: false,
                       zoomControlsEnabled: false,
+                      myLocationEnabled: false,
+                      myLocationButtonEnabled: false,
+                      compassEnabled: false,
+                      // Preview only: the card (and list) handle all touches.
+                      scrollGesturesEnabled: false,
+                      zoomGesturesEnabled: false,
+                      rotateGesturesEnabled: false,
+                      tiltGesturesEnabled: false,
                       polylines: _createPolylines(),
                       markers: _createMarkers(),
-                      onMapCreated: (controller) {
-                        if (trip.points.isNotEmpty) {
-                          final bounds = _createBounds(
-                            trip.points
-                                .map((p) => LatLng(p.lat, p.lng))
-                                .toList(),
-                          );
-                          controller.moveCamera(
-                            CameraUpdate.newLatLngBounds(bounds, 20),
-                          );
-                        }
+                      onMapCreated: (controller) async {
+                        // Wait for the 90px map to be laid out, otherwise the
+                        // bounds are fitted to a zero-size view and the route
+                        // ends up cut off / tiny.
+                        await Future.delayed(Duration(milliseconds: 150));
+                        final bounds = _createBounds(
+                          trip.points.map((p) => LatLng(p.lat, p.lng)).toList(),
+                        );
+                        controller.moveCamera(
+                          CameraUpdate.newLatLngBounds(bounds, 12),
+                        );
                       },
                     )
                   : Container(
                       color: Colors.grey[100],
-                      child: const Center(child: Text('No path data')),
+                      child: Center(child: Text('No path data')),
                     ),
             ),
           ),
 
-          // Details Section
-          Padding(
-            padding: const EdgeInsets.all(AppSizes.paddingM),
-            child: Column(
+          // Details Section (Figma "map card": 185px under the 90px map)
+          SizedBox(
+            height: 185.w,
+            child: Stack(
               children: [
-                // Top Row: Time, Duration, Distance
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: RichText(
-                        text: TextSpan(
-                          style: AppTextStyles.body2.copyWith(
-                            color: AppColors.textPrimary,
-                          ),
-                          children: [
-                            if (dateLabel.isNotEmpty)
-                              TextSpan(
-                                text: '$dateLabel, ',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            TextSpan(
-                              // An ongoing trip has no real end time yet —
-                              // points.last.ts (or json['end_time']) from
-                              // whenever this list happened to be fetched
-                              // is NOT one, and rendering it as a fixed
-                              // range made a still-in-progress trip look
-                              // like a short, already-finished one.
-                              // Confirmed real incident: "8:46am - 8:49am,
-                              // 0.4km" shown for a trip that was actually
-                              // still running 30+ min and 8+ km later.
-                              text: trip.isOngoing
-                                  ? '${_formatTime(trip.startTime)} - now'
-                                  : '${_formatTime(trip.startTime)} - ${_formatTime(trip.endTime)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            if (trip.isOngoing)
-                              const TextSpan(
-                                text: '   LIVE',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.green,
-                                ),
-                              )
-                            else
-                              TextSpan(
-                                text:
-                                    '   ${_calculateDuration(trip.startTime, trip.endTime)}',
-                                style: AppTextStyles.body2.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Icon(_getRideModeIcon(trip.rideMode)),
-                    const SizedBox(width: AppSizes.spacingM),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${trip.distanceKm}km',
-                        style: AppTextStyles.caption.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
+                // Route: green start dot, 2px connector, red end dot.
+                Positioned(
+                  left: 34.w,
+                  top: 33.5.w,
+                  child: _dot(Color(0xFF34C759)),
                 ),
-                const SizedBox(height: AppSizes.spacingM),
-                // Bottom Row: Timeline and View Button
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _PlaceRenderer(
-                            placeName: trip.fromPlace.isNotEmpty
-                                ? trip.fromPlace
-                                : 'Unknown Location',
-                            point: trip.points.isNotEmpty
-                                ? trip.points.first
-                                : null,
-                            iconColor: Colors.grey.shade400,
+                Positioned(
+                  left: 37.w,
+                  top: 45.5.w,
+                  child: Container(
+                    width: 2.w,
+                    height: 23.w,
+                    color: Color(0xFFDDE1EA),
+                  ),
+                ),
+                Positioned(
+                  left: 34.w,
+                  top: 72.5.w,
+                  child: _dot(Color(0xFFEF4444)),
+                ),
+                _routeRow(
+                  top: 23,
+                  placeName: trip.fromPlace.isNotEmpty
+                      ? trip.fromPlace
+                      : 'Unknown Location',
+                  point: trip.points.isNotEmpty ? trip.points.first : null,
+                  time: _timeLabel(trip.startTime),
+                ),
+                _routeRow(
+                  top: 71,
+                  placeName: trip.toPlace.isNotEmpty
+                      ? trip.toPlace
+                      : 'Unknown Location',
+                  point: trip.points.isNotEmpty ? trip.points.last : null,
+                  time: trip.isOngoing ? 'Now' : _timeLabel(trip.endTime),
+                ),
+                // Hairline between the route and the footer (Figma: y115).
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 115.w,
+                  child: Container(height: 1, color: Color(0xFFEEF0F4)),
+                ),
+                // Footer: duration, distance and the 44px open button.
+                Positioned(
+                  left: 22.w,
+                  top: 137.w,
+                  child: Row(
+                    children: [
+                      if (trip.isOngoing)
+                        Text(
+                          'LIVE',
+                          style: _metaStyle.copyWith(
+                            color: Colors.green,
+                            fontWeight: FontWeight.w700,
                           ),
-                          Container(
-                            margin: const EdgeInsets.only(left: 3.5),
-                            height: 12,
-                            width: 1,
-                            color: AppColors.textSecondary.withValues(
-                              alpha: 0.3,
-                            ),
-                          ),
-                          _PlaceRenderer(
-                            placeName: trip.toPlace.isNotEmpty
-                                ? trip.toPlace
-                                : 'Unknown Location',
-                            point: trip.points.isNotEmpty
-                                ? trip.points.last
-                                : null,
-                            iconColor: Colors.grey.shade400,
+                        )
+                      else
+                        _meta(
+                          Icons.schedule_outlined,
+                          _durationLabel(trip.startTime, trip.endTime),
+                        ),
+                      SizedBox(width: 16.w),
+                      _meta(
+                        Icons.location_on_outlined,
+                        '${trip.distanceKm} km',
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  left: 330.w,
+                  top: 125.w,
+                  child: GestureDetector(
+                    onTap: () => _openDetail(context),
+                    child: Container(
+                      width: 44.w,
+                      height: 44.w,
+                      decoration: BoxDecoration(
+                        color: Color(0xFF0069F9),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0xFF0070F0).withValues(alpha: 0.3),
+                            blurRadius: 4.w,
+                            offset: Offset(0, 2.w),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: AppSizes.spacingM),
-                    // Circular icon-only CTA (44px, #0069F9, arrow icon) —
-                    // matches the Figma trip card's button shape/radius
-                    // family instead of a labeled pill button.
-                    GestureDetector(
-                      onTap: () async {
-                        if (trip.points.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("No detailed trip data available"),
-                            ),
-                          );
-                          return;
-                        }
-                        injector<HomepageBloc>().add(
-                          GetTripDetail(tripId: trip.tripId),
-                        );
-                        final tripSegment = TripSegment.fromTrip(trip);
-
-                        // Use the resolved saved-place name (e.g. "Home") as
-                        // the marker label/icon instead of a generic
-                        // "START"/"END" pin, when the backend recognized one.
-                        final startName =
-                            trip.fromPlace.isNotEmpty &&
-                                trip.fromPlace != 'Unknown Location'
-                            ? _truncatePlaceLabel(trip.fromPlace)
-                            : null;
-                        final endName =
-                            trip.toPlace.isNotEmpty &&
-                                trip.toPlace != 'Unknown Location'
-                            ? _truncatePlaceLabel(trip.toPlace)
-                            : null;
-
-                        final startIcon = startName != null
-                            ? await MapMarkerUtils.createCustomMarkerBitmap(
-                                startName,
-                                icon: startName.toLowerCase().contains('home')
-                                    ? Icons.home
-                                    : Icons.location_on,
-                                backgroundColor: AppColors.success,
-                                circleColor: AppColors.textSecondary,
-                              )
-                            : null;
-                        final endIcon = endName != null
-                            ? await MapMarkerUtils.createCustomMarkerBitmap(
-                                endName,
-                                icon: endName.toLowerCase().contains('home')
-                                    ? Icons.home
-                                    : Icons.location_on,
-                                backgroundColor: AppColors.error,
-                                circleColor: AppColors.textSecondary,
-                              )
-                            : null;
-
-                        if (!context.mounted) return;
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => TripDetailView(
-                              trip: tripSegment,
-                              markers: _createMarkers(
-                                startIconOverride: startIcon,
-                                endIconOverride: endIcon,
-                              ).toList(),
-                              polylines: _createPolylines().toList(),
-                            ),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0069F9),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFF0070F0,
-                              ).withValues(alpha: 0.3),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.arrow_forward_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.white,
+                        size: 16.w,
                       ),
                     ),
-                  ],
+                  ),
                 ),
-                // Removed redundant SizedBox and PlaceRenderers that were here
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  TextStyle get _metaStyle =>
+      FigmaText.poppins(14, color: FigmaColors.body, lineHeight: 20);
+
+  Widget _dot(Color color) => Container(
+    width: 8.w,
+    height: 8.w,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
+
+  Widget _meta(IconData icon, String text) => Row(
+    children: [
+      Icon(icon, size: 16.w, color: Color(0xFF0F1320)),
+      SizedBox(width: 6.w),
+      Text(text, style: _metaStyle),
+    ],
+  );
+
+  /// One route line: place name at x54, time right-aligned (x ends at 369).
+  Widget _routeRow({
+    required double top,
+    required String placeName,
+    required TripPoint? point,
+    required String time,
+  }) {
+    return Positioned(
+      left: 54.w,
+      right: 31.w,
+      top: top.w,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: _PlaceRenderer(placeName: placeName, point: point),
+          ),
+          SizedBox(width: 8.w),
+          Padding(
+            padding: EdgeInsets.only(top: 2.w),
+            child: Text(
+              time,
+              style: FigmaText.poppins(
+                12,
+                color: FigmaColors.body,
+                lineHeight: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// "2:30 pm"; trips not from today get the date in front ("27 Sep, 7:54 pm").
+  String _timeLabel(String timeStr) {
+    final time = _formatTime(timeStr);
+    final date = _formatDateLabel(timeStr);
+    if (time.isEmpty || date.isEmpty || date == 'Today') return time;
+    final short = date == 'Yesterday'
+        ? date
+        : date.replaceFirst(RegExp(r' \d{4}$'), '');
+    return '$short, $time';
+  }
+
+  String _durationLabel(String startStr, String endStr) {
+    final raw = _calculateDuration(startStr, endStr);
+    return raw.length > 2 && raw.startsWith('(') && raw.endsWith(')')
+        ? raw.substring(1, raw.length - 1)
+        : raw;
+  }
+
+  Future<void> _openDetail(BuildContext context) async {
+    if (trip.points.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("No detailed trip data available")),
+      );
+      return;
+    }
+    injector<HomepageBloc>().add(GetTripDetail(tripId: trip.tripId));
+    final tripSegment = TripSegment.fromTrip(trip);
+
+    // Use the resolved saved-place name (e.g. "Home") as
+    // the marker label/icon instead of a generic
+    // "START"/"END" pin, when the backend recognized one.
+    final startName =
+        trip.fromPlace.isNotEmpty && trip.fromPlace != 'Unknown Location'
+        ? _truncatePlaceLabel(trip.fromPlace)
+        : null;
+    final endName =
+        trip.toPlace.isNotEmpty && trip.toPlace != 'Unknown Location'
+        ? _truncatePlaceLabel(trip.toPlace)
+        : null;
+
+    final startIcon = startName != null
+        ? await MapMarkerUtils.createCustomMarkerBitmap(
+            startName,
+            icon: startName.toLowerCase().contains('home')
+                ? Icons.home
+                : Icons.location_on,
+            backgroundColor: AppColors.success,
+            circleColor: AppColors.textSecondary,
+          )
+        : null;
+    final endIcon = endName != null
+        ? await MapMarkerUtils.createCustomMarkerBitmap(
+            endName,
+            icon: endName.toLowerCase().contains('home')
+                ? Icons.home
+                : Icons.location_on,
+            backgroundColor: AppColors.error,
+            circleColor: AppColors.textSecondary,
+          )
+        : null;
+
+    if (!context.mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => TripDetailView(
+          trip: tripSegment,
+          markers: _createMarkers(
+            startIconOverride: startIcon,
+            endIconOverride: endIcon,
+          ).toList(),
+          polylines: _createPolylines().toList(),
+        ),
       ),
     );
   }
@@ -587,6 +617,8 @@ class _SimpleTripCard extends StatelessWidget {
       if (p.longitude > east) east = p.longitude;
     }
 
+    // Marker pins draw above their point, so leave headroom on the north edge.
+    north += (north - south) * 0.3;
     return LatLngBounds(
       southwest: LatLng(south, west),
       northeast: LatLng(north, east),
@@ -603,7 +635,7 @@ class _SimpleTripCard extends StatelessWidget {
       final minutes = duration.inMinutes.remainder(60);
 
       if (hours > 0) {
-        return '(${hours}hrs ${minutes > 0 ? '$minutes min' : ''})'.trim();
+        return '($hours hr${hours > 1 ? 's' : ''}${minutes > 0 ? ' $minutes min' : ''})';
       } else {
         return '($minutes min)';
       }
@@ -636,13 +668,8 @@ class _SimpleTripCard extends StatelessWidget {
 class _PlaceRenderer extends StatefulWidget {
   final String placeName;
   final TripPoint? point;
-  final Color iconColor;
 
-  const _PlaceRenderer({
-    required this.placeName,
-    required this.point,
-    required this.iconColor,
-  });
+  const _PlaceRenderer({required this.placeName, required this.point});
 
   @override
   State<_PlaceRenderer> createState() => _PlaceRendererState();
@@ -703,27 +730,26 @@ class _PlaceRendererState extends State<_PlaceRenderer> {
   Widget build(BuildContext context) {
     final displayText = _resolvedAddress ?? widget.placeName;
 
-    return Row(
-      children: [
-        Icon(Icons.circle, size: 8, color: widget.iconColor),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _isLoading
-              ? SizedBox(
-                  height: 14,
-                  width: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.textSecondary,
-                  ),
-                )
-              : Text(
-                  displayText,
-                  style: AppTextStyles.body2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+    if (_isLoading) {
+      return SizedBox(
+        height: 14.w,
+        width: 14.w,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: AppColors.textSecondary,
         ),
-      ],
+      );
+    }
+    return Text(
+      displayText,
+      maxLines: 1,
+      style: FigmaText.poppins(
+        16,
+        weight: FontWeight.w600,
+        color: Color(0xFF0F1320),
+        lineHeight: 23,
+      ),
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

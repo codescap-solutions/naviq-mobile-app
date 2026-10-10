@@ -38,27 +38,34 @@ class _TripRouteMapState extends State<TripRouteMap> {
     _mapController?.dispose();
     super.dispose();
   }
+
   Future<void> _getCurrentLocation() async {
     AppLogger.info('📍 TripRouteMap: Starting to get current location...');
     try {
       Position? position = await _locationService.getCurrentPosition();
-      AppLogger.info('📍 TripRouteMap: getCurrentPosition returned: ${position != null ? "SUCCESS" : "NULL"}');
-      
+      AppLogger.info(
+        '📍 TripRouteMap: getCurrentPosition returned: ${position != null ? "SUCCESS" : "NULL"}',
+      );
+
       if (position != null && mounted) {
-        AppLogger.info('📍 TripRouteMap: Position received - Lat: ${position.latitude}, Lng: ${position.longitude}');
+        AppLogger.info(
+          '📍 TripRouteMap: Position received - Lat: ${position.latitude}, Lng: ${position.longitude}',
+        );
         setState(() {
           _currentPosition = position;
           _isLoading = false;
-          AppLogger.info('📍 TripRouteMap: State updated with position, isLoading: false');
+          AppLogger.info(
+            '📍 TripRouteMap: State updated with position, isLoading: false',
+          );
           // Add kid marker for current location
           if (_kidMarkerIcon != null) {
             _markers.add(
               Marker(
-                markerId: const MarkerId('kid_location'),
+                markerId: MarkerId('kid_location'),
                 position: LatLng(position.latitude, position.longitude),
                 icon: _kidMarkerIcon!,
-                anchor: const Offset(0.5, 1.0),
-                infoWindow: const InfoWindow(
+                anchor: Offset(0.5.w, 1.0.w),
+                infoWindow: InfoWindow(
                   title: 'Kid Location',
                   snippet: 'Current position',
                 ),
@@ -66,7 +73,9 @@ class _TripRouteMapState extends State<TripRouteMap> {
             );
             AppLogger.info('📍 TripRouteMap: Kid marker added');
           } else {
-            AppLogger.warning('📍 TripRouteMap: _kidMarkerIcon is null, cannot add kid marker');
+            AppLogger.warning(
+              '📍 TripRouteMap: _kidMarkerIcon is null, cannot add kid marker',
+            );
           }
 
           // Add parent/office marker (slightly offset for demo)
@@ -74,17 +83,14 @@ class _TripRouteMapState extends State<TripRouteMap> {
           if (_parentMarkerIcon != null) {
             _markers.add(
               Marker(
-                markerId: const MarkerId('parent_location'),
+                markerId: MarkerId('parent_location'),
                 position: LatLng(
                   position.latitude + 0.005,
                   position.longitude + 0.005,
                 ),
                 icon: _parentMarkerIcon!,
-                anchor: const Offset(0.5, 1.0),
-                infoWindow: const InfoWindow(
-                  title: 'at Office',
-                  snippet: '1 h 53 m',
-                ),
+                anchor: Offset(0.5.w, 1.0.w),
+                infoWindow: InfoWindow(title: 'at Office', snippet: '1 h 53 m'),
               ),
             );
             AppLogger.info('📍 TripRouteMap: Parent marker added');
@@ -101,30 +107,38 @@ class _TripRouteMapState extends State<TripRouteMap> {
             ),
           );
         } else {
-          AppLogger.warning('📍 TripRouteMap: Map controller is null, cannot move camera');
+          AppLogger.warning(
+            '📍 TripRouteMap: Map controller is null, cannot move camera',
+          );
         }
       } else {
-        AppLogger.warning('📍 TripRouteMap: Position is null or widget not mounted, trying last known position...');
+        AppLogger.warning(
+          '📍 TripRouteMap: Position is null or widget not mounted, trying last known position...',
+        );
         // If current position fails, try last known position
         Position? lastPosition = await _locationService.getLastKnownPosition();
-        AppLogger.info('📍 TripRouteMap: getLastKnownPosition returned: ${lastPosition != null ? "SUCCESS" : "NULL"}');
-        
+        AppLogger.info(
+          '📍 TripRouteMap: getLastKnownPosition returned: ${lastPosition != null ? "SUCCESS" : "NULL"}',
+        );
+
         if (lastPosition != null && mounted) {
-          AppLogger.info('📍 TripRouteMap: Last known position - Lat: ${lastPosition.latitude}, Lng: ${lastPosition.longitude}');
+          AppLogger.info(
+            '📍 TripRouteMap: Last known position - Lat: ${lastPosition.latitude}, Lng: ${lastPosition.longitude}',
+          );
           setState(() {
             _currentPosition = lastPosition;
             _isLoading = false;
             if (_kidMarkerIcon != null) {
               _markers.add(
                 Marker(
-                  markerId: const MarkerId('last_known_location'),
+                  markerId: MarkerId('last_known_location'),
                   position: LatLng(
                     lastPosition.latitude,
                     lastPosition.longitude,
                   ),
                   icon: _kidMarkerIcon!,
-                  anchor: const Offset(0.5, 1.0),
-                  infoWindow: const InfoWindow(
+                  anchor: Offset(0.5.w, 1.0.w),
+                  infoWindow: InfoWindow(
                     title: 'Last Known Location',
                     snippet: 'Last known position',
                   ),
@@ -141,7 +155,9 @@ class _TripRouteMapState extends State<TripRouteMap> {
             );
           }
         } else {
-          AppLogger.warning('📍 TripRouteMap: No location available, using default location (Bangalore)');
+          AppLogger.warning(
+            '📍 TripRouteMap: No location available, using default location (Bangalore)',
+          );
           // Default location (if no location available)
           if (mounted) {
             setState(() {
@@ -159,13 +175,16 @@ class _TripRouteMapState extends State<TripRouteMap> {
       }
     }
   }
+
   void _onMapCreated(GoogleMapController controller) {
     AppLogger.info('🗺️ TripRouteMap: Map controller created successfully!');
     _mapController = controller;
-    
+
     // If we already have a position, move camera to it
     if (_currentPosition != null) {
-      AppLogger.info('🗺️ TripRouteMap: Moving camera to existing position - Lat: ${_currentPosition!.latitude}, Lng: ${_currentPosition!.longitude}');
+      AppLogger.info(
+        '🗺️ TripRouteMap: Moving camera to existing position - Lat: ${_currentPosition!.latitude}, Lng: ${_currentPosition!.longitude}',
+      );
       controller.animateCamera(
         CameraUpdate.newLatLngZoom(
           LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
@@ -173,102 +192,112 @@ class _TripRouteMapState extends State<TripRouteMap> {
         ),
       );
     } else {
-      AppLogger.warning('🗺️ TripRouteMap: No current position available when map was created');
+      AppLogger.warning(
+        '🗺️ TripRouteMap: No current position available when map was created',
+      );
     }
   }
-@override
-Widget build(BuildContext context) {
-  final initialTarget = _currentPosition != null
-      ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
-      : const LatLng(12.9716, 77.5946); // Default: Bangalore
-  
-  AppLogger.info('🗺️ TripRouteMap: Building map widget');
-  AppLogger.info('🗺️ TripRouteMap: isLoading = $_isLoading');
-  AppLogger.info('🗺️ TripRouteMap: currentPosition = ${_currentPosition != null ? "Lat: ${_currentPosition!.latitude}, Lng: ${_currentPosition!.longitude}" : "NULL"}');
-  AppLogger.info('🗺️ TripRouteMap: initialTarget = Lat: ${initialTarget.latitude}, Lng: ${initialTarget.longitude}');
-  AppLogger.info('🗺️ TripRouteMap: markers count = ${_markers.length}');
-  AppLogger.info('🗺️ TripRouteMap: mapType = MapType.normal');
-  
-  return Stack(
-    clipBehavior: Clip.none,
-    children: [
-      // Map at the bottom
-      Positioned.fill(
-        child: Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          margin: const EdgeInsets.all(AppSizes.paddingM),
-          child: GoogleMap(
-            onMapCreated: _onMapCreated,
-            initialCameraPosition: CameraPosition(
-              target: initialTarget,
-              zoom: _currentPosition != null ? 15.0 : 12.0,
+
+  @override
+  Widget build(BuildContext context) {
+    final initialTarget = _currentPosition != null
+        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+        : LatLng(12.9716, 77.5946); // Default: Bangalore
+
+    AppLogger.info('🗺️ TripRouteMap: Building map widget');
+    AppLogger.info('🗺️ TripRouteMap: isLoading = $_isLoading');
+    AppLogger.info(
+      '🗺️ TripRouteMap: currentPosition = ${_currentPosition != null ? "Lat: ${_currentPosition!.latitude}, Lng: ${_currentPosition!.longitude}" : "NULL"}',
+    );
+    AppLogger.info(
+      '🗺️ TripRouteMap: initialTarget = Lat: ${initialTarget.latitude}, Lng: ${initialTarget.longitude}',
+    );
+    AppLogger.info('🗺️ TripRouteMap: markers count = ${_markers.length}');
+    AppLogger.info('🗺️ TripRouteMap: mapType = MapType.normal');
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Map at the bottom
+        Positioned.fill(
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30.w),
             ),
-            markers: _markers,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            mapType: MapType.normal,
-            zoomControlsEnabled: false,
-            compassEnabled: false,
-            onCameraMoveStarted: () {
-              AppLogger.info('🗺️ TripRouteMap: Camera move started');
-            },
-            onCameraIdle: () {
-              AppLogger.info('🗺️ TripRouteMap: Camera idle');
-            },
-          ),
-        ),
-      ),
-
-      // Title on top of the map
-      Positioned(
-        top: 29,
-        left: 30,
-        right: 0,
-
-        child: Container(
-          width: 100,
-          // height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM, vertical: AppSizes.paddingS),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceColor.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          ),
-          child: Text(
-            'Trip Route',
-            style: AppTextStyles.subtitle1.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
+            margin: EdgeInsets.all(AppSizes.paddingM.w),
+            child: GoogleMap(
+              onMapCreated: _onMapCreated,
+              initialCameraPosition: CameraPosition(
+                target: initialTarget,
+                zoom: _currentPosition != null ? 15.0 : 12.0,
+              ),
+              markers: _markers,
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
+              mapType: MapType.normal,
+              zoomControlsEnabled: false,
+              compassEnabled: false,
+              onCameraMoveStarted: () {
+                AppLogger.info('🗺️ TripRouteMap: Camera move started');
+              },
+              onCameraIdle: () {
+                AppLogger.info('🗺️ TripRouteMap: Camera idle');
+              },
             ),
           ),
         ),
-      ),
+
+        // Title on top of the map
         Positioned(
-        bottom:30,
-        left: 0,
-        right: 0,
+          top: 29.w,
+          left: 30.w,
+          right: 0.w,
 
-        child: _buildTripTodayCard(context)
-      ),
-    ],
-  );
-}
+          child: Container(
+            width: 100.w,
+            // height: 30,
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSizes.paddingM.w,
+              vertical: AppSizes.paddingS.w,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceColor.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM.w),
+            ),
+            child: Text(
+              'Trip Route',
+              style: AppTextStyles.subtitle1.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 30.w,
+          left: 0.w,
+          right: 0.w,
 
- // Trip Today Card
+          child: _buildTripTodayCard(context),
+        ),
+      ],
+    );
+  }
+
+  // Trip Today Card
   Widget _buildTripTodayCard(BuildContext context) {
     return Container(
-      height: 85,
-      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
-      padding: const EdgeInsets.all(AppSizes.paddingS),
+      height: 85.w,
+      margin: EdgeInsets.symmetric(horizontal: AppSizes.paddingL.w),
+      padding: EdgeInsets.all(AppSizes.paddingS.w),
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
-        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL.w),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 10.w,
+            offset: Offset(0, 4.w),
           ),
         ],
       ),
@@ -277,43 +306,42 @@ Widget build(BuildContext context) {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              
               Text(
                 '08:43 am - 21:20 pm (12hrs)',
                 style: AppTextStyles.overline.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
-              // const SizedBox(height: AppSizes.spacingXS),
+              // SizedBox(height: AppSizes.spacingXS.w),
               Text(
                 'Kamakshi Palaya - Cubbon Park',
                 style: AppTextStyles.overline.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: AppSizes.spacingM),
+              SizedBox(height: AppSizes.spacingM.w),
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.paddingXS,
-                      vertical: AppSizes.paddingXS,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingXS.w,
+                      vertical: AppSizes.paddingXS.w,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.backgroundColor,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusS.w),
                     ),
                     child: Text('4 Events', style: AppTextStyles.caption),
                   ),
-                  const SizedBox(width: AppSizes.spacingS),
+                  SizedBox(width: AppSizes.spacingS.w),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.paddingS,
-                      vertical: AppSizes.paddingXS,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingS.w,
+                      vertical: AppSizes.paddingXS.w,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryColor.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusS.w),
                     ),
                     child: Text(
                       'today',
@@ -323,28 +351,25 @@ Widget build(BuildContext context) {
                       ),
                     ),
                   ),
-                 
                 ],
               ),
             ],
           ),
-           const Spacer(),
-                  CommonButton(
-                    padding: EdgeInsets.zero,
-                    width: 80,
-                    text: 'View all',
-                    fontSize: 12.0.sp,
-                    textColor: AppColors.surfaceColor,
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const TripsView()),
-                    ),
-                    height: 30,
-                  ),
+          Spacer(),
+          CommonButton(
+            padding: EdgeInsets.zero,
+            width: 80.w,
+            text: 'View all',
+            fontSize: 12.0.sp,
+            textColor: AppColors.surfaceColor,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => TripsView()),
+            ),
+            height: 30.w,
+          ),
         ],
       ),
     );
   }
-
 }
-

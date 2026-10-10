@@ -89,6 +89,7 @@ class ApiEndpoints {
   static const String webFilter = 'parent/web-filter';
   static const String restrictDeletion = 'parent/restrict-deletion';
   static const String notificationPreferences = 'notification-preferences';
+  static const String parentNotificationLogs = 'parent/notifications/logs';
 
   // Chat Endpoints
   static const String chat = 'chat';

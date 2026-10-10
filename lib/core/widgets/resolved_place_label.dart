@@ -16,6 +16,7 @@ class ResolvedPlaceLabel extends StatefulWidget {
   final double? lng;
   final Color iconColor;
   final TextStyle? textStyle;
+  final bool showDot;
 
   const ResolvedPlaceLabel({
     super.key,
@@ -24,6 +25,7 @@ class ResolvedPlaceLabel extends StatefulWidget {
     required this.lng,
     this.iconColor = Colors.grey,
     this.textStyle,
+    this.showDot = true,
   });
 
   @override
@@ -54,7 +56,10 @@ class _ResolvedPlaceLabelState extends State<ResolvedPlaceLabel> {
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      final placemarks = await placemarkFromCoordinates(widget.lat!, widget.lng!);
+      final placemarks = await placemarkFromCoordinates(
+        widget.lat!,
+        widget.lng!,
+      );
 
       if (placemarks.isNotEmpty && mounted) {
         final place = placemarks.first;
@@ -83,8 +88,10 @@ class _ResolvedPlaceLabelState extends State<ResolvedPlaceLabel> {
 
     return Row(
       children: [
-        Icon(Icons.circle, size: 8, color: widget.iconColor),
-        const SizedBox(width: 8),
+        if (widget.showDot) ...[
+          Icon(Icons.circle, size: 8, color: widget.iconColor),
+          const SizedBox(width: 8),
+        ],
         Expanded(
           child: _isLoading
               ? SizedBox(

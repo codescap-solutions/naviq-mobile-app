@@ -50,15 +50,20 @@ class HomeRepository extends BaseService {
     return response;
   }
 
-  Future<BaseResponse<Map<String, dynamic>>> getTrackingSnapshot(String childId) async {
+  Future<BaseResponse<Map<String, dynamic>>> getTrackingSnapshot(
+    String childId,
+  ) async {
     final response = await get<Map<String, dynamic>>(
       ApiEndpoints.getTrackingSnapshot(childId),
     );
 
     if (response.isSuccess && response.data != null) {
-      return BaseResponse.success(data: response.data!, message: response.message);
+      return BaseResponse.success(
+        data: response.data!,
+        message: response.message,
+      );
     }
-    
+
     return BaseResponse.error(
       message: response.message,
       statusCode: response.statusCode,
@@ -115,7 +120,10 @@ class HomeRepository extends BaseService {
     );
   }
 
-  Future<BaseResponse<TripDetailResponse>> getTripDetail(String tripId, {String? childId}) async {
+  Future<BaseResponse<TripDetailResponse>> getTripDetail(
+    String tripId, {
+    String? childId,
+  }) async {
     final url = childId != null
         ? 'parent/child/$childId/trips/$tripId'
         : ApiEndpoints.getTripDetail(tripId);
@@ -171,6 +179,18 @@ class HomeRepository extends BaseService {
       data: dataMap,
     );
     return response;
+  }
+
+  /// Pushes the parent actually received (geofence, logout requests, promos…),
+  /// newest first. Response data: `{logs: [...], pagination: {has_next, ...}}`.
+  Future<BaseResponse<Map<String, dynamic>>> getNotificationFeed({
+    int page = 1,
+    int pageSize = 20,
+  }) {
+    return get<Map<String, dynamic>>(
+      ApiEndpoints.parentNotificationLogs,
+      queryParameters: {'visible': 'true', 'page': page, 'page_size': pageSize},
+    );
   }
 
   Future<BaseResponse<List<dynamic>>> getChildrenProfiles() async {
@@ -258,7 +278,8 @@ class HomeRepository extends BaseService {
     return BaseResponse.error(message: response.message);
   }
 
-  Future<BaseResponse<Map<String, dynamic>>> getNotificationPreferences() async {
+  Future<BaseResponse<Map<String, dynamic>>>
+  getNotificationPreferences() async {
     final response = await get<Map<String, dynamic>>(
       ApiEndpoints.notificationPreferences,
     );
@@ -394,7 +415,10 @@ class HomeRepository extends BaseService {
   Future<BaseResponse<List<dynamic>>> getGuardians() async {
     final response = await get<List<dynamic>>(ApiEndpoints.guardians);
     if (response.isSuccess && response.data != null) {
-      return BaseResponse.success(data: response.data!, message: response.message);
+      return BaseResponse.success(
+        data: response.data!,
+        message: response.message,
+      );
     }
     return BaseResponse.error(
       message: response.message,
@@ -445,7 +469,8 @@ class HomeRepository extends BaseService {
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(
           file.path,
-          filename: 'avatar_guardian_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          filename:
+              'avatar_guardian_${DateTime.now().millisecondsSinceEpoch}.jpg',
         ),
       });
       final response = await post(
@@ -455,14 +480,21 @@ class HomeRepository extends BaseService {
       if (response.isSuccess && response.data != null) {
         final avatarUrl = response.data['avatar_url'] as String?;
         if (avatarUrl != null) {
-          return BaseResponse.success(data: avatarUrl, message: response.message);
+          return BaseResponse.success(
+            data: avatarUrl,
+            message: response.message,
+          );
         }
       }
       return BaseResponse.error(
-        message: response.message.isEmpty ? 'Failed to upload avatar' : response.message,
+        message: response.message.isEmpty
+            ? 'Failed to upload avatar'
+            : response.message,
       );
     } catch (e) {
-      return BaseResponse.error(message: 'Error uploading avatar: ${e.toString()}');
+      return BaseResponse.error(
+        message: 'Error uploading avatar: ${e.toString()}',
+      );
     }
   }
 }
