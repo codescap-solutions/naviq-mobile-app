@@ -17,6 +17,9 @@ class DeviceInfo {
   final DateTime? lastAlarmAt;
   final String? deviceImei;
 
+  /// Child is tracked by a hardware device only (no phone ever logged in).
+  final bool isDeviceOnly;
+
   DeviceInfo({
     required this.batteryPercentage,
     required this.networkStatus,
@@ -31,6 +34,7 @@ class DeviceInfo {
     this.lastAlarmType,
     this.lastAlarmAt,
     this.deviceImei,
+    this.isDeviceOnly = false,
   });
 
   factory DeviceInfo.fromJson(Map<String, dynamic> json) {
@@ -50,6 +54,7 @@ class DeviceInfo {
           ? DateTime.tryParse(json['last_alarm_at'] as String)
           : null,
       deviceImei: json['device_imei'] as String?,
+      isDeviceOnly: json['is_device_only'] == true,
     );
   }
 
@@ -76,10 +81,13 @@ class DeviceInfo {
       onlineSince: onlineSince ?? this.onlineSince,
       isCharging: isCharging ?? this.isCharging,
       gpsEnabled: gpsEnabled ?? this.gpsEnabled,
-      locationPermissionStatus: locationPermissionStatus ?? this.locationPermissionStatus,
+      locationPermissionStatus:
+          locationPermissionStatus ?? this.locationPermissionStatus,
       altitude: altitude ?? this.altitude,
       lastAlarmType: lastAlarmType ?? this.lastAlarmType,
       lastAlarmAt: lastAlarmAt ?? this.lastAlarmAt,
+      deviceImei: deviceImei,
+      isDeviceOnly: isDeviceOnly,
     );
   }
 }

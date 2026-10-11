@@ -1,11 +1,13 @@
 import 'package:child_track/app/childapp/view_model/repository/child_repo.dart';
 import 'package:child_track/app/home/view_model/home_repo.dart';
 import 'package:child_track/core/di/injector.dart';
+import 'package:child_track/app/auth/view/onboarding/kid_added_view.dart';
 import 'package:child_track/core/navigation/route_names.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/utils/app_logger.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/widgets/figma_primary_button.dart';
@@ -18,7 +20,11 @@ import 'package:child_track/core/widgets/figma_app_bar.dart';
 
 class AddKidView extends StatefulWidget {
   final ChildProfile? childToEdit;
-  const AddKidView({super.key, this.childToEdit});
+
+  /// Add a kid tracked by a GPS device: asks for its serial number and skips
+  /// the child-code pairing step (there is no phone to pair).
+  final bool withDevice;
+  const AddKidView({super.key, this.childToEdit, this.withDevice = false});
 
   @override
   State<AddKidView> createState() => _AddKidViewState();
@@ -28,6 +34,7 @@ class _AddKidViewState extends State<AddKidView> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
+  final _serialController = TextEditingController();
   final _childRepo = injector<ChildRepo>();
   final _homeRepo = injector<HomeRepository>();
   final _sharedPrefsService = SharedPrefsService();
@@ -102,6 +109,7 @@ class _AddKidViewState extends State<AddKidView> {
   void dispose() {
     _nameController.dispose();
     _ageController.dispose();
+    _serialController.dispose();
     super.dispose();
   }
 
@@ -360,6 +368,35 @@ class _AddKidViewState extends State<AddKidView> {
     validator: validator,
   );
 
+  /// Same 10–11 digit rule as the Devices screen's link sheet.
+  Widget _buildSerialField() => CommonTextField(
+    controller: _serialController,
+    hintText: 'Device serial number',
+    keyboardType: TextInputType.number,
+    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+    maxLength: 11,
+    fillColor: Colors.white,
+    borderColor: FigmaColors.fieldBorder,
+    borderRadius: 16.w,
+    contentPadding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 18.w),
+    hintStyle: FigmaText.inputHint,
+    suffixIcon: IconButton(
+      tooltip: 'Where to find the serial number',
+      icon: Icon(Icons.info_outline_rounded, color: FigmaColors.body),
+      onPressed: () => AppSnackbar.showInfo(
+        context,
+        'The 10 or 11-digit serial number is printed on the back of the '
+        'tracker package.',
+      ),
+    ),
+    validator: (v) {
+      final serial = v?.trim() ?? '';
+      if (serial.isEmpty) return 'Please enter the device serial number';
+      if (serial.length < 10) return 'Serial number must be 10 or 11 digits';
+      return null;
+    },
+  );
+
   Widget _buildDetailsSection(bool isEdit) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,6 +412,10 @@ class _AddKidViewState extends State<AddKidView> {
           validator: (v) =>
               v == null || v.isEmpty ? 'Please enter child name' : null,
         ),
+        if (widget.withDevice && !isEdit) ...[
+          SizedBox(height: 16.w),
+          _buildSerialField(),
+        ],
         SizedBox(height: 25.w),
         Text('Age', style: FigmaText.fieldLabel),
         SizedBox(height: 16.w),
@@ -652,6 +693,7 @@ class _AddKidViewState extends State<AddKidView> {
         age: age,
         travelOption: travelOption,
         avatar: avatarValue,
+        deviceImei: widget.withDevice ? _serialController.text.trim() : null,
       );
 
       if (response.isSuccess && response.data != null) {
@@ -687,7 +729,16 @@ class _AddKidViewState extends State<AddKidView> {
             'Child created successfully. ID: $childId, Code: $childCode',
           );
 
-          if (mounted && childCode != null) {
+          if (mounted && widget.withDevice) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => KidAddedView(
+                  kidName: name,
+                  serial: _serialController.text.trim(),
+                ),
+              ),
+            );
+          } else if (mounted && childCode != null) {
             Navigator.of(context).pushReplacementNamed(
               RouteNames.childCode,
               arguments: {

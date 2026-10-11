@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
+import 'package:child_track/core/widgets/figma_primary_button.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:child_track/core/di/injector.dart';
@@ -308,11 +310,7 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                       children: [
                         Text(
                           'Add Guardian',
-                          style: GoogleFonts.poppins(
-                            fontSize: 20.0.sp,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF0C1D37),
-                          ),
+                          style: FigmaText.poppins(20, lineHeight: 28),
                         ),
                         IconButton(
                           icon: Icon(
@@ -325,21 +323,17 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                       ],
                     ),
                     SizedBox(height: 20.w),
-                    Text(
-                      'Name',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14.0.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0C1D37),
-                      ),
-                    ),
+                    Text('Name', style: FigmaText.poppins(16, lineHeight: 24)),
                     SizedBox(height: 8.w),
                     TextField(
                       controller: nameController,
                       decoration: InputDecoration(
                         hintText: 'Enter Name',
-                        hintStyle: GoogleFonts.poppins(
-                          color: Color(0xFF94A3B8),
+                        hintStyle: FigmaText.poppins(
+                          12,
+                          weight: FontWeight.w600,
+                          color: Color(0xFF9BA4B5),
+                          lineHeight: 18,
                         ),
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 16.w,
@@ -347,22 +341,18 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.w),
-                          borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                          borderSide: BorderSide(color: Colors.black),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.w),
-                          borderSide: BorderSide(color: Color(0xFFE2E8F0)),
+                          borderSide: BorderSide(color: Colors.black),
                         ),
                       ),
                     ),
                     SizedBox(height: 16.w),
                     Text(
                       'Phone Number',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14.0.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0C1D37),
-                      ),
+                      style: FigmaText.poppins(16, lineHeight: 24),
                     ),
                     SizedBox(height: 8.w),
                     TextField(
@@ -370,8 +360,11 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                       keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
                         hintText: 'Enter Phone Number',
-                        hintStyle: GoogleFonts.poppins(
-                          color: Color(0xFF94A3B8),
+                        hintStyle: FigmaText.poppins(
+                          12,
+                          weight: FontWeight.w600,
+                          color: Color(0xFF9BA4B5),
+                          lineHeight: 18,
                         ),
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 16.w,
@@ -379,11 +372,11 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.w),
-                          borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                          borderSide: BorderSide(color: Colors.black),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.w),
-                          borderSide: BorderSide(color: Color(0xFFE2E8F0)),
+                          borderSide: BorderSide(color: Colors.black),
                         ),
                       ),
                     ),
@@ -424,36 +417,10 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                       ),
                     ],
                     SizedBox(height: 24.w),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54.w,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF0066FF),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16.w),
-                          ),
-                          elevation: 0,
-                        ),
-                        onPressed: isSubmitting ? null : submit,
-                        child: isSubmitting
-                            ? SizedBox(
-                                width: 22.w,
-                                height: 22.w,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(
-                                'Continue',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16.0.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                      ),
+                    FigmaPrimaryButton(
+                      label: 'Continue',
+                      isLoading: isSubmitting,
+                      onPressed: submit,
                     ),
                   ],
                 ),
@@ -558,11 +525,7 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                     ),
                     Text(
                       'Edit Name',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14.0.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0C1D37),
-                      ),
+                      style: FigmaText.poppins(16, lineHeight: 24),
                     ),
                     SizedBox(height: 8.w),
                     TextField(
@@ -574,45 +537,19 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.w),
-                          borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                          borderSide: BorderSide(color: Colors.black),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.w),
-                          borderSide: BorderSide(color: Color(0xFFE2E8F0)),
+                          borderSide: BorderSide(color: Colors.black),
                         ),
                       ),
                     ),
                     SizedBox(height: 24.w),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54.w,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: BorderSide(color: Colors.black, width: 2.0.w),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16.w),
-                          ),
-                        ),
-                        onPressed: isSubmitting ? null : submit,
-                        child: isSubmitting
-                            ? SizedBox(
-                                width: 22.w,
-                                height: 22.w,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  color: Colors.black,
-                                ),
-                              )
-                            : Text(
-                                'Update',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16.0.sp,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.black,
-                                ),
-                              ),
-                      ),
+                    FigmaPrimaryButton(
+                      label: 'Update',
+                      isLoading: isSubmitting,
+                      onPressed: submit,
                     ),
                   ],
                 ),
@@ -692,10 +629,7 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFF8FAFC),
-      appBar: figmaAppBar(
-        context,
-        title: 'Family',
-      ),
+      appBar: figmaAppBar(context, title: 'Family'),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _fetchGuardians,
@@ -765,13 +699,14 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                               children: [
                                 Text(
                                   guardian['name'] ?? '',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16.0.sp,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0C1D37),
+                                  // Figma "Body Medium": 16 / 24, #0F1320.
+                                  style: FigmaText.poppins(
+                                    16,
+                                    color: Color(0xFF0F1320),
+                                    lineHeight: 24,
                                   ),
                                 ),
-                                SizedBox(height: 4.w),
+                                SizedBox(height: 2.w),
                                 Row(
                                   children: [
                                     Icon(
@@ -782,10 +717,10 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                                     SizedBox(width: 4.w),
                                     Text(
                                       guardian['phone_number'] ?? '',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13.0.sp,
-                                        color: Color(0xFF64748B),
-                                        fontWeight: FontWeight.w500,
+                                      style: FigmaText.poppins(
+                                        12,
+                                        color: FigmaColors.body,
+                                        lineHeight: 20,
                                       ),
                                     ),
                                   ],

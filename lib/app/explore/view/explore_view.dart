@@ -4,6 +4,7 @@ import 'package:child_track/app/subscription/view/subscription_multi_plan_view.d
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/di/injector.dart';
@@ -25,7 +26,7 @@ class ExploreView extends StatelessWidget {
     final sharedPrefsService = injector<SharedPrefsService>();
 
     return Scaffold(
-      backgroundColor: Color(0xFFF3F4F6),
+      backgroundColor: Color(0xFFF4F8FE),
       appBar: figmaAppBar(
         context,
         title: 'Explore',
@@ -166,7 +167,7 @@ class ExploreView extends StatelessWidget {
       if (i > 0) {
         rows.add(
           Padding(
-            padding: EdgeInsets.fromLTRB(20.w, 0.w, 20.w, 8.w),
+            padding: EdgeInsets.symmetric(horizontal: 22.w),
             child: Divider(height: 1, thickness: 1, color: Color(0xFFEEF0F4)),
           ),
         );
@@ -202,34 +203,32 @@ class ExploreView extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(20.w, 16.w, 20.w, 11.w),
+        padding: EdgeInsets.fromLTRB(22.w, 17.w, 22.w, 17.w),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 44.w,
-              height: 44.w,
-              decoration: BoxDecoration(
-                color: Color(0xFFF7F8FA),
-                borderRadius: BorderRadius.circular(16.w),
-              ),
-              child: Center(
-                child: SvgPicture.asset(iconAsset, width: 20.w, height: 20.w),
+            // Figma: bare 26px blue icon, no tile.
+            SvgPicture.asset(
+              iconAsset,
+              width: 26.w,
+              height: 26.w,
+              colorFilter: ColorFilter.mode(
+                FigmaColors.primary,
+                BlendMode.srcIn,
               ),
             ),
-            SizedBox(width: 16.w),
+            SizedBox(width: 18.w),
             Expanded(
               child: Padding(
-                padding: EdgeInsets.only(top: 1.w),
+                padding: EdgeInsets.zero,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
                       style: GoogleFonts.poppins(
-                        fontSize: 20.0.sp,
+                        fontSize: 16.0.sp,
                         fontWeight: FontWeight.w400,
-                        height: 28 / 20,
+                        height: 24 / 16,
                         letterSpacing: 0.2,
                         color: Color(0xFF0F1320),
                       ),
@@ -248,19 +247,11 @@ class ExploreView extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(
-              height: 44.w,
-              child: Center(
-                child: SvgPicture.asset(
-                  'assets/icons/settings_chevron.svg',
-                  width: 18.w,
-                  height: 18.w,
-                  colorFilter: ColorFilter.mode(
-                    Color(0xFF707784),
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
+            SvgPicture.asset(
+              'assets/icons/settings_chevron.svg',
+              width: 18.w,
+              height: 18.w,
+              colorFilter: ColorFilter.mode(Color(0xFF707784), BlendMode.srcIn),
             ),
           ],
         ),

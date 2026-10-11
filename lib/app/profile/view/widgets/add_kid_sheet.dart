@@ -2,12 +2,13 @@ import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:flutter/material.dart';
 
-/// Figma "add kid popup": bottom sheet that explains the two ways to add a
-/// child (install the app / buy a tracker) and offers both actions.
-/// Both callbacks run after the sheet has closed.
+/// Figma "add kid popup": bottom sheet that explains the ways to add a child
+/// (install the app / use a GPS tracker) and offers the three actions.
+/// Every callback runs after the sheet has closed.
 Future<void> showAddKidSheet(
   BuildContext context, {
   required VoidCallback onAddKid,
+  required VoidCallback onAddKidWithDevice,
   required VoidCallback onPurchaseDevice,
 }) {
   return showModalBottomSheet<void>(
@@ -19,6 +20,10 @@ Future<void> showAddKidSheet(
         Navigator.pop(sheetContext);
         onAddKid();
       },
+      onAddKidWithDevice: () {
+        Navigator.pop(sheetContext);
+        onAddKidWithDevice();
+      },
       onPurchaseDevice: () {
         Navigator.pop(sheetContext);
         onPurchaseDevice();
@@ -29,9 +34,14 @@ Future<void> showAddKidSheet(
 
 class _AddKidSheet extends StatelessWidget {
   final VoidCallback onAddKid;
+  final VoidCallback onAddKidWithDevice;
   final VoidCallback onPurchaseDevice;
 
-  const _AddKidSheet({required this.onAddKid, required this.onPurchaseDevice});
+  const _AddKidSheet({
+    required this.onAddKid,
+    required this.onAddKidWithDevice,
+    required this.onPurchaseDevice,
+  });
 
   static const _tint = Color(0xFFF2F7FF);
   static const _tintBorder = Color(0xFFD6E6FD);
@@ -77,8 +87,15 @@ class _AddKidSheet extends StatelessWidget {
           SizedBox(height: 24.w),
           _FilledButton(
             icon: Icons.add_rounded,
-            label: 'Add Kid',
+            label: 'Add Kid with Phone',
             onTap: onAddKid,
+          ),
+          SizedBox(height: 12.w),
+          _FilledButton(
+            icon: Icons.gps_fixed_rounded,
+            label: 'Add Kid with Device',
+            outlined: true,
+            onTap: onAddKidWithDevice,
           ),
           SizedBox(height: 12.w),
           _FilledButton(

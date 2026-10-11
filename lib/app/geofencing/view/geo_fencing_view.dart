@@ -20,7 +20,6 @@ import '../model/geofence_model.dart';
 import 'widgets/geoplace_card.dart';
 import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/widgets/figma_app_bar.dart';
-import 'widgets/preset_place_card_body.dart';
 import 'package:child_track/core/widgets/geo_fencing_shimmer.dart';
 
 class GeoFencingView extends StatefulWidget {
@@ -213,13 +212,6 @@ class _GeoFencingViewState extends State<GeoFencingView> {
                             },
                           ),
                         ),
-                      ] else ...[
-                        // Professional Quick Add / Preset Grid directly on main page
-                        SizedBox(height: 16.w),
-                        _buildPresetGridHeader(),
-                        SizedBox(height: 8.w),
-                        _buildPresetGridContent(),
-                        SizedBox(height: 24.w),
                       ],
 
                       SizedBox(height: 24.w),
@@ -494,121 +486,5 @@ class _GeoFencingViewState extends State<GeoFencingView> {
       return '${parts[0].trim()}, ${parts[1].trim()}';
     }
     return address;
-  }
-
-  Widget _buildPresetGridHeader() => _sectionCaption("Quick Add Geofence");
-
-  Widget _buildPresetGridContent() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: 10.w,
-      crossAxisSpacing: 12.w,
-      childAspectRatio: (MediaQuery.of(context).size.width - 40.w) / 2 / 100.w,
-      children: [
-        _buildPresetGridCard(
-          label: "School",
-          emoji: '🏫',
-          circleBg: Color(0xFF0DBF75),
-          category: "school",
-        ),
-        _buildPresetGridCard(
-          label: "Coaching",
-          emoji: '🎓',
-          circleBg: Color(0xFFF5A623),
-          category: "tuition",
-        ),
-        _buildPresetGridCard(
-          label: "Grandma's",
-          emoji: '👵',
-          circleBg: Color(0xFFF03E3E),
-          category: "other",
-        ),
-        _buildPresetGridCard(
-          label: "Temple/Masjid",
-          emoji: '⛪',
-          circleBg: Color(0xFF0069F9),
-          category: "other",
-        ),
-        _buildPresetGridCard(
-          label: "Sports Ground",
-          emoji: '🏏',
-          circleBg: Color(0xFF003A8C),
-          category: "other",
-        ),
-        _buildPresetGridCard(
-          label: "Current Location",
-          emoji: '📍',
-          circleBg: Color(0xFF9BA4B5),
-          category: "other",
-          isCurrentLocation: true,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPresetGridCard({
-    required String label,
-    required String emoji,
-    required Color circleBg,
-    required String category,
-    bool isCurrentLocation = false,
-  }) {
-    final homeState = injector<HomepageBloc>().state;
-    LatLng? currentLatLng;
-    String? currentAddress;
-    if (isCurrentLocation &&
-        homeState is HomepageSuccess &&
-        homeState.currentLocation != null) {
-      final loc = homeState.currentLocation!;
-      currentLatLng = LatLng(loc.lat, loc.lng);
-      currentAddress = loc.address;
-    }
-
-    return GestureDetector(
-      onTap: () {
-        if (!_isPrimaryParent) {
-          AppSnackbar.showError(
-            context,
-            'Guardians have view-only access. Only primary parents can edit geofences.',
-          );
-          return;
-        }
-        if (!_canCreateNewGeofence()) return;
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => LocationSelectionScreen(
-              childId: widget.childId,
-              parentId: widget.parentId,
-              selectedCategory: category,
-              customName: label,
-              isCurrentLocation: isCurrentLocation,
-              geofence: currentLatLng != null
-                  ? Geofence(
-                      name: label,
-                      address: currentAddress ?? 'Current Location',
-                      latitude: currentLatLng.latitude,
-                      longitude: currentLatLng.longitude,
-                    )
-                  : null,
-            ),
-          ),
-        ).then((_) {
-          if (!mounted) return;
-          if (widget.childId != null && _lastDateParam != null) {
-            context.read<GeofenceBloc>().add(
-              GetGeofencesRequested(
-                childId: widget.childId!,
-                date: _lastDateParam!,
-              ),
-            );
-          }
-          injector<HomepageBloc>().add(GetHomepageData());
-        });
-      },
-      child: PresetPlaceCardBody(label: label, emoji: emoji, color: circleBg),
-    );
   }
 }

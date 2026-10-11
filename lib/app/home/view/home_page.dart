@@ -30,6 +30,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../geofencing/view/geo_fencing_view.dart';
 import '../../geofencing/view_model/bloc/geofence_bloc.dart';
 import '../../geofencing/view_model/bloc/geofence_event.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import '../../settings/view/help_view.dart';
 import '../../settings/view/settings_view.dart';
 import '../../settings/view/devices_view.dart';
@@ -1258,11 +1259,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           const SizedBox(width: 8),
                           Text(
                             'Location Share',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18.0.sp,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF0C1D37),
-                            ),
+                            style: FigmaText.poppins(20, lineHeight: 28),
                           ),
                         ],
                       ),
@@ -1301,19 +1298,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 children: [
                                   Text(
                                     '$requesterName is requesting for your kids location',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14.0.sp,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF0C1D37),
+                                    style: FigmaText.poppins(
+                                      16,
+                                      lineHeight: 24,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     'Sent just now',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12.0.sp,
-                                      color: const Color(0xFF64748B),
-                                      fontWeight: FontWeight.w500,
+                                    style: FigmaText.poppins(
+                                      11,
+                                      color: const Color(0xFF9BA4B5),
+                                      lineHeight: 16,
                                     ),
                                   ),
                                   if (notes != null &&
@@ -1370,7 +1366,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             'Share location for',
                             style: GoogleFonts.poppins(
                               fontSize: 14.0.sp,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w400,
                               color: const Color(0xFF0C1D37),
                             ),
                           ),
@@ -1417,8 +1413,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   child: Text(
                                     duration,
                                     style: GoogleFonts.poppins(
-                                      fontSize: 13.0.sp,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.0.sp,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w400,
                                       color: isSelected
                                           ? Colors.white
                                           : const Color(0xFF0C1D37),
@@ -1569,13 +1567,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       const SizedBox(height: 28),
                       SizedBox(
                         width: double.infinity,
-                        height: 52,
+                        height: 60,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF0066FF),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 0,
                           ),
@@ -1722,7 +1720,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
-                        height: 52,
+                        height: 60,
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFFDC2626),
@@ -1731,7 +1729,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               width: 1.5,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                           onPressed: isResponding
@@ -2597,6 +2595,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         final isChildNotPaired =
             !_viewingSharedChild &&
             state.trackingSnapshot?.uiDirective.displayState == 'NEVER_SHARED';
+        // A hardware-tracker-only kid has no phone, so Scroll (app locking)
+        // has nothing to control.
+        final isScrollDisabled = state.deviceInfo?.isDeviceOnly == true;
         final childName =
             _sharedPrefsService.getString('child_name') ?? 'Ananya';
         // Backend already resolves place_name authoritatively (Child.currentPlace,
@@ -3485,28 +3486,38 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                             child: Row(
                                               children: [
                                                 Expanded(
-                                                  child: _buildFeatureCard(
-                                                    title: 'Scroll',
-                                                    statusText:
-                                                        state
-                                                            .features
-                                                            ?.scrollStatusText ??
-                                                        '0 Apps Locked',
-                                                    iconAsset:
-                                                        'assets/home/home_scroll.svg',
-                                                    cardBg: Color(0xFFEBF3FF),
-                                                    statusTextCol: Color(
-                                                      0xFF3084F7,
-                                                    ),
-                                                    onTap: () {
-                                                      Navigator.push(
-                                                        context,
-                                                        MaterialPageRoute(
-                                                          builder: (_) =>
-                                                              SocialAppsView(),
+                                                  child: IgnorePointer(
+                                                    ignoring: isScrollDisabled,
+                                                    child: Opacity(
+                                                      opacity: isScrollDisabled
+                                                          ? 0.45
+                                                          : 1.0,
+                                                      child: _buildFeatureCard(
+                                                        title: 'Scroll',
+                                                        statusText:
+                                                            state
+                                                                .features
+                                                                ?.scrollStatusText ??
+                                                            '0 Apps Locked',
+                                                        iconAsset:
+                                                            'assets/home/home_scroll.svg',
+                                                        cardBg: Color(
+                                                          0xFFEBF3FF,
                                                         ),
-                                                      );
-                                                    },
+                                                        statusTextCol: Color(
+                                                          0xFF3084F7,
+                                                        ),
+                                                        onTap: () {
+                                                          Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder: (_) =>
+                                                                  SocialAppsView(),
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
                                                 SizedBox(width: 14.w),

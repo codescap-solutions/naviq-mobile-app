@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:child_track/app/childapp/view_model/repository/logout_request_repository.dart';
 import 'package:child_track/app/home/view_model/home_repo.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:flutter/material.dart';
@@ -162,7 +163,10 @@ class _NotificationPageState extends State<NotificationPage> {
             .map((e) => Map<String, dynamic>.from(e as Map))
             .toList();
       }
-      for (final entry in {'approved': results[1], 'denied': results[2]}.entries) {
+      for (final entry in {
+        'approved': results[1],
+        'denied': results[2],
+      }.entries) {
         if (!entry.value.isSuccess) continue;
         for (final r in entry.value.data ?? const []) {
           _logoutStatus[(r as Map)['_id'].toString()] = entry.key;
@@ -513,43 +517,42 @@ class _NotificationPageState extends State<NotificationPage> {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13.0.sp,
-                          fontWeight: FontWeight.w700,
-                          height: 19.5 / 13,
+                        style: FigmaText.poppins(
+                          16,
                           color: Color(0xFF0F1320),
+                          lineHeight: 24,
                         ),
                       ),
                       Padding(
                         padding: EdgeInsets.only(top: 2.w),
                         child: Text(
                           body,
-                          style: GoogleFonts.poppins(
-                            fontSize: 11.0.sp,
-                            fontWeight: FontWeight.w400,
-                            height: 16.5 / 11,
+                          style: FigmaText.poppins(
+                            12,
                             color: Color(0xFF6B7280),
+                            lineHeight: 20,
                           ),
                         ),
                       ),
                       if (type == 'LOGOUT_REQUEST' &&
-                          _logoutStatus[notification['request_id']?.toString()] !=
+                          _logoutStatus[notification['request_id']
+                                  ?.toString()] !=
                               null)
                         Padding(
                           padding: EdgeInsets.only(top: 8.w),
                           child: _statusChip(
-                            _logoutStatus[notification['request_id']?.toString()]!,
+                            _logoutStatus[notification['request_id']
+                                ?.toString()]!,
                           ),
                         ),
                       Padding(
                         padding: EdgeInsets.only(top: 8.w),
                         child: Text(
                           _formatTimestamp(timestamp),
-                          style: GoogleFonts.poppins(
-                            fontSize: 10.0.sp,
-                            fontWeight: FontWeight.w400,
-                            height: 15 / 10,
+                          style: FigmaText.poppins(
+                            11,
                             color: Color(0xFF9BA4B5),
+                            lineHeight: 16,
                           ),
                         ),
                       ),
@@ -667,21 +670,20 @@ class _NotificationPageState extends State<NotificationPage> {
                   children: [
                     Text(
                       '$name wants to log out',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13.0.sp,
-                        fontWeight: FontWeight.w700,
-                        height: 19.5 / 13,
+                      style: FigmaText.poppins(
+                        16,
                         color: Color(0xFF0F1320),
+                        lineHeight: 24,
                       ),
                     ),
                     Padding(
                       padding: EdgeInsets.only(top: 2.w),
                       child: Text(
                         'Allow $name to log out of the app?',
-                        style: GoogleFonts.poppins(
-                          fontSize: 11.0.sp,
-                          height: 16.5 / 11,
+                        style: FigmaText.poppins(
+                          12,
                           color: Color(0xFF6B7280),
+                          lineHeight: 20,
                         ),
                       ),
                     ),
@@ -689,10 +691,10 @@ class _NotificationPageState extends State<NotificationPage> {
                       padding: EdgeInsets.only(top: 6.w),
                       child: Text(
                         _formatTimestamp(request['created_at']?.toString()),
-                        style: GoogleFonts.poppins(
-                          fontSize: 10.0.sp,
-                          height: 15 / 10,
+                        style: FigmaText.poppins(
+                          11,
                           color: Color(0xFF9BA4B5),
+                          lineHeight: 16,
                         ),
                       ),
                     ),

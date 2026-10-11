@@ -50,10 +50,11 @@ class PresetPlaceCardBody extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
+            // Figma "Body Medium": 16 / 24.
             style: GoogleFonts.poppins(
-              fontSize: 20.0.sp,
+              fontSize: 16.0.sp,
               fontWeight: FontWeight.w400,
-              height: 28 / 20,
+              height: 24 / 16,
               letterSpacing: 0.2,
               color: Color(0xFF16181A),
             ),

@@ -132,6 +132,7 @@ class ChildRepo extends BaseService {
     required int age,
     required String travelOption,
     String? avatar,
+    String? deviceImei,
   }) async {
     final Map<String, dynamic> dataMap = {
       'name': name,

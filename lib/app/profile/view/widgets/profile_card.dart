@@ -12,6 +12,10 @@ enum ProfileCardAction { edit, remove }
 class ProfileCard extends StatelessWidget {
   final String name;
   final String childCode;
+
+  /// Set for a device-only kid: the chip shows this serial instead of the
+  /// child code (nobody needs a code to pair a phone that will never exist).
+  final String? deviceSerial;
   final String? avatar;
   final String status;
   final String screenTime;
@@ -25,6 +29,7 @@ class ProfileCard extends StatelessWidget {
     super.key,
     required this.name,
     required this.childCode,
+    this.deviceSerial,
     required this.avatar,
     required this.status,
     required this.screenTime,
@@ -190,13 +195,16 @@ class ProfileCard extends StatelessWidget {
   /// Child code + copy, so a guardian / second device can be paired without
   /// retyping it.
   Widget _buildCodeChip(BuildContext context) {
+    final isSerial = deviceSerial != null && deviceSerial!.isNotEmpty;
+    final noun = isSerial ? 'Serial' : 'Code';
+    final value = isSerial ? deviceSerial! : childCode;
     return Semantics(
       button: true,
-      label: 'Copy child code $childCode',
+      label: 'Copy ${noun.toLowerCase()} $value',
       child: GestureDetector(
         onTap: () {
-          Clipboard.setData(ClipboardData(text: childCode));
-          AppSnackbar.showSuccess(context, 'Child code copied: $childCode');
+          Clipboard.setData(ClipboardData(text: value));
+          AppSnackbar.showSuccess(context, '$noun copied: $value');
         },
         child: Container(
           height: 32.w,
@@ -209,7 +217,7 @@ class ProfileCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Code',
+                noun,
                 style: FigmaText.poppins(
                   12,
                   color: FigmaColors.body,
@@ -218,7 +226,7 @@ class ProfileCard extends StatelessWidget {
               ),
               SizedBox(width: 8.w),
               Text(
-                childCode,
+                value,
                 style: FigmaText.poppins(
                   14,
                   weight: FontWeight.w700,

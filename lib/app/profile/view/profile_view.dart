@@ -81,6 +81,14 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _openAddKid({bool withDevice = false}) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AddKidView(withDevice: withDevice)),
+    );
+    _loadChildren();
+  }
+
   Future<void> _loadChildren() async {
     if (_isRefreshing) return;
     if (mounted) setState(() => _isRefreshing = true);
@@ -239,13 +247,8 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
           color: Colors.white,
           onTap: () => showAddKidSheet(
             context,
-            onAddKid: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => AddKidView()),
-              );
-              _loadChildren();
-            },
+            onAddKid: () => _openAddKid(),
+            onAddKidWithDevice: () => _openAddKid(withDevice: true),
             onPurchaseDevice: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -289,6 +292,9 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
                       child: ProfileCard(
                         name: child.childName,
                         childCode: child.childCode,
+                        deviceSerial: child.isDeviceOnly
+                            ? child.deviceImei
+                            : null,
                         avatar: child.avatar,
                         status: status,
                         screenTime: screenTime,

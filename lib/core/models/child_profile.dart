@@ -10,6 +10,13 @@ class ChildProfile {
   final String childCode;
   final int? age;
 
+  /// Tracker serial (IMEI) of a GPS device linked to this child, if any.
+  final String? deviceImei;
+
+  /// True when the child is tracked by a hardware device only — no phone has
+  /// logged in, so app features (Scroll, ...) have nothing to control.
+  final bool isDeviceOnly;
+
   /// Whether the child's device is currently online and tracking location
   /// (recent heartbeat), as reported by the server — not a local UI selection.
   final bool isActive;
@@ -26,6 +33,8 @@ class ChildProfile {
     this.avatar,
     required this.lastActiveAt,
     this.age,
+    this.deviceImei,
+    this.isDeviceOnly = false,
     this.isActive = false,
     this.screenTimeTodayMinutes = 0,
     this.formattedScreenTimeToday = '0.0 hrs',
@@ -42,6 +51,8 @@ class ChildProfile {
       'avatar': avatar,
       'last_active_at': lastActiveAt.toIso8601String(),
       'age': age,
+      'device_imei': deviceImei,
+      'is_device_only': isDeviceOnly,
       'is_active': isActive,
       'screentime_today': {
         'total_minutes': screenTimeTodayMinutes,
@@ -69,6 +80,8 @@ class ChildProfile {
         map['last_active_at'] ?? DateTime.now().toIso8601String(),
       ),
       age: map['age'] != null ? int.tryParse(map['age'].toString()) : null,
+      deviceImei: map['device_imei'] as String?,
+      isDeviceOnly: map['is_device_only'] == true,
       isActive: map['is_active'] == true,
       screenTimeTodayMinutes: safeToInt(screentimeToday['total_minutes']),
       formattedScreenTimeToday:
@@ -91,6 +104,8 @@ class ChildProfile {
     String? childCode,
     DateTime? lastActiveAt,
     int? age,
+    String? deviceImei,
+    bool? isDeviceOnly,
     bool? isActive,
     int? screenTimeTodayMinutes,
     String? formattedScreenTimeToday,
@@ -105,6 +120,8 @@ class ChildProfile {
       avatar: avatar ?? this.avatar,
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,
       age: age ?? this.age,
+      deviceImei: deviceImei ?? this.deviceImei,
+      isDeviceOnly: isDeviceOnly ?? this.isDeviceOnly,
       isActive: isActive ?? this.isActive,
       screenTimeTodayMinutes:
           screenTimeTodayMinutes ?? this.screenTimeTodayMinutes,

@@ -180,10 +180,7 @@ class _ParentsContactViewState extends State<ParentsContactView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFF8FAFC),
-      appBar: figmaAppBar(
-        context,
-        title: 'Parents Contact',
-      ),
+      appBar: figmaAppBar(context, title: 'Parents Contact'),
       body: SafeArea(
         child: _contacts.isEmpty
             ? Center(

@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:math' show min;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:child_track/core/constants/app_colors.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
+import 'package:child_track/core/widgets/figma_primary_button.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/utils/app_logger.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
@@ -106,103 +107,46 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
     }
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      color: AppColors.primaryColor,
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 8.w,
-        bottom: 24.w,
-        left: 20.w,
-        right: 20.w,
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: 44.w,
-                height: 44.w,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.chevron_left_rounded,
-                  color: Colors.white,
-                  size: 28.w,
-                ),
-              ),
-            ),
-          ),
-          Text(
-            'Parents Details',
-            style: GoogleFonts.poppins(
-              fontSize: 20.0.sp,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTextField({
     required String label,
     required String hint,
     required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
   }) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10.w),
+      borderSide: BorderSide(color: FigmaColors.border),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 14.0.sp,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF0C1D37),
-          ),
+          style: FigmaText.poppins(12, weight: FontWeight.w600, lineHeight: 18),
         ),
-        SizedBox(height: 8.w),
+        SizedBox(height: 6.w),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
-          style: GoogleFonts.poppins(
-            fontSize: 15.0.sp,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF0C1D37),
-          ),
+          style: FigmaText.poppins(14, lineHeight: 20),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.poppins(
-              fontSize: 14.0.sp,
-              color: Color(0xFF94A3B8),
-              fontWeight: FontWeight.w400,
+            hintStyle: FigmaText.poppins(
+              12,
+              color: FigmaColors.hint,
+              lineHeight: 18,
             ),
             filled: true,
-            fillColor: Color(0xFFF8FAFC),
+            fillColor: Colors.white,
+            isDense: true,
             contentPadding: EdgeInsets.symmetric(
-              horizontal: 16.w,
-              vertical: 16.w,
+              horizontal: 14.w,
+              vertical: 12.w,
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.w),
-              borderSide: BorderSide(color: Color(0xFFE2E8F0)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.w),
-              borderSide: BorderSide(color: Color(0xFFE2E8F0)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.w),
-              borderSide: BorderSide(
-                color: AppColors.primaryColor,
-                width: 1.5.w,
-              ),
+            border: border,
+            enabledBorder: border,
+            focusedBorder: border.copyWith(
+              borderSide: BorderSide(color: FigmaColors.primary),
             ),
           ),
         ),
@@ -220,35 +164,13 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 28.w,
-                height: 28.w,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '$index',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 14.0.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Text(
-                'Contact $index',
-                style: GoogleFonts.poppins(
-                  fontSize: 16.0.sp,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0C1D37),
-                ),
-              ),
-            ],
+          Text(
+            'Contact $index',
+            style: FigmaText.poppins(
+              14,
+              weight: FontWeight.w700,
+              lineHeight: 20,
+            ),
           ),
           SizedBox(height: 16.w),
           _buildTextField(
@@ -277,10 +199,10 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFFF4F8FE),
+      appBar: figmaAppBar(context, title: 'Parents Details'),
       body: Column(
         children: [
-          _buildHeader(context),
           Expanded(
             child: SingleChildScrollView(
               physics: BouncingScrollPhysics(),
@@ -289,36 +211,10 @@ class _EmergencyContactsViewState extends State<EmergencyContactsView> {
                 children: [
                   for (int i = 1; i <= 5; i++) _buildContactCard(i),
                   SizedBox(height: 16.w),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54.w,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16.w),
-                        ),
-                        elevation: 0,
-                      ),
-                      onPressed: _isLoading ? null : _saveContacts,
-                      child: _isLoading
-                          ? SizedBox(
-                              width: 24.w,
-                              height: 24.w,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2.5,
-                              ),
-                            )
-                          : Text(
-                              'Done',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16.0.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
+                  FigmaPrimaryButton(
+                    label: 'Done',
+                    isLoading: _isLoading,
+                    onPressed: _isLoading ? null : _saveContacts,
                   ),
                   SizedBox(height: 24.w),
                 ],

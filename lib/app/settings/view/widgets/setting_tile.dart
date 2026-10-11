@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 
 class SettingTile extends StatelessWidget {
@@ -38,9 +39,13 @@ class SettingTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: titleColor != null
-                        ? AppTextStyles.subtitle2.copyWith(color: titleColor)
-                        : AppTextStyles.subtitle2,
+                    // Figma settings row: Poppins Regular 16 / 22.5, 0.1px.
+                    style: FigmaText.poppins(
+                      16,
+                      color: titleColor ?? FigmaColors.ink,
+                      lineHeight: 22.5,
+                      letterSpacing: 0.1,
+                    ),
                   ),
                   if (subtitle != null) ...[
                     SizedBox(height: 2),

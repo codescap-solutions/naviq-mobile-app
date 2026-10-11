@@ -50,6 +50,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
   final Set<Circle> _circles = {};
   final Set<Polyline> _polylines = {};
   bool _isMapReady = false;
+  bool _formAutoOpened = false;
+  LatLng? _selectedPosition;
   int _defaultRadius = 30;
   String? _selectedAddress;
   BitmapDescriptor? _centerDotIcon;
@@ -227,41 +229,36 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
     _updateCircle(position, _defaultRadius.toDouble());
   }
 
-  Future<void> _openFormSheet(LatLng position) async {
+  /// Shows (or moves) the sticky fence form at the bottom of the screen for
+  /// [position]. The map stays interactive above it.
+  void _openFormSheet(LatLng position) {
     setState(() {
       _showSuggestions = false;
+      _selectedPosition = position;
     });
+  }
 
+  /// Pops this screen with the saved/updated/deleted fence, like the old
+  /// modal sheet did after its result.
+  Widget _buildFormPanel(LatLng position) {
     final currentRadius = _circles.isNotEmpty
         ? _circles.first.radius
         : _defaultRadius.toDouble();
-
-    final result = await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => GeoFenceFormSheet(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        childId: widget.childId ?? '',
-        parentId: widget.parentId ?? '',
-        geofence: widget.geofence,
-        category: widget.selectedCategory,
-        customName: widget.customName,
-        address:
-            _selectedAddress ??
-            widget.geofence?.address ??
-            "${widget.customName ?? 'Custom Place'} · Fenced Location",
-        initialRadius: currentRadius.toInt(),
-        onRadiusChanged: (newRadius) {
-          _updateCircle(position, newRadius);
-        },
-      ),
+    return GeoFenceFormSheet(
+      latitude: position.latitude,
+      longitude: position.longitude,
+      childId: widget.childId ?? '',
+      parentId: widget.parentId ?? '',
+      geofence: widget.geofence,
+      category: widget.selectedCategory,
+      customName: widget.customName,
+      address:
+          _selectedAddress ??
+          widget.geofence?.address ??
+          "${widget.customName ?? 'Custom Place'} · Fenced Location",
+      initialRadius: currentRadius.toInt(),
+      onRadiusChanged: (newRadius) => _updateCircle(position, newRadius),
     );
-    if (result != null) {
-      if (!mounted) return;
-      Navigator.pop(context, result);
-    }
   }
 
   @override
@@ -296,7 +293,13 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                 );
               });
             }
-            if (widget.isCurrentLocation) {
+            // A named place (School, Home, a custom name…) opens the form right
+            // away at the child's current spot, so the name is visible and
+            // editable without hunting for a tap target; the parent can still
+            // tap elsewhere on the map to move it afterwards.
+            if ((widget.isCurrentLocation || widget.customName != null) &&
+                !_formAutoOpened) {
+              _formAutoOpened = true;
               _openFormSheet(state.coordinates);
             }
           }
@@ -348,9 +351,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                   }
                 }
               },
-              onMapTap: (position) async {
+              onMapTap: (position) {
                 _addMarker(position);
-                await Future.delayed(Duration(milliseconds: 150));
                 _openFormSheet(position);
               },
             ),
@@ -507,30 +509,32 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.symmetric(vertical: 18.w, horizontal: 20.w),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Color(0xFF0C1D37).withValues(alpha: 0.06),
-              blurRadius: 10.w,
-              offset: Offset(0, -4.w),
+      bottomNavigationBar: _selectedPosition != null
+          ? _buildFormPanel(_selectedPosition!)
+          : Container(
+              padding: EdgeInsets.symmetric(vertical: 18.w, horizontal: 20.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0xFF0C1D37).withValues(alpha: 0.06),
+                    blurRadius: 10.w,
+                    offset: Offset(0, -4.w),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: Text(
+                  "zoom in and pick the location you want to fence",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.0.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
-        child: SafeArea(
-          child: Text(
-            "zoom in and pick the location you want to fence",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 13.0.sp,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF64748B),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -794,6 +798,16 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
+                  // Pencil: the title looks like plain text but is editable.
+                  suffixIcon: Icon(
+                    Icons.edit_outlined,
+                    size: 20.w,
+                    color: Color(0xFF9BA4B5),
+                  ),
+                  suffixIconConstraints: BoxConstraints(
+                    minWidth: 28.w,
+                    minHeight: 28.w,
+                  ),
                 ),
               ),
               Text(
