@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
@@ -184,10 +185,12 @@ class _SubscriptionMultiPlanViewState extends State<SubscriptionMultiPlanView> {
               SizedBox(width: 6.w),
               Text(
                 label,
-                style: GoogleFonts.poppins(
-                  fontSize: 11.0.sp,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                // Figma "Body Small": Poppins Regular 12 / 20, 0.2px.
+                style: FigmaText.poppins(
+                  12,
                   color: color,
+                  lineHeight: 20,
+                  letterSpacing: 0.2,
                 ),
               ),
               if (trailing != null) ...[SizedBox(width: 6.w), trailing],

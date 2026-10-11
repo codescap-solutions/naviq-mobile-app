@@ -28,7 +28,8 @@ class HelpChannels {
 class SubscriptionFeatureGate {
   const SubscriptionFeatureGate._();
 
-  static SubscriptionTier get _currentTier => SubscriptionManager.instance.currentTier;
+  static SubscriptionTier get _currentTier =>
+      SubscriptionManager.instance.currentTier;
 
   /// Max number of geofence zones the tier may create.
   /// NOTE: the pricing sheet lists Smart = 7; a separate internal
@@ -67,6 +68,18 @@ class SubscriptionFeatureGate {
   static bool canTakeScreenTimeAction({SubscriptionTier? tier}) {
     final t = tier ?? _currentTier;
     return t == SubscriptionTier.smart || t == SubscriptionTier.premium;
+  }
+
+  /// "Restrict From Deleting the app" is a Smart / Premium feature
+  /// (pricing sheet).
+  static bool canRestrictDeletion({SubscriptionTier? tier}) {
+    final t = tier ?? _currentTier;
+    return t == SubscriptionTier.smart || t == SubscriptionTier.premium;
+  }
+
+  /// "Block 18+ Websites" is Premium-only (pricing sheet).
+  static bool canBlockAdultWebsites({SubscriptionTier? tier}) {
+    return (tier ?? _currentTier) == SubscriptionTier.premium;
   }
 
   /// Free tier sees a static upgrade-promo card instead of real route

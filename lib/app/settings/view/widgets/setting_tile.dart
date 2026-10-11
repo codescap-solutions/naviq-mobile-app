@@ -39,12 +39,12 @@ class SettingTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    // Figma settings row: Poppins Regular 16 / 22.5, 0.1px.
+                    // Same as the Explore row titles: Poppins Regular 16 / 24, 0.2px.
                     style: FigmaText.poppins(
                       16,
-                      color: titleColor ?? FigmaColors.ink,
-                      lineHeight: 22.5,
-                      letterSpacing: 0.1,
+                      color: titleColor ?? Color(0xFF0F1320),
+                      lineHeight: 24,
+                      letterSpacing: 0.2,
                     ),
                   ),
                   if (subtitle != null) ...[

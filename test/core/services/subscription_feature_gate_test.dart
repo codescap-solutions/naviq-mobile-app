@@ -171,4 +171,25 @@ void main() {
       );
     });
   });
+
+  group('pricing-sheet feature flags', () {
+    test('Restrict From Deleting is Smart and Premium only', () {
+      for (final t in SubscriptionTier.values) {
+        expect(
+          SubscriptionFeatureGate.canRestrictDeletion(tier: t),
+          t == SubscriptionTier.smart || t == SubscriptionTier.premium,
+          reason: '$t',
+        );
+      }
+    });
+    test('Block 18+ Websites is Premium only', () {
+      for (final t in SubscriptionTier.values) {
+        expect(
+          SubscriptionFeatureGate.canBlockAdultWebsites(tier: t),
+          t == SubscriptionTier.premium,
+          reason: '$t',
+        );
+      }
+    });
+  });
 }

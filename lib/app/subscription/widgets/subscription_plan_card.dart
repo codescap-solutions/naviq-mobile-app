@@ -14,6 +14,10 @@ class SubscriptionPlanCard extends StatelessWidget {
   final bool isYearly;
   final VoidCallback onTap;
 
+  /// The card previews this many features; "View all features" (the detail
+  /// screen) lists the rest. Same count on every card (Figma).
+  static const previewFeatureCount = 6;
+
   const SubscriptionPlanCard({
     super.key,
     required this.plan,
@@ -161,8 +165,7 @@ class SubscriptionPlanCard extends StatelessWidget {
   // ── Left panel ────────────────────────────────────────────────────────────
   Widget _leftPanel(_TierStyle s) {
     final label =
-        plan.badge ??
-        (plan.tier == SubscriptionTier.starter ? 'Starter' : null);
+        plan.badge ?? (plan.tier == SubscriptionTier.starter ? 'Free' : null);
     final isFree = plan.isFree;
 
     final top = Column(
@@ -311,6 +314,9 @@ class SubscriptionPlanCard extends StatelessWidget {
     );
   }
 
+  List<SubscriptionFeature> get _preview =>
+      plan.features.take(previewFeatureCount).toList();
+
   // ── Right panel ───────────────────────────────────────────────────────────
   Widget _rightPanel(_TierStyle s) {
     return Container(
@@ -319,7 +325,7 @@ class SubscriptionPlanCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (var i = 0; i < plan.features.length; i++) ...[
+          for (var i = 0; i < _preview.length; i++) ...[
             if (i > 0) SizedBox(height: 6.5.w),
             Row(
               children: [
@@ -340,8 +346,10 @@ class SubscriptionPlanCard extends StatelessWidget {
                 SizedBox(width: 8.w),
                 Expanded(
                   child: Text(
-                    plan.features[i].name,
-                    maxLines: 1,
+                    _preview[i].name,
+                    // Pricing-sheet wording is long ("3 Parents / Guardians
+                    // Access Logins"): wrap instead of cutting it off.
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
                       fontSize: 11.0.sp,
@@ -377,7 +385,7 @@ class SubscriptionPlanCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Get It Free',
+                    'View all features',
                     style: GoogleFonts.poppins(
                       fontSize: 12.0.sp,
                       fontWeight: FontWeight.w600,

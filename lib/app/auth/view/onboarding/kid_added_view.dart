@@ -47,7 +47,7 @@ class KidAddedView extends StatelessWidget {
               ),
               SizedBox(height: 12.w),
               Text(
-                "$kidName's device ($serial) is linked. Location appears on "
+                '$kidName is linked to tracker $serial. Location appears on '
                 'Home as soon as the tracker is switched on.',
                 textAlign: TextAlign.center,
                 style: FigmaText.poppins(

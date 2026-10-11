@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_text_styles.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 import '../../../core/services/revenue_cat_service.dart';
 import '../models/subscription_plan.dart';
@@ -48,10 +49,7 @@ class SubscriptionDetailView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: figmaAppBar(
-        context,
-        title: '',
-      ),
+      appBar: figmaAppBar(context, title: ''),
       body: SafeArea(
         child: Column(
           children: [
@@ -62,10 +60,8 @@ class SubscriptionDetailView extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: AppTextStyles.headline3.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1E293B),
-                    ),
+                    // Figma header: Poppins Regular 20 / 28, 0.2px.
+                    style: FigmaText.appBarTitle,
                   ),
                   SizedBox(height: 8.w),
                   Row(
@@ -73,9 +69,12 @@ class SubscriptionDetailView extends StatelessWidget {
                     children: [
                       Text(
                         priceText,
-                        style: AppTextStyles.subtitle2.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF334155),
+                        // Figma "Body Medium": Regular 16 / 24, 0.2px.
+                        style: FigmaText.poppins(
+                          16,
+                          color: Color(0xFF0F1320),
+                          lineHeight: 24,
+                          letterSpacing: 0.2,
                         ),
                       ),
                       if (plan.yearlyDiscountBadge != null && isYearly) ...[
@@ -91,9 +90,11 @@ class SubscriptionDetailView extends StatelessWidget {
                           ),
                           child: Text(
                             plan.yearlyDiscountBadge!,
-                            style: AppTextStyles.overline.copyWith(
+                            style: FigmaText.poppins(
+                              11,
                               color: AppColors.primaryColor,
-                              fontWeight: FontWeight.w700,
+                              lineHeight: 16,
+                              letterSpacing: 0.2,
                             ),
                           ),
                         ),
@@ -147,11 +148,11 @@ class SubscriptionDetailView extends StatelessWidget {
             ),
             child: Text(
               isStarter
-                  ? 'Choose Starter'
+                  ? 'Choose Free'
                   : isBasic
                   ? 'Choose Basic'
                   : isSmart
-                  ? 'Choose Plus'
+                  ? 'Choose Smart'
                   : 'Choose Premium',
               style: AppTextStyles.button.copyWith(
                 color: Colors.white,
@@ -265,15 +266,19 @@ class SubscriptionDetailView extends StatelessWidget {
               children: [
                 Text(
                   feature.name,
-                  style: AppTextStyles.subtitle2.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
+                  // Every row uses the first rows' Figma style (Regular 16 / 24).
+                  style: FigmaText.poppins(
+                    16,
+                    color: Color(0xFF0F1320),
+                    lineHeight: 24,
+                    letterSpacing: 0.2,
                   ),
                 ),
                 // Optional subtitle description could go here if added to model
               ],
             ),
           ),
+          SizedBox(width: 12.w),
           Container(
             padding: EdgeInsets.all(4.w),
             decoration: BoxDecoration(

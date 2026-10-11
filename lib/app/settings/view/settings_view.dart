@@ -15,6 +15,9 @@ import 'account_view.dart';
 import 'devices_view.dart';
 import 'notification_settings_view.dart';
 import '../../subscription/view/subscription_multi_plan_view.dart';
+import '../../subscription/models/subscription_plan.dart' show SubscriptionTier;
+import '../../subscription/widgets/upgrade_restriction_dialog.dart';
+import 'package:child_track/core/services/subscription_feature_gate.dart';
 import 'family_management_view.dart';
 import 'help_view.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -130,6 +133,19 @@ class _SettingsViewState extends State<SettingsView> {
                                 );
                                 return;
                               }
+                              // Turning it ON is a Smart / Premium feature; switching an
+                              // already-on setting OFF is never blocked.
+                              if (value &&
+                                  !SubscriptionFeatureGate.canRestrictDeletion()) {
+                                UpgradeRestrictionDialog.show(
+                                  context,
+                                  title: 'Restrict from Deleting',
+                                  message:
+                                      'Stopping the app from being deleted is available on Smart and Premium plans.',
+                                  suggestedTier: SubscriptionTier.smart,
+                                );
+                                return;
+                              }
                               if (_currentChildId != null) {
                                 final response =
                                     await injector<HomeRepository>()
@@ -172,6 +188,17 @@ class _SettingsViewState extends State<SettingsView> {
                                 AppSnackbar.showError(
                                   context,
                                   'Guardians have view-only access. Only primary parents can change this setting.',
+                                );
+                                return;
+                              }
+                              if (value &&
+                                  !SubscriptionFeatureGate.canBlockAdultWebsites()) {
+                                UpgradeRestrictionDialog.show(
+                                  context,
+                                  title: 'Block 18+ Websites',
+                                  message:
+                                      'Blocking 18+ websites is available on the Premium plan.',
+                                  suggestedTier: SubscriptionTier.premium,
                                 );
                                 return;
                               }
@@ -516,12 +543,13 @@ class _SettingsViewState extends State<SettingsView> {
             Expanded(
               child: Text(
                 title,
+                // Same as the Explore row titles: Regular 16 / 24, 0.2px.
                 style: GoogleFonts.poppins(
-                  fontSize: 15.0.sp,
-                  fontWeight: FontWeight.w500,
-                  height: 22.5 / 15,
+                  fontSize: 16.0.sp,
+                  fontWeight: FontWeight.w400,
+                  height: 24 / 16,
                   color: Color(0xFF0F1320),
-                  letterSpacing: 0.1,
+                  letterSpacing: 0.2,
                 ),
               ),
             ),

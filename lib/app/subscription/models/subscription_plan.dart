@@ -110,15 +110,14 @@ class SubscriptionPlan {
           .toList();
     }
 
-    String cta = 'Choose Premium';
-    final nameLower = (json['name'] as String?)?.toLowerCase() ?? '';
-    if (nameLower.contains('starter') || nameLower.contains('free')) {
-      cta = 'Choose Starter';
-    } else if (nameLower.contains('basic')) {
-      cta = 'Choose Basic';
-    } else if (nameLower.contains('smart') || nameLower.contains('plus')) {
-      cta = 'Choose Plus';
-    }
+    final cta = switch (SubscriptionTier.fromId(
+      (json['id'] ?? json['name'] ?? '') as String,
+    )) {
+      SubscriptionTier.starter => 'Choose Free',
+      SubscriptionTier.basic => 'Choose Basic',
+      SubscriptionTier.smart => 'Choose Smart',
+      SubscriptionTier.premium => 'Choose Premium',
+    };
 
     return SubscriptionPlan(
       id: json['id'] as String,

@@ -625,6 +625,25 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
     );
   }
 
+  /// Only the account owner exists (it can't be deleted): tell the owner how
+  /// to add someone, instead of leaving a lone card on an empty screen.
+  bool get _showAddHint => _isPrimaryParent && _guardians.length == 1;
+
+  Widget _buildAddHint() => Padding(
+    padding: EdgeInsets.fromLTRB(24.w, 8.w, 24.w, 0),
+    child: Text(
+      'You are the account owner. Tap + to add a guardian who can '
+      'also track your kids.',
+      textAlign: TextAlign.center,
+      style: FigmaText.poppins(
+        14,
+        color: FigmaColors.body,
+        lineHeight: 20,
+        letterSpacing: 0.2,
+      ),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -654,8 +673,9 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                 )
               : ListView.builder(
                   padding: EdgeInsets.all(16.0.w),
-                  itemCount: _guardians.length,
+                  itemCount: _guardians.length + (_showAddHint ? 1 : 0),
                   itemBuilder: (context, index) {
+                    if (index == _guardians.length) return _buildAddHint();
                     final guardian = _guardians[index];
                     final isDefault = guardian['is_default'] == true;
 
@@ -699,11 +719,12 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
                               children: [
                                 Text(
                                   guardian['name'] ?? '',
-                                  // Figma "Body Medium": 16 / 24, #0F1320.
+                                  // Figma "Body Medium": Regular 16 / 24, 0.2px, #0F1320.
                                   style: FigmaText.poppins(
                                     16,
                                     color: Color(0xFF0F1320),
                                     lineHeight: 24,
+                                    letterSpacing: 0.2,
                                   ),
                                 ),
                                 SizedBox(height: 2.w),
