@@ -1,21 +1,26 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter_test/flutter_test.dart';
-
+import 'package:child_track/core/constants/app_strings.dart';
+import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/main.dart';
+import 'package:flutter/widgets.dart' show SizedBox;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() async {
+    // ChildTrackApp resolves its blocs from GetIt, which main() fills in
+    // before runApp — the test has to do the same.
+    SharedPreferences.setMockInitialValues({});
+    await injector.reset();
+    await initializeDependencies();
+  });
+
   testWidgets('App starts with splash screen', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
     await tester.pumpWidget(const ChildTrackApp());
 
-    // Verify that our app shows the splash screen
-    expect(find.text('NAVIQ'), findsOneWidget);
-    expect(find.text('Keeping children safe'), findsOneWidget);
+    expect(find.text(AppStrings.appName), findsOneWidget);
+
+    // Unmount, then let the splash's 2 s auth-check timer fire harmlessly.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 3));
   });
 }

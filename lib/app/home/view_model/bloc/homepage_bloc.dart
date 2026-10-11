@@ -29,6 +29,10 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
   StreamSubscription? _statusSubscription;
   Timer? _snapshotPollTimer;
   String? _joinedRoomChildId;
+  // Child each in-flight trips / trip-detail request was made for, so a stale
+  // response only clears the loading flag if no newer request has taken over.
+  String? _tripsRequestChildId;
+  String? _tripDetailRequestChildId;
   DateTime? _lastAppliedLocationTs;
   String? _lastChildId;
   // Which child's data state.currentLocation actually reflects right now.
@@ -352,6 +356,9 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
       }
     } catch (e) {
       AppLogger.error('Error fetching home data: ${e.toString()}');
+      // Same identity guard as the success path: an error for the previously
+      // selected child must not replace the newly selected child's screen.
+      if (childId != _sharedPrefsService.getString('child_id')) return;
       final freshState = state is HomepageSuccess
           ? state as HomepageSuccess
           : startingState;
@@ -393,10 +400,11 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
     }
 
     AppLogger.info('💡 [_onGetTrips] Proceeding to fetch trips...');
+    final childId = _sharedPrefsService.getString('child_id');
+    _tripsRequestChildId = childId;
     emit(currentState.copyWith(isLoadingTrips: true));
 
     try {
-      final childId = _sharedPrefsService.getString('child_id');
       AppLogger.info('💡 [_onGetTrips] using childId: $childId');
 
       final response = await _homeRepository.getTrips(
@@ -405,6 +413,19 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
         pageSize: event.pageSize,
         includePoints: true,
       );
+
+      // Same identity guard as getHomeData: a slow response for the previous
+      // child must not land in the newly selected child's trip list.
+      if (childId != _sharedPrefsService.getString('child_id')) {
+        final latest = state is HomepageSuccess
+            ? state as HomepageSuccess
+            : currentState;
+        // Leave the flag alone if the new child's own request is in flight.
+        if (_tripsRequestChildId == childId) {
+          emit(latest.copyWith(isLoadingTrips: false));
+        }
+        return;
+      }
 
       if (response.isSuccess && response.data != null) {
         // Get freshet state here too
@@ -447,7 +468,9 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
           ? state as HomepageSuccess
           : currentState;
       AppLogger.error('Error fetching trips: ${e.toString()}');
-      emit(freshState.copyWith(isLoadingTrips: false));
+      if (_tripsRequestChildId == childId) {
+        emit(freshState.copyWith(isLoadingTrips: false));
+      }
     }
   }
 
@@ -457,6 +480,8 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
   ) async {
     final currentState = state;
     if (currentState is! HomepageSuccess) return;
+    final childId = _sharedPrefsService.getString('child_id');
+    _tripDetailRequestChildId = childId;
     emit(
       currentState.copyWith(
         isLoadingTripDetail: true,
@@ -464,11 +489,20 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
       ),
     );
     try {
-      final childId = _sharedPrefsService.getString('child_id');
       final response = await _homeRepository.getTripDetail(
         event.tripId,
         childId: childId,
       );
+
+      if (childId != _sharedPrefsService.getString('child_id')) {
+        final latest = state is HomepageSuccess
+            ? state as HomepageSuccess
+            : currentState;
+        if (_tripDetailRequestChildId == childId) {
+          emit(latest.copyWith(isLoadingTripDetail: false));
+        }
+        return;
+      }
 
       final freshState = state is HomepageSuccess
           ? state as HomepageSuccess
@@ -489,7 +523,9 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
           ? state as HomepageSuccess
           : currentState;
       AppLogger.error('Error fetching trip detail: ${e.toString()}');
-      emit(freshState.copyWith(isLoadingTripDetail: false));
+      if (_tripDetailRequestChildId == childId) {
+        emit(freshState.copyWith(isLoadingTripDetail: false));
+      }
     }
   }
 

@@ -105,6 +105,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   StreamSubscription? _notificationSubscription;
   StreamSubscription? _foregroundSubscription;
+  StreamSubscription? _childRouteSubscription;
   Map<String, dynamic>? _activeSharedChildData;
   bool _viewingSharedChild = false;
   bool _isLocationShareSheetOpen = false;
@@ -345,6 +346,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           }
         });
 
+    // A child-specific notification tapped before the session was ready
+    // (cold start / login) is applied now that Home exists.
+    final childRouter = injector<FirebaseNotificationService>().childRouter;
+    childRouter.flushPending();
+    _childRouteSubscription = childRouter.resolved.listen((_) {
+      if (!mounted) return;
+      setState(() {
+        _currentIndex = 0;
+        _viewingSharedChild = false;
+      });
+    });
+
     // Check if there is a pending request on startup
     _checkAndShowPendingLocationRequest();
     _showPendingActionTap();
@@ -421,6 +434,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _childRouteSubscription?.cancel();
     _progressTimer?.cancel();
     _sharedChildTimer?.cancel();
     _sheetController.dispose();
@@ -436,6 +450,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkAndShowPendingLocationRequest();
+      injector<FirebaseNotificationService>().childRouter.flushPending();
       _showPendingActionTap();
       _refreshOnResume();
     }

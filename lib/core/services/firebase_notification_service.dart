@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -29,6 +30,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:child_track/app/chat/view/chat_screen.dart';
 import 'package:child_track/app/chat/view_model/bloc/chat_bloc.dart';
 import 'package:child_track/core/services/screen_time_sync_service.dart';
+import 'package:child_track/app/home/view_model/bloc/homepage_bloc.dart';
+import 'package:child_track/app/home/view_model/home_repo.dart';
+import 'package:child_track/core/models/child_profile.dart';
+import 'package:child_track/core/services/notifications/child_notification_router.dart';
+import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:child_track/app/childapp/view_model/repository/device_info_service.dart';
 import 'package:child_track/core/services/device_info_service.dart' show DeviceInfoService;
 
@@ -425,6 +431,56 @@ class FirebaseNotificationService {
   GlobalKey<NavigatorState>? _navigatorKey;
   void setNavigatorKey(GlobalKey<NavigatorState> key) => _navigatorKey = key;
 
+  /// Opens the child a tapped push belongs to (select it, refresh its data,
+  /// show Home). Selection is the app's existing one: the `child_id` pref via
+  /// SharedPrefsService.switchChild + a HomepageBloc reload.
+  late final ChildNotificationRouter childRouter =
+      ChildNotificationRouter.withPrefs(
+        prefs: injector<SharedPrefsService>(),
+        reloadHome: () => injector<HomepageBloc>().add(GetHomepageData()),
+        // Drop pushed screens (trip detail, sheets, ...) that still show the
+        // previously selected child. Home is the root route; on a cold start
+        // the navigator does not exist yet and Home is built after the
+        // selection.
+        showHome: (_) =>
+            _navigatorKey?.currentState?.popUntil((r) => r.isFirst),
+        refreshAccessibleChildIds: _refreshAccessibleChildIds,
+        onInaccessible: (_) => _showRouteError(
+          'That notification is for a child you can no longer access.',
+        ),
+        onFailure: (_, _) => _showRouteError(
+          'Could not open that notification. Please pick the child manually.',
+        ),
+      );
+
+  void _showRouteError(String message) {
+    final context = _navigatorKey?.currentContext;
+    if (context != null) AppSnackbar.showError(context, message);
+  }
+
+  Future<List<String>> _refreshAccessibleChildIds() async {
+    final prefs = injector<SharedPrefsService>();
+    try {
+      final response = await injector<HomeRepository>().getChildrenProfiles();
+      if (response.isSuccess && response.data != null) {
+        final existing = prefs.getChildren();
+        final parentToken = prefs.getAuthToken() ?? '';
+        final fresh = response.data!.map((json) {
+          final child = ChildProfile.fromMap(json as Map<String, dynamic>);
+          final known = existing.where((c) => c.childId == child.childId);
+          return child.copyWith(
+            authToken: known.isNotEmpty ? known.first.authToken : parentToken,
+          );
+        }).toList();
+        await prefs.saveChildren(fresh);
+        return fresh.map((c) => c.childId).toList();
+      }
+    } catch (e) {
+      AppLogger.warning('Could not refresh children for notification tap: $e');
+    }
+    return prefs.getChildren().map((c) => c.childId).toList();
+  }
+
   String? _fcmToken;
 
   String? get fcmToken => _fcmToken;
@@ -506,19 +562,26 @@ class FirebaseNotificationService {
       initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         AppLogger.info('Local notification tapped: ${response.payload}');
-        if (response.payload != null) {
-          try {
-            final Map<String, dynamic> decoded = json.decode(response.payload!);
-            final remoteMessage = RemoteMessage(
-              data: decoded.map((key, value) => MapEntry(key, value.toString())),
-            );
-            _handleNotificationTap(remoteMessage);
-          } catch (e) {
-            AppLogger.warning('Payload was not JSON, treating as raw: $e');
-          }
-        }
+        final message = messageFromLocalPayload(response.payload);
+        if (message != null) _handleNotificationTap(message);
       },
     );
+
+    // A local notification (shown for a foreground push) tapped after the app
+    // was killed launches the app without calling the callback above.
+    try {
+      final launch = await _localNotifications
+          .getNotificationAppLaunchDetails();
+      if (launch?.didNotificationLaunchApp ?? false) {
+        final message = messageFromLocalPayload(
+          launch?.notificationResponse?.payload,
+        );
+        if (message != null) _handleNotificationTap(message);
+      }
+    } catch (e) {
+      // Must not abort the rest of initialize() (token, FCM listeners).
+      AppLogger.warning('Could not read notification launch details: $e');
+    }
 
     // Create the Android notification channel
     await _localNotifications
@@ -766,6 +829,27 @@ class FirebaseNotificationService {
     };
   }
 
+  /// Payload of the local notification shown for a foreground push: the whole
+  /// data map (so `child_id` survives) with the resolved type.
+  @visibleForTesting
+  static String localPayload(Map<String, dynamic> data, String type) =>
+      json.encode({...data, 'type': type});
+
+  /// Inverse of [localPayload]; null when the payload is absent or not JSON.
+  @visibleForTesting
+  static RemoteMessage? messageFromLocalPayload(String? payload) {
+    if (payload == null) return null;
+    try {
+      final decoded = json.decode(payload) as Map<String, dynamic>;
+      return RemoteMessage(
+        data: decoded.map((key, value) => MapEntry(key, value.toString())),
+      );
+    } catch (e) {
+      AppLogger.warning('Payload was not JSON, treating as raw: $e');
+      return null;
+    }
+  }
+
   /// Show a local notification based on FCM message data
   void _showLocalNotification(RemoteMessage message) {
     final parsed = parseNotificationContent(message);
@@ -796,10 +880,7 @@ class FirebaseNotificationService {
           presentSound: true,
         ),
       ),
-      payload: json.encode({
-        ...message.data,
-        'type': type,
-      }),
+      payload: localPayload(message.data, type),
     );
   }
 
@@ -853,6 +934,22 @@ class FirebaseNotificationService {
       _pendingActionTap = message;
     }
     _saveTappedNotification(message);
+
+    // Child-specific events: open the child the push is for, not whichever
+    // child happens to be selected.
+    try {
+      unawaited(
+        childRouter
+            .handleTap(message.data, messageId: message.messageId)
+            .catchError((Object e) {
+              AppLogger.error('Child notification routing failed: $e');
+              return ChildRouteOutcome.failed;
+            }),
+      );
+    } catch (e) {
+      // Must never block the existing tap handling below.
+      AppLogger.error('Child notification routing failed: $e');
+    }
 
     // Add to stream for navigation or other actions
     _notificationTapController.add(message);
