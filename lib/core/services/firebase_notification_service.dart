@@ -404,6 +404,19 @@ class FirebaseNotificationService {
   RemoteMessage? _pendingLocationShareRequest;
   RemoteMessage? get pendingLocationShareRequest => _pendingLocationShareRequest;
 
+  // Parent "approve / deny" prompts (child asks for logout / more time) whose
+  // notification was tapped before HomePage was listening — a cold start emits
+  // the tap on a broadcast stream nobody has subscribed to yet, so it was lost
+  // and the app just opened on Home with no sheet. HomePage takes it on start /
+  // resume.
+  RemoteMessage? _pendingActionTap;
+
+  RemoteMessage? takePendingActionTap() {
+    final m = _pendingActionTap;
+    _pendingActionTap = null;
+    return m;
+  }
+
   void clearPendingLocationShareRequest() {
     _pendingLocationShareRequest = null;
     AppLogger.info('Cleared pending location share request');
@@ -790,6 +803,30 @@ class FirebaseNotificationService {
     );
   }
 
+  /// A visible push received while the app was backgrounded / killed never
+  /// reaches the Dart handlers, so it is missing from the in-app Notifications
+  /// list. Add it when the user taps it (once per message id).
+  Future<void> _saveTappedNotification(RemoteMessage message) async {
+    try {
+      final prefs = SharedPrefsService();
+      if (!prefs.isParent) return;
+      final parsed = parseNotificationContent(message);
+      if (parsed['type'] == 'SYNC_SCREEN_TIME' || parsed['type'] == 'SYNC_LOCKED_APPS') return;
+      final id = message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString();
+      if (prefs.getNotifications().any((n) => n['id'] == id)) return;
+      await prefs.addNotification({
+        'id': id,
+        'title': parsed['title'],
+        'body': parsed['body'],
+        'timestamp': _eventTimestampOrNow(message),
+        'type': parsed['type'],
+        'isRead': false,
+      });
+    } catch (e) {
+      AppLogger.error('Failed to save tapped notification: $e');
+    }
+  }
+
   /// Handle notification tap (when app is in background or terminated)
   void _handleNotificationTap(RemoteMessage message) {
     AppLogger.info('Notification tapped: ${message.messageId}');
@@ -810,6 +847,12 @@ class FirebaseNotificationService {
         AppLogger.error('Failed to save tapped request to SharedPrefs: $e');
       }
     }
+
+    final tapType = message.data['type'];
+    if (tapType == 'LOGOUT_REQUEST' || tapType == 'TIME_EXTENSION_REQUEST') {
+      _pendingActionTap = message;
+    }
+    _saveTappedNotification(message);
 
     // Add to stream for navigation or other actions
     _notificationTapController.add(message);
