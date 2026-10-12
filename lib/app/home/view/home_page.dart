@@ -3941,7 +3941,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             style: GoogleFonts.poppins(
                               fontSize: 24.0.sp,
                               fontWeight: FontWeight.w500,
-                              height: 1.0,
+                              height: 1.25,
                               color: Color(0xFF16181A),
                             ),
                           ),
@@ -3954,34 +3954,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         if (!_viewingSharedChild &&
                             state.deviceInfo?.deviceImei != null) ...[
                           SizedBox(width: 6.w),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 7.w,
-                              vertical: 3.w,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(8.w),
-                              border: Border.all(color: Color(0xFFBFDBFE)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.gps_fixed_rounded,
-                                  size: 10.w,
-                                  color: Color(0xFF2563EB),
-                                ),
-                                SizedBox(width: 3.w),
-                                Text(
-                                  'GPS Tracker',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 9.0.sp,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF2563EB),
-                                  ),
-                                ),
-                              ],
+                          // Icon only: the text badge pushed the name into an
+                          // ellipsis. The label stays for screen readers.
+                          Semantics(
+                            label: 'GPS tracker',
+                            child: Container(
+                              width: 22.w,
+                              height: 22.w,
+                              decoration: BoxDecoration(
+                                color: Color(0xFFEFF6FF),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Color(0xFFBFDBFE)),
+                              ),
+                              child: Icon(
+                                Icons.gps_fixed_rounded,
+                                size: 12.w,
+                                color: Color(0xFF2563EB),
+                              ),
                             ),
                           ),
                         ],
@@ -4270,11 +4259,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           // "Location updated" line hidden (kLocationCardOverlap /
           // kRestSheetContent already account for the 176px card).
           SizedBox(height: 24.w),
-          // Horizontally scrollable instead of a fixed spaceAround Row —
-          // a 4th pill (altitude, tracker-only) plus a 5th (alarm context)
-          // down the line no longer has to fit a fixed card width; it was
-          // overflowing by 12px on a real tracker-linked child the moment
-          // the altitude pill had something to show (confirmed real case).
+          // Horizontally scrollable instead of a fixed spaceAround Row so an
+          // extra pill never overflows the card. Altitude is not shown here
+          // (Devices screen only).
           SizedBox(
             height: 32.w,
             child: LayoutBuilder(
@@ -4331,7 +4318,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                     : Icons.battery_std_rounded),
                           _viewingSharedChild && _activeSharedChildData != null
                               ? '${_activeSharedChildData!['battery_percentage'] ?? 0}%'
-                              : '${state.deviceInfo?.batteryPercentage ?? 0}%',
+                              : (state.deviceInfo?.batteryKnown == false
+                                    ? '--'
+                                    : '${state.deviceInfo?.batteryPercentage ?? 0}%'),
                           svgAsset:
                               (_viewingSharedChild &&
                                       _activeSharedChildData != null) ||
@@ -4355,16 +4344,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                     'silent'
                                 ? null
                                 : 'assets/home/home_chip_sound.svg',
-                          ),
-                        ],
-                        // Altitude — only present for a physical JT808 tracker
-                        // (naviQ-server tcp/server.js), never a phone, so this pill
-                        // simply doesn't render for a phone-only child.
-                        if (!_viewingSharedChild &&
-                            state.deviceInfo?.altitude != null) ...[
-                          _buildLocationStatusPill(
-                            Icons.terrain_rounded,
-                            '${state.deviceInfo!.altitude!.round()}m',
                           ),
                         ],
                       ],
@@ -5865,7 +5844,7 @@ class _DynamicLocationTextState extends State<_DynamicLocationText> {
           style: GoogleFonts.poppins(
             fontSize: 24.0.sp,
             fontWeight: FontWeight.w500,
-            height: 1.0,
+            height: 1.25,  // 1.0 clipped descenders (the g in "Nagar")
             color: const Color(0xFF16181A),
           ),
         ),

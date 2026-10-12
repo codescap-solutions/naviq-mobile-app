@@ -402,7 +402,7 @@ class _DevicesViewState extends State<DevicesView> {
               isLive: _isDeviceLive,
               metrics: [
                 (
-                  _deviceInfo != null
+                  _deviceInfo != null && _deviceInfo!.batteryKnown
                       ? '${_deviceInfo!.batteryPercentage}%'
                       : '—',
                   'Battery',

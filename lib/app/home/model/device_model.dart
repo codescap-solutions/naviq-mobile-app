@@ -1,5 +1,9 @@
 class DeviceInfo {
   final int batteryPercentage;
+
+  /// False when the server sent no battery reading (a tracker that has not
+  /// reported one yet) — shown as "--", never as a real 0%.
+  final bool batteryKnown;
   final String networkStatus;
   final String networkType;
   final String soundProfile;
@@ -22,6 +26,7 @@ class DeviceInfo {
 
   DeviceInfo({
     required this.batteryPercentage,
+    this.batteryKnown = true,
     required this.networkStatus,
     required this.networkType,
     required this.soundProfile,
@@ -40,6 +45,7 @@ class DeviceInfo {
   factory DeviceInfo.fromJson(Map<String, dynamic> json) {
     return DeviceInfo(
       batteryPercentage: json['battery_percentage'] ?? 0,
+      batteryKnown: json['battery_percentage'] != null,
       networkStatus: json['network_status'] ?? '',
       networkType: json['network_type'] ?? '',
       soundProfile: json['sound_profile'] ?? '',
@@ -74,6 +80,7 @@ class DeviceInfo {
   }) {
     return DeviceInfo(
       batteryPercentage: batteryPercentage ?? this.batteryPercentage,
+      batteryKnown: batteryPercentage != null ? true : batteryKnown,
       networkStatus: networkStatus ?? this.networkStatus,
       networkType: networkType ?? this.networkType,
       soundProfile: soundProfile ?? this.soundProfile,
