@@ -120,8 +120,17 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
     // on an already-open Home screen wouldn't be reflected until one of those
     // happens. Poll it lightly in the background instead.
     _snapshotPollTimer?.cancel();
-    _snapshotPollTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      add(const RefreshTrackingSnapshot());
+    // A child still on NEVER_SHARED (e.g. a just-linked tracker waiting for its
+    // first fix) is polled every 10s so the "not paired yet" card clears fast.
+    var snapshotTick = 0;
+    _snapshotPollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      final current = state;
+      final waitingForFirstFix =
+          current is HomepageSuccess &&
+          current.trackingSnapshot?.uiDirective.displayState == 'NEVER_SHARED';
+      if (waitingForFirstFix || ++snapshotTick % 6 == 0) {
+        add(const RefreshTrackingSnapshot());
+      }
     });
   }
 
@@ -659,6 +668,13 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
 
       // Reject a point older than what's currently displayed — see
       // _isNewerLocationUpdate doc comment.
+      // First-ever fix for a child still on the "not paired yet" card: the
+      // snapshot only flips to LIVE once refetched.
+      if (currentState.trackingSnapshot?.uiDirective.displayState ==
+          'NEVER_SHARED') {
+        add(const RefreshTrackingSnapshot());
+      }
+
       if (!_isNewerLocationUpdate(since)) {
         AppLogger.info(
           '[HomepageBloc] Ignoring stale location_update (since: $since, is_catch_up: ${data['is_catch_up']}) — older than what is already displayed',

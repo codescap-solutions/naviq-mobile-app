@@ -3729,6 +3729,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       final childCode = _sharedPrefsService.getString('child_code');
       return Container(
         width: double.infinity,
+      // A hardware-tracker kid has no companion app to pair — it just hasn't
+      // reported a fix yet.
+      final isTracker = state.deviceInfo?.isDeviceOnly == true;
         padding: EdgeInsets.all(20.w),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -3766,7 +3769,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "$childName's device isn't paired yet",
+                        isTracker
+                            ? "Waiting for $childName's tracker"
+                            : "$childName's device isn't paired yet",
                         style: GoogleFonts.poppins(
                           fontSize: 15.0.sp,
                           fontWeight: FontWeight.w800,
@@ -3775,8 +3780,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                       SizedBox(height: 2),
                       Text(
-                        'GPS tracking, screen time rules, and safe geofencing '
-                        'will activate automatically once the companion app is paired.',
+                        isTracker
+                            ? "The location will show up as soon as the tracker "
+                                  "reports its first GPS fix. Make sure it is "
+                                  "switched on and has a clear view of the sky."
+                            : 'GPS tracking, screen time rules, and safe geofencing '
+                                  'will activate automatically once the companion app is paired.',
                         style: GoogleFonts.poppins(
                           fontSize: 12.0.sp,
                           fontWeight: FontWeight.w500,
@@ -3788,34 +3797,35 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
               ],
             ),
-            SizedBox(height: 16.w),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: childCode == null
-                    ? null
-                    : () => Share.share(
-                        "Set up $childName on NaviQ: install the NaviQ app on "
-                        "${childName}'s phone and enter this code to connect — $childCode",
-                      ),
-                icon: Icon(Icons.share_rounded, size: 18.w),
-                label: Text(
-                  'Share Invite Link',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14.0.sp,
-                    fontWeight: FontWeight.w700,
+            if (!isTracker) SizedBox(height: 16.w),
+            if (!isTracker)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: childCode == null
+                      ? null
+                      : () => Share.share(
+                          "Set up $childName on NaviQ: install the NaviQ app on "
+                          "${childName}'s phone and enter this code to connect — $childCode",
+                        ),
+                  icon: Icon(Icons.share_rounded, size: 18.w),
+                  label: Text(
+                    'Share Invite Link',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14.0.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF0066FF),
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 14.w),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16.w),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF0066FF),
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 14.w),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.w),
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       );
