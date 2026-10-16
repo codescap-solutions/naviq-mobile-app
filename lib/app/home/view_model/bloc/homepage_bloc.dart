@@ -659,6 +659,13 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
         return;
       }
 
+      // First-ever fix for a child still on the "not paired yet" card: the
+      // snapshot only flips to LIVE once refetched.
+      if (currentState.trackingSnapshot?.uiDirective.displayState ==
+          'NEVER_SHARED') {
+        add(const RefreshTrackingSnapshot());
+      }
+
       // Map 'timestamp' from socket (or 'since') to the 'since' field in model
       final since =
           (data['timestamp'] ??
@@ -668,13 +675,6 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
 
       // Reject a point older than what's currently displayed — see
       // _isNewerLocationUpdate doc comment.
-      // First-ever fix for a child still on the "not paired yet" card: the
-      // snapshot only flips to LIVE once refetched.
-      if (currentState.trackingSnapshot?.uiDirective.displayState ==
-          'NEVER_SHARED') {
-        add(const RefreshTrackingSnapshot());
-      }
-
       if (!_isNewerLocationUpdate(since)) {
         AppLogger.info(
           '[HomepageBloc] Ignoring stale location_update (since: $since, is_catch_up: ${data['is_catch_up']}) — older than what is already displayed',

@@ -3727,11 +3727,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (!_viewingSharedChild &&
         state.trackingSnapshot?.uiDirective.displayState == 'NEVER_SHARED') {
       final childCode = _sharedPrefsService.getString('child_code');
-      return Container(
-        width: double.infinity,
       // A hardware-tracker kid has no companion app to pair — it just hasn't
       // reported a fix yet.
       final isTracker = state.deviceInfo?.isDeviceOnly == true;
+      return Container(
+        width: double.infinity,
         padding: EdgeInsets.all(20.w),
         decoration: BoxDecoration(
           color: Colors.white,
