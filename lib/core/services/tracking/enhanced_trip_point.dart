@@ -1,3 +1,4 @@
+import 'package:child_track/core/utils/location_payload.dart';
 import 'package:geolocator/geolocator.dart';
 
 /// Full-fidelity trip point that captures every GPS metadata field.
@@ -5,7 +6,10 @@ import 'package:geolocator/geolocator.dart';
 class EnhancedTripPoint {
   final double lat;
   final double lng;
-  final double speed; // m/s
+  final double speed; // m/s — 0.0 placeholder when [speedKnown] is false
+  /// false = the platform supplied no speed; [speed] is then NOT a measurement
+  /// and is left out of the payload (the backend reads that as unknown).
+  final bool speedKnown;
   final double accuracy; // horizontal accuracy radius in metres
   final String ts; // ISO 8601 UTC
   final int battery;
@@ -23,6 +27,7 @@ class EnhancedTripPoint {
     required this.lat,
     required this.lng,
     required this.speed,
+    this.speedKnown = true,
     required this.accuracy,
     required this.ts,
     required this.battery,
@@ -40,7 +45,8 @@ class EnhancedTripPoint {
     return EnhancedTripPoint(
       lat: pos.latitude,
       lng: pos.longitude,
-      speed: pos.speed < 0 ? 0.0 : pos.speed,
+      speed: knownSpeedMps(pos) ?? 0.0,
+      speedKnown: knownSpeedMps(pos) != null,
       accuracy: pos.accuracy,
       ts: pos.timestamp.toUtc().toIso8601String(),
       battery: battery,
@@ -58,7 +64,8 @@ class EnhancedTripPoint {
   Map<String, dynamic> toJson() => {
     'lat': lat,
     'lng': lng,
-    'speed': speed,
+    if (speedKnown) 'speed': speed,
+    'speed_known': speedKnown,
     'accuracy': accuracy,
     'ts': ts,
     'battery': battery,

@@ -96,4 +96,8 @@ dependencies {
     // as an `implementation` dependency there, which Gradle hides from this module — declare
     // it explicitly so LocationWatchdogWorker.kt can reference androidx.work.* directly.
     implementation("androidx.work:work-runtime-ktx:2.9.1")
+
+    // JVM unit tests for the pure native tracking rules (TrackingRecovery.decide,
+    // NearFencePolicy, GeofenceRegistrationDiff, NativeLocationPayload).
+    testImplementation("junit:junit:4.13.2")
 }

@@ -13,7 +13,10 @@ import 'package:child_track/core/services/location_state_machine.dart';
 import 'package:child_track/core/services/tracking/tracking_profile_manager.dart';
 import 'package:child_track/core/services/tracking/tracking_config_service.dart';
 import 'package:child_track/core/services/tracking/geofence_tracking_config.dart';
+import 'package:child_track/core/services/tracking/tracking_recovery_policy.dart';
+import 'package:child_track/core/utils/location_payload.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -125,6 +128,53 @@ class BackgroundLocationService {
     final service = FlutterBackgroundService();
     return await service.isRunning();
   }
+
+  static DateTime? _lastRecoveryAttempt;
+
+  @visibleForTesting
+  static void resetRecoveryThrottleForTests() => _lastRecoveryAttempt = null;
+
+  /// Restart the high-accuracy foreground service if it is not running, from a
+  /// context Android allows it (a high-priority FCM message is a documented
+  /// foreground-service-start exemption). Safe to call repeatedly: the policy
+  /// refuses when the device is not a logged-in child, location permission is
+  /// missing, the service already runs, or an attempt was made moments ago.
+  /// Never throws; the native fallback ping is left untouched either way.
+  /// Returns the decision so callers/tests can see why nothing happened.
+  static Future<RecoveryDecision> recoverIfStopped({
+    required String reason,
+    @visibleForTesting TrackingRecoveryProbe? probe,
+  }) async {
+    final p = probe ?? TrackingRecoveryProbe.real();
+    try {
+      final now = DateTime.now();
+      final decision = TrackingRecoveryPolicy.decide(
+        isAndroid: p.isAndroid,
+        isChildDevice: await p.isChildDevice(),
+        hasLocationPermission: await p.hasLocationPermission(),
+        hasBackgroundLocation: await p.hasBackgroundLocation(),
+        serviceRunning: await p.serviceRunning(),
+        sinceLastAttempt:
+            _lastRecoveryAttempt == null ? null : now.difference(_lastRecoveryAttempt!),
+      );
+      if (decision != RecoveryDecision.start) {
+        StructuredLogger.log(LogTag.BG, 'Tracking recovery ($reason): skipped → ${decision.name}');
+        return decision;
+      }
+      _lastRecoveryAttempt = now;
+      try {
+        await p.startService();
+        StructuredLogger.log(LogTag.BG, 'Tracking recovery ($reason): foreground service start requested');
+        return RecoveryDecision.start;
+      } catch (e) {
+        StructuredLogger.log(LogTag.BG, 'Tracking recovery ($reason): start failed', error: e);
+        return RecoveryDecision.startFailed;
+      }
+    } catch (e) {
+      StructuredLogger.log(LogTag.BG, 'Tracking recovery ($reason): check failed', error: e);
+      return RecoveryDecision.startFailed;
+    }
+  }
 }
 
 // ── Global stream state ──────────────────────────────────────────────────────
@@ -158,6 +208,15 @@ Future<String> _getLocationPermissionStatus() async {
 }
 
 Timer? _boostTimer;
+Timer? _aliveTimer;
+
+/// Epoch-ms heartbeat of this isolate (key shared with TrackingRecovery.kt).
+void _writeAliveMarker(SharedPrefsService prefs) {
+  prefs.setInt(
+    TrackingRecoveryPolicy.aliveMarkerKey,
+    DateTime.now().millisecondsSinceEpoch,
+  );
+}
 
 /// Start/extend a time-boxed boost and make sure the stream actually ends it
 /// even if no further position arrives (e.g. the device goes still).
@@ -299,6 +358,7 @@ void onStart(ServiceInstance service) async {
 
     service.on('stopService').listen((_) {
       StructuredLogger.log(LogTag.BG, 'Stop signal received');
+      _aliveTimer?.cancel();
       _positionSubscription?.cancel();
       _serviceStatusSubscription?.cancel();
       _stateMachine?.dispose();
@@ -375,6 +435,17 @@ void onStart(ServiceInstance service) async {
 
     // Start with 'still' profile — adapts on first position
     _startLocationStream(service);
+
+    // Liveness marker for the native layer (TrackingRecovery.kt reads it): the
+    // Android service existing is not proof that THIS isolate is still running
+    // the location stream, and a stationary child emits no fixes to infer it
+    // from. Only the isolate itself can write it.
+    _writeAliveMarker(sharedPrefsService);
+    _aliveTimer?.cancel();
+    _aliveTimer = Timer.periodic(
+      TrackingRecoveryPolicy.aliveMarkerInterval,
+      (_) => _writeAliveMarker(sharedPrefsService),
+    );
 
     _serviceStatusSubscription = Geolocator.getServiceStatusStream().listen(
       (ServiceStatus status) async {
@@ -468,8 +539,8 @@ Future<bool> onIosBackground(ServiceInstance service) async {
       'lng': position.longitude,
       'accuracy': position.accuracy,
       'accuracy_m': position.accuracy,
-      'speed': position.speed < 0 ? 0.0 : position.speed,
-      'speed_mps': position.speed < 0 ? 0.0 : position.speed,
+      ...speedFields(position),
+      ...locationDiagnostics(fixSource: 'ios_background_fetch'),
       'bearing': position.heading < 0 ? 0.0 : position.heading,
       // position.timestamp, not DateTime.now() — see location_state_machine.dart's
       // _postChildLocation for why: a stale cached OS fix relabeled with a
