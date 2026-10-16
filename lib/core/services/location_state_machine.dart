@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 import 'package:battery_plus/battery_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:child_track/core/utils/structured_logger.dart';
@@ -15,6 +14,9 @@ import 'package:child_track/core/services/tracking/offline_trip_queue.dart';
 import 'package:child_track/core/services/tracking/local_geofence_engine.dart';
 import 'package:child_track/core/services/tracking/tracking_config_service.dart';
 import 'package:child_track/core/services/tracking/geofence_tracking_config.dart';
+import 'package:child_track/core/utils/location_payload.dart';
+import 'package:child_track/core/services/base_service.dart';
+import 'package:child_track/core/services/tracking/post_outcome.dart';
 
 export 'package:child_track/core/services/tracking/trip_classification_engine.dart'
     show BgTripMode;
@@ -273,8 +275,8 @@ class LocationStateMachine {
         'lng': pos.longitude,
         'accuracy': pos.accuracy,
         'accuracy_m': pos.accuracy,
-        'speed': pos.speed < 0 ? 0.0 : pos.speed,
-        'speed_mps': pos.speed < 0 ? 0.0 : pos.speed,
+        // Unknown speed is omitted (speed_known=false), never sent as 0 m/s.
+        ...speedFields(pos),
         'bearing': pos.heading < 0 ? 0.0 : pos.heading,
         'altitude': pos.altitude,
         'speed_accuracy': pos.speedAccuracy,
@@ -297,9 +299,10 @@ class LocationStateMachine {
         'battery': batteryLevel,
         // Engineering diagnostics only (never shown to a parent): which
         // platform/tracking profile produced this fix and why it was taken.
-        'platform': Platform.isIOS ? 'ios' : 'android',
-        'tracking_profile': profileLabelProvider?.call() ?? 'unknown',
-        'fix_source': source,
+        ...locationDiagnostics(
+          fixSource: source,
+          trackingProfile: profileLabelProvider?.call() ?? 'unknown',
+        ),
       };
 
       StructuredLogger.log(LogTag.BG, 'Posting location → $requestBody');
@@ -308,46 +311,68 @@ class LocationStateMachine {
         LogTag.BG,
         'Location post: [${response.statusCode}] ${response.message}',
       );
-      StructuredLogger.log(
-        LogTag.LOCATION,
-        'source=$source lat=${pos.latitude} lng=${pos.longitude} '
-        'acc=${pos.accuracy.toStringAsFixed(1)}m status=posted',
-        buffered: true,
-      );
-    } catch (e) {
-      StructuredLogger.log(LogTag.BG, 'Failed to post location', error: e);
-      String status = 'failed';
-      try {
-        final int battery = await _battery.batteryLevel;
-        await _offlineQueue.enqueueLocation(
-          childId: childId,
-          payload: {
-            // The server rejects a location post without child_id (400);
-            // queued entries used to omit it and were dead-lettered after
-            // their retries, i.e. an offline fix was never actually delivered.
-            'child_id': childId,
-            'lat': pos.latitude,
-            'lng': pos.longitude,
-            'accuracy_m': pos.accuracy,
-            'speed_mps': pos.speed < 0 ? 0.0 : pos.speed,
-            'bearing': pos.heading < 0 ? 0.0 : pos.heading,
-            // The fix's own capture time (not the time the upload failed), so
-            // the server can tell how old the evidence is when it replays.
-            'timestamp': pos.timestamp.toUtc().toIso8601String(),
-            'accuracy': pos.accuracy,
-            'battery': battery,
-            'platform': Platform.isIOS ? 'ios' : 'android',
-            'fix_source': source,
-          },
-        );
-        status = 'queued';
-      } catch (_) {}
+      // BaseService.post never throws — a failed upload comes back as an error
+      // response — so the answer itself decides whether the point is kept.
+      final outcome = classifyPostResponse(response);
+      var status = 'posted';
+      if (outcome == PostOutcome.retryable) {
+        status = await _queueLocation(pos, childId, source) ? 'queued' : 'failed';
+      } else if (outcome == PostOutcome.clockSkew) {
+        status = 'refused_clock_skew';
+      } else if (outcome == PostOutcome.permanent) {
+        status = 'refused';
+      }
       StructuredLogger.log(
         LogTag.LOCATION,
         'source=$source lat=${pos.latitude} lng=${pos.longitude} '
         'acc=${pos.accuracy.toStringAsFixed(1)}m status=$status',
         buffered: true,
       );
+    } catch (e) {
+      StructuredLogger.log(LogTag.BG, 'Failed to post location', error: e);
+      final status = await _queueLocation(pos, childId, source) ? 'queued' : 'failed';
+      StructuredLogger.log(
+        LogTag.LOCATION,
+        'source=$source lat=${pos.latitude} lng=${pos.longitude} '
+        'acc=${pos.accuracy.toStringAsFixed(1)}m status=$status',
+        buffered: true,
+      );
+    }
+  }
+
+  /// Keep a fix that could not be delivered so the offline-queue drain re-sends
+  /// it. The payload carries the fix's OWN capture time (never the time the
+  /// upload failed), and the queue already ignores a second entry with the same
+  /// timestamp, so a retry of the same fix cannot be queued twice. Returns
+  /// whether the point is now safely queued.
+  Future<bool> _queueLocation(Position pos, String childId, String source) async {
+    try {
+      // A failing battery read must never be the reason a fix is lost.
+      var battery = 100;
+      try {
+        battery = await _battery.batteryLevel;
+      } catch (_) {}
+      await _offlineQueue.enqueueLocation(
+        childId: childId,
+        payload: {
+          // The server rejects a location post without child_id (400);
+          // queued entries used to omit it and were dead-lettered after
+          // their retries, i.e. an offline fix was never actually delivered.
+          'child_id': childId,
+          'lat': pos.latitude,
+          'lng': pos.longitude,
+          'accuracy_m': pos.accuracy,
+          ...speedFields(pos, legacyAlias: false),
+          'bearing': pos.heading < 0 ? 0.0 : pos.heading,
+          'timestamp': pos.timestamp.toUtc().toIso8601String(),
+          'accuracy': pos.accuracy,
+          'battery': battery,
+          ...locationDiagnostics(fixSource: source),
+        },
+      );
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -542,7 +567,9 @@ class LocationStateMachine {
           StructuredLogger.log(LogTag.TRIP, 'Backend → STOP signal');
           _stopTripTracking();
         }
-      } else {
+      } else if (classifyPostResponse(response) == PostOutcome.retryable) {
+        // Only a failure a re-send can cure is queued; a permanent refusal
+        // would just be dropped by the drain after a pointless round trip.
         await _offlineQueue.enqueuePoints(
           childId: childId,
           points: enhancedPoints,
@@ -703,19 +730,19 @@ class LocationStateMachine {
               'child_id': entry.childId,
               ...entry.payload,
             });
-            return response.isSuccess;
+            return _settled(response);
           case OfflineEntryType.tripPoints:
             final response = await _childRepo.postTripLocation(
               childId: entry.childId,
               data: entry.payload,
             );
-            return response.isSuccess;
+            return _settled(response);
           case OfflineEntryType.tripEnd:
             final response = await _childRepo.postTripEnd(
               childId: entry.childId,
               data: entry.payload,
             );
-            return response.isSuccess;
+            return _settled(response);
           case OfflineEntryType.geofenceEvent:
             final response = await _childRepo.postGeofenceEvent(
               childId: entry.childId,
@@ -723,12 +750,27 @@ class LocationStateMachine {
               eventType: entry.payload['eventType'] as String,
               timestamp: entry.payload['timestamp'] as String,
             );
-            return response.isSuccess;
+            return _settled(response);
         }
       } catch (_) {
         return false;
       }
     });
+  }
+
+  /// Whether a replayed queue entry is finished with: delivered, or refused for
+  /// a reason a re-send cannot fix (dropped now rather than retried to the cap).
+  /// Only a retryable failure keeps the entry queued.
+  bool _settled(BaseResponse response) {
+    final outcome = classifyPostResponse(response);
+    if (outcome == PostOutcome.permanent || outcome == PostOutcome.clockSkew) {
+      StructuredLogger.log(
+        LogTag.BG,
+        '[OfflineQ] dropping entry the server refused permanently '
+        '(${response.statusCode} ${response.errorCode ?? response.message})',
+      );
+    }
+    return outcome != PostOutcome.retryable;
   }
 
   // ══════════════════════════════════════════════════════════════════════════

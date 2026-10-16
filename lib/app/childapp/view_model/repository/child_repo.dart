@@ -1,3 +1,4 @@
+import 'package:child_track/core/services/tracking/clock_skew_monitor.dart';
 import 'dart:developer';
 import 'dart:io';
 import 'package:child_track/core/services/api_endpoints.dart';
@@ -17,10 +18,14 @@ class ChildRepo extends BaseService {
   final SharedPrefsService _sharedPrefsService;
   final SocketService _socketService = SocketService();
 
+  final ClockSkewMonitor _clockSkew;
+
   ChildRepo({
     required DioClient dioClient,
     SharedPrefsService? sharedPrefsService,
+    ClockSkewMonitor? clockSkewMonitor,
   }) : _sharedPrefsService = sharedPrefsService ?? SharedPrefsService(),
+       _clockSkew = clockSkewMonitor ?? ClockSkewMonitor.instance,
        super(dioClient);
 
   void initializeSocket(String childId) {
@@ -143,6 +148,9 @@ class ChildRepo extends BaseService {
     if (avatar != null) {
       dataMap['avatar'] = avatar;
     }
+    if (deviceImei != null) {
+      dataMap['device_imei'] = deviceImei;
+    }
 
     final response = await post(
       ApiEndpoints.createChild,
@@ -214,10 +222,18 @@ class ChildRepo extends BaseService {
   }
 
   Future<BaseResponse> postChildLocation(Map<String, dynamic> data) async {
+    // Stamped at SEND time (not at capture, not at queue time): the device's own
+    // wall clock when this request leaves. The backend compares it with its clock
+    // to tell a wrong phone clock from a genuinely late upload (queue replay) —
+    // the capture `timestamp` alone can't distinguish the two.
+    final body = {...data, 'device_time': DateTime.now().toUtc().toIso8601String()};
     if (_socketService.isConnected) {
-      _socketService.sendLocation(data);
+      _socketService.sendLocation(body);
     }
-    final response = await post(ApiEndpoints.postLocation, data: data);
+    final response = await post(ApiEndpoints.postLocation, data: body);
+    // A CLOCK_SKEW refusal raises the child's "fix your date & time" prompt; an
+    // accepted live point clears it. Never affects the returned response.
+    await _clockSkew.observe(response);
     return response;
   }
 
@@ -237,7 +253,13 @@ class ChildRepo extends BaseService {
         'childId': childId,
         'geofenceId': geofenceId,
         'eventType': eventType,
+        // When the transition happened (also on a queued replay) — unchanged.
         'timestamp': timestamp,
+        // Send-time wall clock, like the location posts. The backend's
+        // geofence-event handler reads only the fields above and ignores this one
+        // today, so it changes no event semantics; it is there so a later server
+        // check can tell a wrong phone clock from a late replay.
+        'device_time': DateTime.now().toUtc().toIso8601String(),
         'source': source,
       },
     );
@@ -268,8 +290,11 @@ class ChildRepo extends BaseService {
   }) async {
     final response = await post(
       ApiEndpoints.postTripLocation(childId),
-      data: data,
+      // Batch-level send-time stamp (see postChildLocation); the point
+      // timestamps inside `data` stay the capture times.
+      data: {...data, 'device_time': DateTime.now().toUtc().toIso8601String()},
     );
+    await _clockSkew.observe(response);
     return response;
   }
 

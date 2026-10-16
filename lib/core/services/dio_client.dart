@@ -1,3 +1,4 @@
+import 'package:child_track/core/services/api_exception.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
@@ -559,36 +560,50 @@ class DioClient {
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode;
         final message = _extractErrorMessage(error.response?.data);
+        final body = error.response?.data;
+        final errorCode = body is Map ? body['error_code']?.toString() : null;
+        final errorData = body is Map && body['data'] is Map
+            ? Map<String, dynamic>.from(body['data'] as Map)
+            : null;
+        // Same text as the plain Exception it replaces; additionally carries the
+        // status / error_code so callers can tell a retryable failure from a
+        // permanent refusal.
+        ApiException api(String text) => ApiException(
+          text,
+          statusCode: statusCode,
+          errorCode: errorCode,
+          data: errorData,
+        );
 
         switch (statusCode) {
           case 400:
             AppLogger.error('Bad request:', message, StackTrace.current);
-            return Exception(
+            return api(
               message.isNotEmpty
                   ? message
                   : 'Bad request: Please check your request',
             );
           case 401:
             AppLogger.error('Unauthorized:', message, StackTrace.current);
-            return Exception('Unauthorized: Please login again to continue');
+            return api('Unauthorized: Please login again to continue');
           case 403:
             AppLogger.error('Access denied:', message, StackTrace.current);
-            return Exception(
+            return api(
               'Access denied: You are not authorized to access this resource',
             );
           case 404:
             AppLogger.error('Not found:', message, StackTrace.current);
-            return Exception('Not found: The requested resource was not found');
+            return api('Not found: The requested resource was not found');
           case 500:
             AppLogger.error(
               'Internal server error:',
               message,
               StackTrace.current,
             );
-            return Exception('Internal server error: Please try again later');
+            return api('Internal server error: Please try again later');
           default:
             AppLogger.error('Server error:', message, StackTrace.current);
-            return Exception('Server error: Please try again later');
+            return api('Server error: Please try again later');
         }
 
       case DioExceptionType.cancel:

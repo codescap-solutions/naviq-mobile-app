@@ -24,6 +24,8 @@ import 'package:child_track/core/services/location_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:child_track/core/services/tracking/geofence_tracking_config.dart';
+import 'package:child_track/core/services/background_location_service.dart' show BackgroundLocationService;
+import 'package:child_track/core/utils/location_payload.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart' show GlobalKey, NavigatorState, MaterialPageRoute;
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -175,6 +177,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       await _performForceRefresh(
         childId,
         geofenceProbe: message.data['purpose'] == 'GEOFENCE_VERIFY',
+        requestId: message.data['request_id']?.toString(),
       );
       AppLogger.info('FORCE_REFRESH_DATA (bg): Sync completed successfully');
     } catch (e) {
@@ -240,6 +243,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> _performForceRefresh(
   String childId, {
   bool geofenceProbe = false,
+  String? requestId,
 }) async {
   try {
     AppLogger.info(
@@ -255,6 +259,16 @@ Future<void> _performForceRefresh(
     // fresh would count as fresh evidence) and no client-side reverse
     // geocoding (the server resolves addresses itself).
     final childRepo = injector<ChildRepo>();
+
+    // A high-priority FCM message is one of the moments Android lets an app
+    // start a foreground service from the background. If the high-accuracy
+    // tracking service has stopped, ask for it back (policy-guarded, never
+    // throws, native fallback unaffected). This proves nothing about tracking
+    // health by itself — it only requests a restart.
+    await BackgroundLocationService.recoverIfStopped(
+      reason: geofenceProbe ? 'fcm_geofence_probe' : 'fcm_force_refresh',
+    );
+
     final fixCount = geofenceProbe ? 2 : 1;
     for (var i = 0; i < fixCount; i++) {
       if (i > 0) await Future.delayed(const Duration(seconds: 12));
@@ -263,19 +277,14 @@ Future<void> _performForceRefresh(
           desiredAccuracy: LocationAccuracy.high,
           timeLimit: const Duration(seconds: 15),
         );
-        final locationResponse = await childRepo.postChildLocation({
-          'child_id': childId,
-          'lat': fix.latitude,
-          'lng': fix.longitude,
-          'accuracy_m': fix.accuracy,
-          'speed_mps': fix.speed < 0 ? 0.0 : fix.speed,
-          'bearing': fix.heading < 0 ? 0.0 : fix.heading,
-          'timestamp': fix.timestamp.toUtc().toIso8601String(),
-          // Engineering diagnostics only.
-          'platform': Platform.isIOS ? 'ios' : 'android',
-          'tracking_profile': geofenceProbe ? 'probe' : 'force_refresh',
-          'fix_source': geofenceProbe ? 'geofence_probe' : 'force_refresh',
-        });
+        final locationResponse = await childRepo.postChildLocation(
+          forceRefreshLocationPayload(
+            childId: childId,
+            fix: fix,
+            geofenceProbe: geofenceProbe,
+            requestId: requestId,
+          ),
+        );
         AppLogger.info(
           locationResponse.isSuccess
               ? '✅ Force Refresh: Location synced (acc ${fix.accuracy.toStringAsFixed(0)}m)'
@@ -667,6 +676,7 @@ class FirebaseNotificationService {
           await _performForceRefresh(
             childId,
             geofenceProbe: message.data['purpose'] == 'GEOFENCE_VERIFY',
+            requestId: message.data['request_id']?.toString(),
           );
           AppLogger.info('FORCE_REFRESH_DATA (fg): Sync triggered');
         }

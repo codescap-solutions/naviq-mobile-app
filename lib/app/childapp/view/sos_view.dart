@@ -1,3 +1,4 @@
+import 'package:child_track/app/childapp/view/widgets/clock_skew_banner.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -286,6 +287,14 @@ class _SosViewState extends State<SosView> with WidgetsBindingObserver {
               onDismiss: () =>
                   setState(() => _showBatteryOptimizationBanner = false),
             ),
+          // Not dismissible: a wrong clock stops location sharing entirely, and
+          // the banner removes itself once the server accepts a live point.
+          ClockSkewBanner(
+            topExtra:
+                (_oemBannerInfo != null ? 56 : 0) +
+                (_showBackgroundLocationBanner ? 56 : 0) +
+                (_showBatteryOptimizationBanner ? 56 : 0),
+          ),
         ],
       ),
     );
@@ -2052,7 +2061,7 @@ class _SosViewContentState extends State<_SosViewContent> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Naviq Dev 1.0.4(Oct 9)',
+                          'Naviq Dev 1.0.4(Oct 13)',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             fontSize: 10.0.sp,

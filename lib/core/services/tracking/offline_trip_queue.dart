@@ -155,8 +155,25 @@ class OfflineTripQueue {
       payload: payload,
       createdAt: DateTime.now(),
     ));
+
+    // A phone that stays offline for hours would otherwise queue one entry per
+    // fix without bound, and every enqueue rewrites the whole persisted list.
+    // Keep the NEWEST fixes; the oldest are the least useful once replayed.
+    final locationEntries =
+        _entries.where((e) => e.type == OfflineEntryType.location).toList();
+    final overflow = locationEntries.length - maxLocationEntries;
+    if (overflow > 0) {
+      locationEntries.take(overflow).forEach(_entries.remove);
+      StructuredLogger.log(
+        LogTag.TRIP,
+        '[OfflineQ] Location queue full — dropped $overflow oldest fix(es)',
+      );
+    }
     await _persist();
   }
+
+  /// Ceiling for queued location fixes (see [enqueueLocation]).
+  static const int maxLocationEntries = 500;
 
   Future<void> enqueueGeofenceEvent({
     required String childId,

@@ -146,6 +146,11 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
 
     try {
       final response = await _homeRepository.getTrackingSnapshot(childId);
+      // Same identity guard as getHomeData / getTrips: childId was captured
+      // before the await, so a slow response for the previously selected child
+      // must not land on the screen (and show its tracking warning) of the
+      // child selected meanwhile.
+      if (childId != _sharedPrefsService.getString('child_id')) return;
       if (response.isSuccess && response.data != null) {
         final freshState = state is HomepageSuccess
             ? state as HomepageSuccess

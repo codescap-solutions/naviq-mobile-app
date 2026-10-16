@@ -57,18 +57,49 @@ object NativeApiClient {
         val token = getAuthToken(context)
         if (token.isNullOrEmpty()) return false
 
-        val firstCode = doPost(path, token, payload)
-        if (firstCode != 401) return firstCode in 200 until 500
+        stampDeviceTime(path, payload)
+        val first = doPost(path, token, payload)
+        NativeClockSkew.handleResponse(NativeClockSkew.storeFor(context), path, first.code, first.body, System.currentTimeMillis())
+        if (first.code != 401) return first.code in 200 until 500
 
         Thread.sleep(AUTH_RETRY_DELAY_MS)
         val retryToken = getAuthToken(context)
         if (retryToken.isNullOrEmpty()) return false
-        val retryCode = doPost(path, retryToken, payload)
-        return retryCode in 200..299
+        stampDeviceTime(path, payload)
+        val retry = doPost(path, retryToken, payload)
+        NativeClockSkew.handleResponse(NativeClockSkew.storeFor(context), path, retry.code, retry.body, System.currentTimeMillis())
+        return retry.code in 200..299
     }
 
-    /** Fires one POST attempt. Returns the HTTP status code, or -1 on a network/timeout exception. */
-    private fun doPost(path: String, token: String, payload: JSONObject): Int {
+    /**
+     * Location posts carry the device's wall clock at SEND time (refreshed on every
+     * attempt, also for entries replayed from the pending queue), so the backend
+     * can tell a wrong phone clock from a genuinely late upload.
+     */
+    private fun stampDeviceTime(path: String, payload: JSONObject) {
+        if (!carriesDeviceTime(path)) return
+        payload.put("device_time", deviceTimeIso(System.currentTimeMillis()))
+    }
+
+    /** Posts that carry the send-time stamp (the geofence-event contract ignores it today; see ChildRepo.postGeofenceEvent). */
+    private val DEVICE_TIME_PATHS = setOf("child/location", "child/geofence-event")
+
+    /** True for the posts that get a send-time `device_time` (never a capture-time field). */
+    fun carriesDeviceTime(path: String): Boolean = DEVICE_TIME_PATHS.contains(path)
+
+    fun deviceTimeIso(epochMs: Long): String {
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+        fmt.timeZone = java.util.TimeZone.getTimeZone("UTC")
+        return fmt.format(java.util.Date(epochMs))
+    }
+
+    /** One POST attempt's outcome: the HTTP status (or -1 on a network/timeout exception) and a bounded copy of the body. */
+    private class PostResult(val code: Int, val body: String?)
+
+    private const val MAX_BODY_CHARS = 4096
+
+    /** Fires one POST attempt. */
+    private fun doPost(path: String, token: String, payload: JSONObject): PostResult {
         var connection: HttpURLConnection? = null
         return try {
             val url = URL(DEFAULT_API_BASE + path)
@@ -81,11 +112,20 @@ object NativeApiClient {
                 setRequestProperty("Authorization", "Bearer $token")
             }
             connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
-            connection.responseCode
+            val code = connection.responseCode
+            // Only the location contract needs the answer's body (CLOCK_SKEW / history_only).
+            PostResult(code, if (path == NativeClockSkew.LOCATION_PATH) readBody(connection, code) else null)
         } catch (e: Exception) {
-            -1
+            PostResult(-1, null)
         } finally {
             connection?.disconnect()
         }
+    }
+
+    private fun readBody(connection: HttpURLConnection, code: Int): String? = try {
+        val stream = if (code >= 400) connection.errorStream else connection.inputStream
+        stream?.bufferedReader(Charsets.UTF_8)?.use { r -> NativeClockSkew.readBounded(r, MAX_BODY_CHARS) }
+    } catch (_: Exception) {
+        null
     }
 }

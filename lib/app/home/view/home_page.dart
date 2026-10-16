@@ -1,3 +1,5 @@
+import 'package:child_track/app/home/model/shared_location_accepted.dart';
+import 'package:child_track/app/home/view/widget/tracking_warning_banner.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
@@ -521,36 +523,36 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     AppLogger.info(
       '💡 _handleIncomingLocationShareAccepted called with data: $data',
     );
-    print('💡 [FCM ACCEPTED] Handling accepted share request: $data');
     try {
-      final String childId = data['child_id'] ?? 'mock_rohan';
-      final String childName = data['child_name'] ?? 'Rohan';
-      final double lat =
-          double.tryParse(data['lat']?.toString() ?? '') ?? 12.9716;
-      final double lng =
-          double.tryParse(data['lng']?.toString() ?? '') ?? 77.5946;
-      final String? expiresAtStr = data['expires_at'];
-      final DateTime expiresAt = expiresAtStr != null
-          ? DateTime.tryParse(expiresAtStr) ??
-                DateTime.now().add(const Duration(minutes: 30))
-          : DateTime.now().add(const Duration(minutes: 30));
+      final accepted = SharedLocationAccepted.fromPush(data);
 
-      setState(() {
-        _activeSharedChildData = {
-          'child_id': childId,
-          'child_name': childName,
-          'avatar': data['avatar'] ?? 'Boy 03.png',
-          'lat': lat,
-          'lng': lng,
-          'expires_at': expiresAt,
-        };
-        _viewingSharedChild = true;
-      });
+      if (accepted.canShowOnMap) {
+        setState(() {
+          _activeSharedChildData = {
+            'child_id': accepted.childId,
+            'child_name': accepted.childName,
+            'avatar': accepted.avatar ?? 'Boy 03.png',
+            'lat': accepted.lat,
+            'lng': accepted.lng,
+            'expires_at':
+                accepted.expiresAt ??
+                DateTime.now().add(const Duration(minutes: 30)),
+          };
+          _viewingSharedChild = true;
+        });
+      } else {
+        // The push (silent, data-only) carries no child id or position — never
+        // invent one. The shared child's real, current location arrives with
+        // the home data's shared-children list, so ask for that.
+        injector<HomepageBloc>().add(
+          const GetHomepageData(isSilentRefresh: true),
+        );
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '$childName\'s shared location is now visible on your map',
+            '${accepted.childName}\'s shared location is now visible on your map',
           ),
           backgroundColor: const Color(0xFF10B981),
         ),
@@ -4264,6 +4266,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ],
               ),
             ),
+          ],
+          // Evidenced by the backend (child's phone clock is wrong): say so
+          // instead of leaving a silently frozen location.
+          if (!_viewingSharedChild &&
+              trackingSnapshot != null &&
+              TrackingWarningBanner.messageFor(trackingSnapshot) != null) ...[
+            SizedBox(height: 10.w),
+            TrackingWarningBanner(snapshot: trackingSnapshot),
           ],
           // Figma: 24px between the name/"is at" block and the chips, with the
           // "Location updated" line hidden (kLocationCardOverlap /
