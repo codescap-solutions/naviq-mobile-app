@@ -5,5 +5,5 @@ class AppBuildInfo {
   const AppBuildInfo._();
 
   static const String version = '1.0.10';
-  static const String build = '30';
+  static const String build = '31';
 }
