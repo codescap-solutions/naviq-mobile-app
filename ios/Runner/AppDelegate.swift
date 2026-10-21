@@ -1842,7 +1842,18 @@ extension AppDelegate {
         logToExtension("👉 Notification Tapped (App Open): type=\(type ?? "nil") action=\(action ?? "nil")")
         
         if #available(iOS 16.0, *) { handleLockPayloadIfNeeded(userInfo) }
-        completionHandler()
+
+        // Forward to the Flutter plugins so firebase_messaging raises onMessageOpenedApp and
+        // flutter_local_notifications delivers its tap callback; without it taps never reach Dart.
+        var completed = false
+        let finish: () -> Void = {
+            guard !completed else { return }
+            completed = true
+            completionHandler()
+        }
+        super.userNotificationCenter(center, didReceive: response, withCompletionHandler: finish)
+        // Safety net: never leave the completion handler uncalled if no plugin answered.
+        DispatchQueue.main.async { finish() }
     }
 
     @available(iOS 16.0, *)

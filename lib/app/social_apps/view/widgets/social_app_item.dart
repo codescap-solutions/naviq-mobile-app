@@ -11,8 +11,10 @@ import 'package:google_fonts/google_fonts.dart';
 /// Calling and texting must always work for a child (including emergencies),
 /// so these apps can never be locked — neither one by one nor by "Set New
 /// Limit" (block all). Android matches the dialer / messaging packages; iOS
-/// only exposes opaque tokens, so it matches the resolved app name.
+/// only exposes opaque tokens, so it matches the resolved app name. NaviQ
+/// itself is in here too: locking it would hide the child's SOS screen.
 const _kEssentialPackages = {
+  'com.truenyx.naviqandroid',
   'com.android.dialer',
   'com.google.android.dialer',
   'com.samsung.android.dialer',
@@ -24,7 +26,13 @@ const _kEssentialPackages = {
   'com.android.messaging',
   'com.samsung.android.messaging',
 };
-const _kEssentialNames = {'phone', 'messages', 'messaging', 'message'};
+const _kEssentialNames = {
+  'phone',
+  'messages',
+  'messaging',
+  'message',
+  'naviq',
+};
 
 bool isEssentialApp(String packageName, String appName) =>
     _kEssentialPackages.contains(packageName) ||
