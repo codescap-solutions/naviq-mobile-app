@@ -1450,35 +1450,119 @@ class _TripDetailViewState extends State<TripDetailView> {
         ('end', 'end', trip.endLocation),
     ];
     if (ends.isEmpty) return SizedBox.shrink();
+    // One button; the popup names the start / end place so the parent picks
+    // which one to fence.
     return Padding(
       padding: EdgeInsets.only(top: 16.w, bottom: 24.w),
-      child: Wrap(
-        spacing: 12.w,
-        runSpacing: 12.w,
-        children: [
-          for (final (key, where, at) in ends)
-            GestureDetector(
-              onTap: () => _addFencing(key, at),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 15.w),
-                decoration: BoxDecoration(
-                  color: Color(0xFF0069F9),
-                  borderRadius: BorderRadius.circular(16.w),
-                ),
-                child: Text(
-                  ends.length > 1 ? 'Add fencing at $where' : 'Add fencing',
-                  style: FigmaText.poppins(
-                    16,
-                    weight: FontWeight.w500,
-                    color: Colors.white,
-                    lineHeight: 24,
+      child: GestureDetector(
+        onTap: () => _chooseFencingPlace(ends),
+        child: Container(
+          height: 48.w,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Color(0xFF0069F9),
+            borderRadius: BorderRadius.circular(16.w),
+          ),
+          child: Text(
+            'Add fencing',
+            style: FigmaText.poppins(
+              16,
+              weight: FontWeight.w500,
+              color: Colors.white,
+              lineHeight: 24,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Popup listing the trip's unsaved start / end places by name.
+  Future<void> _chooseFencingPlace(List<(String, String, LatLng)> ends) async {
+    final trip = widget.trip;
+    final key = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Add fencing', style: FigmaText.dialogTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              ends.length > 1
+                  ? 'Which place do you want to save as a safe place?'
+                  : 'Save this place as a safe place?',
+              style: FigmaText.dialogBody,
+            ),
+            SizedBox(height: 12.w),
+            for (final (k, _, at) in ends)
+              Padding(
+                padding: EdgeInsets.only(bottom: 8.w),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14.w),
+                  onTap: () => Navigator.of(ctx).pop(k),
+                  child: Container(
+                    padding: EdgeInsets.all(12.w),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: FigmaColors.border),
+                      borderRadius: BorderRadius.circular(14.w),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                k == 'start'
+                                    ? 'Starting place'
+                                    : 'Ending place',
+                                style: FigmaText.bodySmall.copyWith(
+                                  color: Color(0xFF707784),
+                                ),
+                              ),
+                              ResolvedPlaceLabel(
+                                placeName:
+                                    (k == 'start'
+                                            ? trip.startPlace
+                                            : trip.endPlace)
+                                        .isNotEmpty
+                                    ? (k == 'start'
+                                          ? trip.startPlace
+                                          : trip.endPlace)
+                                    : 'Unknown Location',
+                                lat: at.latitude,
+                                lng: at.longitude,
+                                showDot: false,
+                                textStyle: FigmaText.bodyMedium.copyWith(
+                                  color: FigmaColors.ink,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: Color(0xFF43474F),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Cancel'),
+          ),
         ],
       ),
     );
+    if (key == null || !mounted) return;
+    final chosen = ends.firstWhere((e) => e.$1 == key);
+    _addFencing(chosen.$1, chosen.$3);
   }
 
   Future<void> _addFencing(String key, LatLng at) async {

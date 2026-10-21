@@ -34,6 +34,8 @@ class AppSnackbar {
         ),
         backgroundColor: AppColors.error,
         duration: const Duration(seconds: 2),
+        // A SnackBar with an action stays until dismissed unless this is false.
+        persist: false,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         action: SnackBarAction(
@@ -56,6 +58,8 @@ class AppSnackbar {
         ),
         backgroundColor: AppColors.warning,
         duration: const Duration(seconds: 2),
+        // A SnackBar with an action stays until dismissed unless this is false.
+        persist: false,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         action: SnackBarAction(

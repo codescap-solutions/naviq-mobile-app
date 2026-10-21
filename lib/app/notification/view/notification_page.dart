@@ -11,6 +11,8 @@ import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:intl/intl.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/widgets/figma_app_bar.dart';
+import 'package:child_track/core/services/notification_badge.dart';
+import 'package:child_track/core/services/firebase_notification_service.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -50,11 +52,15 @@ class _NotificationPageState extends State<NotificationPage> {
     super.initState();
     _hidden = _readHidden();
     _scroll.addListener(_onScroll);
+    // Opening the screen is reading it: the bell badge on Home clears.
+    NotificationBadge.instance.markAllSeen();
     _load();
   }
 
   @override
   void dispose() {
+    // Anything that arrived while the list was open was seen too.
+    NotificationBadge.instance.markAllSeen();
     _scroll.dispose();
     super.dispose();
   }
@@ -82,6 +88,7 @@ class _NotificationPageState extends State<NotificationPage> {
     'timestamp': log['created_at'],
     'type': log['type'] ?? log['notification_type'],
     'request_id': log['data'] is Map ? log['data']['request_id'] : null,
+    'data': log['data'] is Map ? Map<String, dynamic>.from(log['data']) : null,
   };
 
   /// Server rows → list items. Re-checks "visible" locally so an older server
@@ -254,43 +261,21 @@ class _NotificationPageState extends State<NotificationPage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18.w),
         ),
-        title: Text(
-          'Clear Notifications',
-          style: GoogleFonts.poppins(
-            fontSize: 18.0.sp,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF0C1D37),
-          ),
-        ),
+        title: Text('Clear Notifications', style: FigmaText.dialogTitle),
         content: Text(
           'Are you sure you want to clear all notifications?',
-          style: GoogleFonts.poppins(
-            fontSize: 14.0.sp,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF475569),
-          ),
+          style: FigmaText.dialogBody,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.poppins(
-                fontSize: 14.0.sp,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF64748B),
-              ),
-            ),
+            child: Text('Cancel', style: FigmaText.dialogAction),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Clear All',
-              style: GoogleFonts.poppins(
-                fontSize: 14.0.sp,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFEF4444),
-              ),
+              style: FigmaText.dialogAction.copyWith(color: FigmaColors.danger),
             ),
           ),
         ],
@@ -462,6 +447,11 @@ class _NotificationPageState extends State<NotificationPage> {
         final body = notification['body'] as String? ?? '';
         final timestamp = notification['timestamp'] as String?;
         final type = notification['type'] as String?;
+        // A pending "<name> is requesting your kid's location": tapping the row
+        // re-opens the same approve / reject sheet the push opens.
+        final canRespond =
+            type?.toUpperCase() == 'LOCATION_SHARE_REQUEST' &&
+            notification['request_id'] != null;
 
         return Dismissible(
           key: Key(id),
@@ -477,105 +467,127 @@ class _NotificationPageState extends State<NotificationPage> {
             child: Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444)),
           ),
           onDismissed: (_) => _deleteNotification(id),
-          child: Container(
-            margin: EdgeInsets.only(bottom: 12.w),
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.w),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14.w),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 4.w,
-                  offset: Offset(0, 2.w),
-                ),
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(top: 2.w),
-                  child: Container(
-                    height: 36.w,
-                    width: 36.w,
-                    decoration: BoxDecoration(
-                      color: _getColorForType(type),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _getIconForType(type),
-                      color: Colors.white,
-                      size: 18.w,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: canRespond
+                ? () => injector<FirebaseNotificationService>()
+                      .replayLocationShareRequest({
+                        ...?(notification['data'] as Map<String, dynamic>?),
+                        'request_id': notification['request_id'],
+                      })
+                : null,
+            child: Container(
+              margin: EdgeInsets.only(bottom: 12.w),
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14.w),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4.w,
+                    offset: Offset(0, 2.w),
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(top: 2.w),
+                    child: Container(
+                      height: 36.w,
+                      width: 36.w,
+                      decoration: BoxDecoration(
+                        color: _getColorForType(type),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _getIconForType(type),
+                        color: Colors.white,
+                        size: 18.w,
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: FigmaText.poppins(
-                          16,
-                          color: Color(0xFF0F1320),
-                          lineHeight: 24,
-                        ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 2.w),
-                        child: Text(
-                          body,
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
                           style: FigmaText.poppins(
-                            12,
-                            color: Color(0xFF6B7280),
-                            lineHeight: 20,
+                            16,
+                            color: Color(0xFF0F1320),
+                            lineHeight: 24,
                           ),
                         ),
-                      ),
-                      if (type == 'LOGOUT_REQUEST' &&
-                          _logoutStatus[notification['request_id']
-                                  ?.toString()] !=
-                              null)
+                        Padding(
+                          padding: EdgeInsets.only(top: 2.w),
+                          child: Text(
+                            body,
+                            style: FigmaText.poppins(
+                              12,
+                              color: Color(0xFF6B7280),
+                              lineHeight: 20,
+                            ),
+                          ),
+                        ),
+                        if (type == 'LOGOUT_REQUEST' &&
+                            _logoutStatus[notification['request_id']
+                                    ?.toString()] !=
+                                null)
+                          Padding(
+                            padding: EdgeInsets.only(top: 8.w),
+                            child: _statusChip(
+                              _logoutStatus[notification['request_id']
+                                  ?.toString()]!,
+                            ),
+                          ),
+                        if (canRespond)
+                          Padding(
+                            padding: EdgeInsets.only(top: 8.w),
+                            child: Text(
+                              'Tap to accept or reject',
+                              style: FigmaText.poppins(
+                                12,
+                                color: Color(0xFF0069F9),
+                                lineHeight: 20,
+                              ),
+                            ),
+                          ),
                         Padding(
                           padding: EdgeInsets.only(top: 8.w),
-                          child: _statusChip(
-                            _logoutStatus[notification['request_id']
-                                ?.toString()]!,
+                          child: Text(
+                            _formatTimestamp(timestamp),
+                            style: FigmaText.poppins(
+                              11,
+                              color: Color(0xFF9BA4B5),
+                              lineHeight: 16,
+                            ),
                           ),
                         ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 8.w),
-                        child: Text(
-                          _formatTimestamp(timestamp),
-                          style: FigmaText.poppins(
-                            11,
-                            color: Color(0xFF9BA4B5),
-                            lineHeight: 16,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                GestureDetector(
-                  onTap: () => _deleteNotification(id),
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: EdgeInsets.only(left: 4.w, top: 2.w),
-                    child: Text(
-                      '×',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16.0.sp,
-                        fontWeight: FontWeight.w500,
-                        height: 1.0,
-                        color: Color(0xFFD1D5DC),
+                  GestureDetector(
+                    onTap: () => _deleteNotification(id),
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: EdgeInsets.only(left: 4.w, top: 2.w),
+                      child: Text(
+                        '×',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16.0.sp,
+                          fontWeight: FontWeight.w500,
+                          height: 1.0,
+                          color: Color(0xFFD1D5DC),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );

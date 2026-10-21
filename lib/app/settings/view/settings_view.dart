@@ -6,9 +6,9 @@ import 'package:child_track/core/services/firebase_notification_service.dart';
 import 'package:child_track/core/utils/app_logger.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:child_track/core/services/csv_file_logger.dart';
 import 'account_view.dart';
@@ -30,7 +30,12 @@ class SettingsView extends StatefulWidget {
   /// hosted in the Home tab bar this returns to the Home tab (same as Explore).
   final VoidCallback? onNavigateToHome;
 
-  const SettingsView({super.key, this.onNavigateToHome});
+  /// Bumped by the tab bar each time Settings is opened. The tab keeps its
+  /// state alive, so without it the toggles kept showing (and changing) the
+  /// child that was selected the first time Settings was built.
+  final int refreshToken;
+
+  const SettingsView({super.key, this.onNavigateToHome, this.refreshToken = 0});
 
   @override
   State<SettingsView> createState() => _SettingsViewState();
@@ -49,6 +54,12 @@ class _SettingsViewState extends State<SettingsView> {
   void initState() {
     super.initState();
     _loadChildData();
+  }
+
+  @override
+  void didUpdateWidget(covariant SettingsView old) {
+    super.didUpdateWidget(old);
+    if (old.refreshToken != widget.refreshToken) _loadChildData();
   }
 
   void _loadChildData() {
@@ -90,13 +101,6 @@ class _SettingsViewState extends State<SettingsView> {
         context,
         title: 'Settings',
         onBack: widget.onNavigateToHome,
-        trailing: FigmaCircleButton(
-          child: SvgPicture.asset(
-            'assets/help/help_search.svg',
-            width: 24.w,
-            height: 24.w,
-          ),
-        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -591,47 +595,6 @@ class _SettingsViewState extends State<SettingsView> {
     }
   }
 
-  void _showDeleteAccountDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text("Delete Account"),
-        content: Text(
-          "This will permanently delete your account and associated data.\n\n"
-          "You will be redirected to a deletion request form.",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              Navigator.pop(context);
-              _openDeleteForm();
-            },
-            child: Text("Continue", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openDeleteForm() async {
-    final Uri url = Uri.parse(
-      "https://docs.google.com/forms/d/e/1FAIpQLSdmxHaRpEqVL1ACZWxk35c9dxvIc6evS-pBfHNc-hHdPJHdfg/viewform",
-    );
-
-    try {
-      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-        debugPrint('Could not open delete account form');
-      }
-    } catch (e) {
-      debugPrint('Error launching URL: $e');
-    }
-  }
-
   void _showLoginSecurityOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -660,16 +623,6 @@ class _SettingsViewState extends State<SettingsView> {
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _shareLogs(context);
-                },
-              ),
-              Divider(),
-              ListTile(
-                leading: Icon(Icons.delete_outline, color: Colors.red),
-                title: Text('Delete Account'),
-                subtitle: Text('Permanently delete your account'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _showDeleteAccountDialog(context);
                 },
               ),
               Divider(),
@@ -738,22 +691,13 @@ class _SettingsViewState extends State<SettingsView> {
                 SizedBox(height: 18.w),
                 Text(
                   'Unlock Premium Protection',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20.0.sp,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0C1D37),
-                  ),
+                  style: FigmaText.dialogTitle,
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 8.w),
                 Text(
                   'Logging out will disable real-time alerts and location updates. Upgrade to Premium to keep your child fully protected.',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13.5.sp,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
-                    height: 1.4,
-                  ),
+                  style: FigmaText.dialogBody,
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 20.w),
@@ -773,11 +717,14 @@ class _SettingsViewState extends State<SettingsView> {
                 SizedBox(height: 24.w),
 
                 // Action Buttons
+                // minimumSize, not a fixed height: a fixed 48.w box clipped the
+                // label when the device font/scale made the text taller.
                 SizedBox(
                   width: double.infinity,
-                  height: 48.w,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
+                      minimumSize: Size.fromHeight(48.w),
+                      padding: EdgeInsets.symmetric(vertical: 12.w),
                       backgroundColor: Color(0xFF0066FF),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14.w),
@@ -795,9 +742,7 @@ class _SettingsViewState extends State<SettingsView> {
                     },
                     child: Text(
                       'Upgrade to Premium',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14.5.sp,
-                        fontWeight: FontWeight.bold,
+                      style: FigmaText.dialogAction.copyWith(
                         color: Colors.white,
                       ),
                     ),
@@ -806,9 +751,9 @@ class _SettingsViewState extends State<SettingsView> {
                 SizedBox(height: 12.w),
                 SizedBox(
                   width: double.infinity,
-                  height: 48.w,
                   child: TextButton(
                     style: TextButton.styleFrom(
+                      minimumSize: Size.fromHeight(48.w),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14.w),
                       ),
@@ -846,10 +791,8 @@ class _SettingsViewState extends State<SettingsView> {
                     },
                     child: Text(
                       'Logout Anyway',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14.0.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.redAccent,
+                      style: FigmaText.dialogAction.copyWith(
+                        color: FigmaColors.danger,
                       ),
                     ),
                   ),
@@ -874,16 +817,7 @@ class _SettingsViewState extends State<SettingsView> {
           child: Icon(Icons.check, color: Color(0xFF0066FF), size: 12.w),
         ),
         SizedBox(width: 10.w),
-        Expanded(
-          child: Text(
-            text,
-            style: GoogleFonts.poppins(
-              fontSize: 13.0.sp,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF0C1D37),
-            ),
-          ),
-        ),
+        Expanded(child: Text(text, style: FigmaText.dialogBody)),
       ],
     );
   }
@@ -892,7 +826,7 @@ class _SettingsViewState extends State<SettingsView> {
     showAboutDialog(
       context: context,
       applicationName: 'NaviQ',
-      applicationVersion: 'Naviq Dev 1.0.4(Oct 9)',
+      applicationVersion: 'Naviq Dev 1.0.10(Oct 17)',
       applicationIcon: Container(
         padding: EdgeInsets.all(8.w),
         decoration: BoxDecoration(

@@ -8,11 +8,36 @@ import 'package:child_track/core/widgets/common_button.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Calling and texting must always work for a child (including emergencies),
+/// so these apps can never be locked — neither one by one nor by "Set New
+/// Limit" (block all). Android matches the dialer / messaging packages; iOS
+/// only exposes opaque tokens, so it matches the resolved app name.
+const _kEssentialPackages = {
+  'com.android.dialer',
+  'com.google.android.dialer',
+  'com.samsung.android.dialer',
+  'com.android.phone',
+  'com.android.server.telecom',
+  'com.android.contacts',
+  'com.google.android.apps.messaging',
+  'com.android.mms',
+  'com.android.messaging',
+  'com.samsung.android.messaging',
+};
+const _kEssentialNames = {'phone', 'messages', 'messaging', 'message'};
+
+bool isEssentialApp(String packageName, String appName) =>
+    _kEssentialPackages.contains(packageName) ||
+    _kEssentialNames.contains(appName.trim().toLowerCase());
+
 class SocialAppItem extends StatelessWidget {
   final ImageProvider icon;
   final String name;
   final String usage;
   final bool isLocked;
+
+  /// False for Phone / Messages ([isEssentialApp]): the lock control is hidden.
+  final bool lockable;
   final Function(bool, int)? onLockToggle;
 
   /// This app's usage relative to the busiest app in the list (0..1); drives
@@ -31,6 +56,7 @@ class SocialAppItem extends StatelessWidget {
     required this.name,
     required this.usage,
     required this.isLocked,
+    this.lockable = true,
     this.onLockToggle,
     this.usageFraction = 0,
     this.dailyLimitMinutes,
@@ -113,7 +139,10 @@ class SocialAppItem extends StatelessWidget {
                   ],
                 ),
               ),
-              _LockIconButton(isLocked: isLocked, onLockToggle: onLockToggle),
+              if (lockable)
+                _LockIconButton(isLocked: isLocked, onLockToggle: onLockToggle)
+              else
+                SizedBox(width: 35.w),
             ],
           ),
         ),
@@ -565,7 +594,12 @@ class _LockOptionsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(AppSizes.paddingL.w),
+      padding: EdgeInsets.fromLTRB(
+        AppSizes.paddingL.w,
+        AppSizes.paddingL.w,
+        AppSizes.paddingL.w,
+        AppSizes.paddingL.w + MediaQuery.paddingOf(context).bottom,
+      ),
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
         borderRadius: BorderRadius.only(

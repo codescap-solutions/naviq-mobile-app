@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
 import '../utils/responsive_font.dart';
+import '../constants/figma_tokens.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
@@ -40,10 +41,13 @@ class AppTheme {
           backgroundColor: AppColors.primaryColor,
           foregroundColor: AppColors.surfaceColor,
           elevation: 2,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.paddingL,
-            vertical: AppSizes.paddingM,
-          ),
+          // No vertical padding: with a fixed-height button (SizedBox(height:
+          // 56)) 16px above and below left too little room for a 20px label,
+          // and Text clips whatever does not fit (the tail of "y", "g", "p").
+          // The minimum height below keeps buttons that rely on padding the
+          // same size as before.
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+          minimumSize: const Size(64, AppSizes.buttonHeightM),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusM),
           ),
@@ -54,10 +58,13 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primaryColor,
           side: const BorderSide(color: AppColors.primaryColor),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.paddingL,
-            vertical: AppSizes.paddingM,
-          ),
+          // No vertical padding: with a fixed-height button (SizedBox(height:
+          // 56)) 16px above and below left too little room for a 20px label,
+          // and Text clips whatever does not fit (the tail of "y", "g", "p").
+          // The minimum height below keeps buttons that rely on padding the
+          // same size as before.
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+          minimumSize: const Size(64, AppSizes.buttonHeightM),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusM),
           ),
@@ -67,12 +74,19 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primaryColor,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.paddingM,
-            vertical: AppSizes.paddingS,
-          ),
-          textStyle: TextStyle(fontSize: 14.0.sp, fontWeight: FontWeight.w600),
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
+          minimumSize: const Size(48, 40),
+          textStyle: FigmaText.dialogAction,
         ),
+      ),
+      // Every AlertDialog picks title / message / shape up from here, so a
+      // dialog that sets no style of its own matches the Figma dialog look.
+      dialogTheme: DialogThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titleTextStyle: FigmaText.dialogTitle,
+        contentTextStyle: FigmaText.dialogBody,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,

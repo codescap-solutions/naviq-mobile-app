@@ -1,3 +1,4 @@
+import 'api_exception.dart';
 import 'dio_client.dart';
 
 class BaseResponse<T> {
@@ -6,11 +7,18 @@ class BaseResponse<T> {
   final T? data;
   final int? statusCode;
 
+  /// Set only on a failed request: the backend's additive `error_code` and the
+  /// response `data` (e.g. `CLOCK_SKEW` + `clock_offset_seconds`).
+  final String? errorCode;
+  final Map<String, dynamic>? errorData;
+
   BaseResponse({
     required this.isSuccess,
     required this.message,
     this.data,
     this.statusCode,
+    this.errorCode,
+    this.errorData,
   });
 
   factory BaseResponse.fromJson(Map<String, dynamic> json) {
@@ -35,11 +43,18 @@ class BaseResponse<T> {
     );
   }
 
-  factory BaseResponse.error({required String message, int? statusCode}) {
+  factory BaseResponse.error({
+    required String message,
+    int? statusCode,
+    String? errorCode,
+    Map<String, dynamic>? errorData,
+  }) {
     return BaseResponse<T>(
       isSuccess: false,
       message: message,
       statusCode: statusCode,
+      errorCode: errorCode,
+      errorData: errorData,
     );
   }
 }
@@ -98,7 +113,12 @@ abstract class BaseService {
 
       return BaseResponse.fromJson(response.data);
     } catch (e) {
-      return BaseResponse.error(message: _extractErrorMessage(e));
+      return BaseResponse.error(
+        message: _extractErrorMessage(e),
+        statusCode: e is ApiException ? e.statusCode : null,
+        errorCode: e is ApiException ? e.errorCode : null,
+        errorData: e is ApiException ? e.data : null,
+      );
     }
   }
 

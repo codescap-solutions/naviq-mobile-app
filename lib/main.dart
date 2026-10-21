@@ -12,6 +12,7 @@ import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'app/geofencing/view_model/bloc/geofence_bloc.dart';
@@ -21,20 +22,28 @@ import 'core/navigation/current_route_tracker.dart';
 import 'core/navigation/route_names.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_strings.dart';
-import 'core/constants/app_colors.dart';
-import 'core/constants/app_text_styles.dart';
+import 'core/constants/figma_tokens.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Android 15+ draws a translucent scrim over the 3-button bar; drop it so
+  // the white bottom nav flows under the buttons like it does on iOS.
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarContrastEnforced: false,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
 
   // Load environment variables
   await dotenv.load(fileName: ".env");
 
   // Initialize RevenueCat
   await RevenueCatService.instance.initialize();
-  
+
   // Initialize SubscriptionManager to start listening for premium status
   await SubscriptionManager.instance.initialize();
 
@@ -188,30 +197,22 @@ class _SplashScreenState extends State<SplashScreen>
           opacity: _opacityAnimation,
           child: ScaleTransition(
             scale: _scaleAnimation,
+            // Figma: 288 x 140 logo with the tagline under it, centred on white.
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Image.asset(
-                  'assets/icons/splash image.png',
-                  width: 300,
+                  'assets/images/splash_logo.png',
+                  width: 288,
+                  height: 140,
                   fit: BoxFit.contain,
                 ),
-                const SizedBox(height: 32),
+                // The logo image carries its own bottom margin, so no extra gap.
+                // Figma Body Large: Poppins Regular 20 / 28, 0.2 spacing.
                 Text(
-                  AppStrings.appName,
-                  style: AppTextStyles.headline2.copyWith(
-                    color: AppColors.primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  'Accuracy. Safety. Protection',
+                  style: FigmaText.bodyLarge.copyWith(color: FigmaColors.ink),
                 ),
-                // const SizedBox(height: 8),
-                // Text(
-                //   'Keeping children safe',
-                //   style: AppTextStyles.body1.copyWith(
-                //     color: Colors.grey[700],
-                //   ),
-                // ),
-                // const SizedBox(height: 48),
               ],
             ),
           ),

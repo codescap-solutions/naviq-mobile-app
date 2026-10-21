@@ -6,6 +6,7 @@ import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/utils/app_logger.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
@@ -84,22 +85,16 @@ class _ConnectToParentScreenState extends State<ConnectToParentScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.w),
         ),
-        title: Text(
-          'Where is my code?',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
+        title: Text('Where is my code?', style: FigmaText.dialogTitle),
         content: Text(
           '1. Open the Parents App.\n2. Go to the Child settings or Dashboard.\n3. Copy the 6-character code shown under your child\'s name.\n4. Enter that code on this screen.',
-          style: GoogleFonts.poppins(height: 1.4),
+          style: FigmaText.dialogBody,
         ),
         actions: [
           TextButton(
             child: Text(
               'Close',
-              style: GoogleFonts.poppins(
-                color: Color(0xFF0066FF),
-                fontWeight: FontWeight.bold,
-              ),
+              style: FigmaText.dialogAction.copyWith(color: Color(0xFF0066FF)),
             ),
             onPressed: () => Navigator.pop(context),
           ),

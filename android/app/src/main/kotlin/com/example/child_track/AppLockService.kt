@@ -10,7 +10,6 @@ import android.text.TextUtils
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import java.util.Locale
 
 /**
  * AccessibilityService that monitors foreground app changes and blocks
@@ -42,11 +41,21 @@ class AppLockService : AccessibilityService() {
             "com.opera.browser",
             "com.opera.mini.native",
             "com.microsoft.emmx", // Edge
-            "com.duckduckgo.mobile.android"
-        )
-
-        private val BLOCKED_KEYWORDS = setOf(
-            "porn", "xxx", "sex", "adult", "xvideo", "pornhub", "redtube", "brazzers", "xhamster"
+            "com.duckduckgo.mobile.android",
+            "com.brave.browser",
+            "com.vivaldi.browser",
+            "org.mozilla.focus",
+            "org.mozilla.fenix",
+            "org.mozilla.firefox_beta",
+            "com.kiwibrowser.browser",
+            "com.opera.gx",
+            "com.UCMobile.intl",
+            "com.mi.globalbrowser", // Xiaomi
+            "com.heytap.browser", // Oppo / Realme
+            "com.huawei.browser",
+            "com.android.browser",
+            "com.chrome.beta",
+            "com.chrome.dev"
         )
 
         /**
@@ -283,13 +292,9 @@ class AppLockService : AccessibilityService() {
 
         if (url != null) {
             Log.d(TAG, ">>> WebFilter: URL FOUND: $url")
-            val lowerUrl = url.lowercase(Locale.ROOT)
-            for (keyword in BLOCKED_KEYWORDS) {
-                if (lowerUrl.contains(keyword)) {
-                    Log.d(TAG, ">>> WebFilter: BLOCKED keyword found: $keyword in $url")
-                    triggerBlock(packageName, url)
-                    break
-                }
+            if (AdultSiteFilter.isBlocked(url)) {
+                Log.d(TAG, ">>> WebFilter: BLOCKED adult site: $url")
+                triggerBlock(packageName, url)
             }
         } else {
             // Optional: Log once every few seconds to avoid flood

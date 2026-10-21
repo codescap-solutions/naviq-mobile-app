@@ -1,3 +1,4 @@
+import 'package:child_track/app/childapp/view/widgets/clock_skew_banner.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -14,6 +15,8 @@ import 'package:child_track/core/services/firebase_notification_service.dart';
 import 'package:child_track/core/services/lock_sync_service.dart';
 import 'package:child_track/core/utils/app_logger.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
+import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -91,8 +94,43 @@ class _SosViewState extends State<SosView> with WidgetsBindingObserver {
       // PROMINENT DISCLOSURE (Google Play Accessibility API Policy)
       // Automatically show disclosure on first launch if Accessibility is not yet enabled.
       // This ensures reviewers see it without needing to tap "Enable" themselves.
-      _showAccessibilityDisclosureIfNeeded();
+      _showAccessibilityDisclosureIfNeeded().then(
+        (_) => _showLocationPermissionDialogIfNeeded(),
+      );
     });
+  }
+
+  /// Location is no longer an onboarding step; ask for "Always" here instead.
+  Future<void> _showLocationPermissionDialogIfNeeded() async {
+    if (!mounted) return;
+    final service = LocationService();
+    if (await service.getBackgroundLocationStatus() != 'denied') return;
+    if (!mounted) return;
+    final allow = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Location access needed'),
+        content: const Text(
+          'Allow location "Always" so your parents can see you are safe, '
+          'even when the app is closed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Later'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Allow'),
+          ),
+        ],
+      ),
+    );
+    if (allow != true) return;
+    final result = await service.requestAlwaysAllowPermission();
+    if (result['granted'] != true) await service.openLocationSettings();
+    _checkOtherPermissions();
+    _checkBackgroundLocationStatus();
   }
 
   /// Show the Accessibility Service prominent disclosure automatically
@@ -286,6 +324,14 @@ class _SosViewState extends State<SosView> with WidgetsBindingObserver {
               onDismiss: () =>
                   setState(() => _showBatteryOptimizationBanner = false),
             ),
+          // Not dismissible: a wrong clock stops location sharing entirely, and
+          // the banner removes itself once the server accepts a live point.
+          ClockSkewBanner(
+            topExtra:
+                (_oemBannerInfo != null ? 56 : 0) +
+                (_showBackgroundLocationBanner ? 56 : 0) +
+                (_showBatteryOptimizationBanner ? 56 : 0),
+          ),
         ],
       ),
     );
@@ -632,9 +678,7 @@ Future<void> showAccessibilityDisclosure(BuildContext context) async {
               Text(
                 'Accessibility Service',
                 textAlign: TextAlign.center,
-                style: AppTextStyles.headline6.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: FigmaText.dialogTitle,
               ),
               const SizedBox(height: AppSizes.spacingS),
 
@@ -642,9 +686,7 @@ Future<void> showAccessibilityDisclosure(BuildContext context) async {
               Text(
                 'NaviQ requires Accessibility permissions for two core parental control features to keep your child safe.',
                 textAlign: TextAlign.center,
-                style: AppTextStyles.body2.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                style: FigmaText.dialogBody,
               ),
               const SizedBox(height: AppSizes.spacingL),
 
@@ -669,18 +711,11 @@ Future<void> showAccessibilityDisclosure(BuildContext context) async {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'App Blocking',
-                          style: AppTextStyles.body1.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text('App Blocking', style: FigmaText.dialogAction),
                         const SizedBox(height: 4),
                         Text(
                           'Detects which app is on screen and blocks restricted apps to enforce limits.',
-                          style: AppTextStyles.body2.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                          style: FigmaText.dialogBody,
                         ),
                       ],
                     ),
@@ -710,18 +745,11 @@ Future<void> showAccessibilityDisclosure(BuildContext context) async {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Web Filtering',
-                          style: AppTextStyles.body1.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text('Web Filtering', style: FigmaText.dialogAction),
                         const SizedBox(height: 4),
                         Text(
                           'Reads website URLs in the browser to block 18+ and adult content.',
-                          style: AppTextStyles.body2.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                          style: FigmaText.dialogBody,
                         ),
                       ],
                     ),
@@ -748,10 +776,7 @@ Future<void> showAccessibilityDisclosure(BuildContext context) async {
                     Expanded(
                       child: Text(
                         'NaviQ strictly uses this for safety. We do NOT read or transmit personal messages or passwords.',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.2,
-                        ),
+                        style: FigmaText.dialogBody,
                       ),
                     ),
                   ],
@@ -773,12 +798,7 @@ Future<void> showAccessibilityDisclosure(BuildContext context) async {
                           borderRadius: BorderRadius.circular(AppSizes.radiusM),
                         ),
                       ),
-                      child: Text(
-                        'Later',
-                        style: AppTextStyles.button.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
+                      child: Text('Later', style: FigmaText.dialogAction),
                     ),
                   ),
                   const SizedBox(width: AppSizes.spacingM),
@@ -796,7 +816,7 @@ Future<void> showAccessibilityDisclosure(BuildContext context) async {
                       ),
                       child: Text(
                         'Enable',
-                        style: AppTextStyles.button.copyWith(
+                        style: FigmaText.dialogAction.copyWith(
                           color: Colors.white,
                         ),
                       ),
@@ -845,64 +865,68 @@ class _PulsingSosButtonState extends State<PulsingSosButton>
 
   @override
   Widget build(BuildContext context) {
+    // Figma: SOS button 188, a soft ring at 237 and another at 309.
+    final button = 188.w;
+    final ring1 = 237.w;
+    final ring2 = 309.w;
     return GestureDetector(
       onTap: widget.onTap,
       child: SizedBox(
-        width: 280,
-        height: 280,
+        width: ring2,
+        height: ring2,
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Ripple 2
-            AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                final progress = (_controller.value + 0.5) % 1.0;
-                return Container(
-                  width: 150 + (130 * progress),
-                  height: 150 + (130 * progress),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(
-                      0xFF0066FF,
-                    ).withValues(alpha: 0.12 * (1.0 - progress)),
-                  ),
-                );
-              },
+            Container(
+              width: ring2,
+              height: ring2,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFEDF2FB),
+              ),
             ),
-            // Ripple 1
+            Container(
+              width: ring1,
+              height: ring1,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFE2EAF8),
+              ),
+            ),
+            // Gentle ripple spreading from the button across the rings.
             AnimatedBuilder(
               animation: _controller,
               builder: (context, child) {
                 final progress = _controller.value;
+                final size = button + (ring1 - button) * progress;
                 return Container(
-                  width: 150 + (130 * progress),
-                  height: 150 + (130 * progress),
+                  width: size,
+                  height: size,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: const Color(
-                      0xFF0066FF,
-                    ).withValues(alpha: 0.22 * (1.0 - progress)),
+                      0xFF2F6BF2,
+                    ).withValues(alpha: 0.18 * (1.0 - progress)),
                   ),
                 );
               },
             ),
-            // Central Solid SOS Button
+            // Central SOS button
             Container(
-              width: 180,
-              height: 180,
+              width: button,
+              height: button,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF1E60FF), Color(0xFF4C82FF)],
+                  colors: [Color(0xFF5B8FF5), Color(0xFF1F44B8)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF1E60FF).withValues(alpha: 0.35),
-                    blurRadius: 24,
-                    offset: const Offset(0, 10),
+                    color: const Color(0xFF2F6BF2).withValues(alpha: 0.4),
+                    blurRadius: 32.w,
+                    offset: Offset(0, 12.w),
                   ),
                 ],
               ),
@@ -910,29 +934,25 @@ class _PulsingSosButtonState extends State<PulsingSosButton>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.error_outline_rounded,
                       color: Colors.white,
-                      size: 36,
+                      size: 28.w,
                     ),
-                    const SizedBox(height: 8),
                     Text(
                       "SOS",
-                      style: GoogleFonts.poppins(
-                        fontSize: 38.0.sp,
-                        fontWeight: FontWeight.w900,
+                      // Figma: Poppins Bold 48, line height 100%.
+                      style: FigmaText.poppins(
+                        48,
+                        weight: FontWeight.w700,
+                        lineHeight: 48,
                         color: Colors.white,
-                        letterSpacing: 1.0,
                       ),
                     ),
-                    const SizedBox(height: 2),
                     Text(
                       "TAP FOR HELP",
-                      style: GoogleFonts.poppins(
-                        fontSize: 10.0.sp,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white.withValues(alpha: 0.85),
-                        letterSpacing: 0.8,
+                      style: FigmaText.labelSmall.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -1069,7 +1089,7 @@ class _SosViewContentState extends State<_SosViewContent> {
         {
           'id': 'default_parent_contact',
           'name': parentName,
-          'phone': parentPhone != 'N/A' ? parentPhone : '+91 78 27 533 456',
+          'phone': parentPhone,
           'relation': 'Parent',
           'is_default': true,
         },
@@ -1112,13 +1132,7 @@ class _SosViewContentState extends State<_SosViewContent> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Device Information',
-                  style: AppTextStyles.headline5.copyWith(
-                    color: AppColors.primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text('Device Information', style: FigmaText.dialogTitle),
                 const SizedBox(height: AppSizes.spacingM),
                 _buildInfoRow('Battery', '${deviceInfo.batteryPercentage}%'),
                 const SizedBox(height: AppSizes.spacingS),
@@ -1154,16 +1168,10 @@ class _SosViewContentState extends State<_SosViewContent> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
-        ),
+        Text(label, style: FigmaText.dialogBody),
         Text(
           value,
-          style: AppTextStyles.body2.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
+          style: FigmaText.dialogBody.copyWith(color: FigmaColors.ink),
         ),
       ],
     );
@@ -1184,14 +1192,7 @@ class _SosViewContentState extends State<_SosViewContent> {
             size: 20,
           ),
           const SizedBox(width: AppSizes.spacingS),
-          Expanded(
-            child: Text(
-              title,
-              style: AppTextStyles.body2.copyWith(
-                fontWeight: isGranted ? FontWeight.normal : FontWeight.bold,
-              ),
-            ),
-          ),
+          Expanded(child: Text(title, style: FigmaText.dialogBody)),
           if (!isGranted)
             GestureDetector(
               onTap: onTap,
@@ -1206,9 +1207,8 @@ class _SosViewContentState extends State<_SosViewContent> {
                 ),
                 child: Text(
                   'Enable',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.error,
-                    fontWeight: FontWeight.bold,
+                  style: FigmaText.dialogAction.copyWith(
+                    color: FigmaColors.danger,
                   ),
                 ),
               ),
@@ -1231,23 +1231,15 @@ class _SosViewContentState extends State<_SosViewContent> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusL),
         ),
-        title: Text(
-          'Logout',
-          style: AppTextStyles.headline6.copyWith(fontWeight: FontWeight.bold),
-        ),
+        title: Text('Logout', style: FigmaText.dialogTitle),
         content: Text(
           'Logging out needs your parent\'s approval. Send them a request now?',
-          style: AppTextStyles.body2,
+          style: FigmaText.dialogBody,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(
-              'Cancel',
-              style: AppTextStyles.body2.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
+            child: Text('Cancel', style: FigmaText.dialogAction),
           ),
           TextButton(
             onPressed: () async {
@@ -1256,10 +1248,7 @@ class _SosViewContentState extends State<_SosViewContent> {
             },
             child: Text(
               'Request Logout',
-              style: AppTextStyles.body2.copyWith(
-                color: AppColors.error,
-                fontWeight: FontWeight.w600,
-              ),
+              style: FigmaText.dialogAction.copyWith(color: FigmaColors.danger),
             ),
           ),
         ],
@@ -1422,37 +1411,27 @@ class _SosViewContentState extends State<_SosViewContent> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    // Figma: selected = solid blue, other = white with a pale-blue outline.
+    const blue = Color(0xFF2F6BF2);
+    final fg = isSelected ? Colors.white : blue;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 48,
+        height: 44.w,
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0066FF) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? blue : Colors.white,
+          borderRadius: BorderRadius.circular(12.w),
           border: Border.all(
-            color: isSelected
-                ? const Color(0xFF0066FF)
-                : const Color(0xFFE2E8F0),
-            width: 1.5,
+            color: isSelected ? blue : const Color(0xFFC9DCFB),
+            width: 1,
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : const Color(0xFF64748B),
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 14.0.sp,
-                fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.white : const Color(0xFF64748B),
-              ),
-            ),
+            Icon(icon, color: fg, size: 18.w),
+            SizedBox(width: 8.w),
+            Text(label, style: FigmaText.bodyMedium.copyWith(color: fg)),
           ],
         ),
       ),
@@ -1493,573 +1472,581 @@ class _SosViewContentState extends State<_SosViewContent> {
                 ? (contact['relation'] ?? 'Parent')
                 : 'Parent';
 
+            final canCall = contactPhone.isNotEmpty && contactPhone != 'N/A';
+
             return Scaffold(
-              backgroundColor: const Color(
-                0xFFF8FAFC,
-              ), // very light blue/gray background
+              backgroundColor: const Color(0xFFF8FAFC),
               drawer: ChildAppDrawer(
                 onLogout: () => _handleLogout(context),
                 onShareLogs: () => shareCsvLogFiles(context),
               ),
-              body: SafeArea(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Top Bar Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Back Button
-                            GestureDetector(
-                              onTap: () {
-                                _handleLogout(context);
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
+              body: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFE6EDF9), Color(0xFFF8F9FC)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.center,
+                  ),
+                ),
+                child: SafeArea(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24.w,
+                        vertical: 16.w,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Top Bar Row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Back Button (Figma: 52px white circle)
+                              FigmaCircleButton(
+                                onTap: () => _handleLogout(context),
+                                child: Image.asset(
+                                  'assets/icons/auth_back.png',
+                                  width: 24.w,
+                                  height: 24.w,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: const Color(0xFFE2E8F0),
-                                    width: 1.5,
+                              ),
+
+                              // Right Status Icons
+                              // Row(
+                              //   children: [
+                              //     GestureDetector(
+                              //       onTap: () => Scaffold.of(context).openDrawer(),
+                              //       child: const Icon(
+                              //         Icons.wb_cloudy_outlined,
+                              //         color: Color(0xFF3B82F6),
+                              //         size: 22,
+                              //       ),
+                              //     ),
+                              //     const SizedBox(width: 16),
+                              //     GestureDetector(
+                              //       onTap: () {
+                              //         context.read<ChildBloc>().add(
+                              //           CheckUsagePermission(),
+                              //         );
+                              //       },
+                              //       child: const Icon(
+                              //         Icons.star_outline_rounded,
+                              //         color: Color(0xFF3B82F6),
+                              //         size: 22,
+                              //       ),
+                              //     ),
+                              //     const SizedBox(width: 16),
+                              //     const Icon(
+                              //       Icons.auto_awesome_outlined,
+                              //       color: Color(0xFF3B82F6),
+                              //       size: 22,
+                              //     ),
+                              //   ],
+                              // ),
+                            ],
+                          ),
+
+                          SizedBox(height: 16.w),
+
+                          // Heading Text. Figma: Body Small label over a Bold 20
+                          // title on one line.
+                          Text(
+                            "Need Help?",
+                            textAlign: TextAlign.center,
+                            style: FigmaText.bodySmall.copyWith(
+                              color: const Color(0xFF2D3035),
+                            ),
+                          ),
+                          SizedBox(height: 4.w),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              "Press SOS to call for help!",
+                              textAlign: TextAlign.center,
+                              // Figma Heading H3: Poppins Bold 24 / 28.
+                              style: FigmaText.poppins(
+                                24,
+                                weight: FontWeight.w700,
+                                lineHeight: 28,
+                                color: const Color(0xFF0F1320),
+                              ),
+                            ),
+                          ),
+
+                          SizedBox(height: 28.w),
+
+                          // Center Pulsing SOS Button
+                          Center(
+                            child: PulsingSosButton(
+                              onTap: () {
+                                if (canCall) _callNumber(contactPhone);
+                                _triggerSosAlert();
+                              },
+                            ),
+                          ),
+
+                          SizedBox(height: 24.w),
+
+                          // Parents Contact Details Card
+                          Container(
+                            padding: EdgeInsets.all(20.w),
+                            // Figma: white card, 24 radius, 1px grey border.
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24.w),
+                              border: Border.all(
+                                color: const Color(0xFFC9CCD1),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Parents Contact Details",
+                                  // Figma: Poppins Regular 11, line height 100%.
+                                  style: FigmaText.poppins(
+                                    11,
+                                    lineHeight: 11,
+                                    letterSpacing: 0.2,
+                                    color: const Color(0xFF2D3035),
                                   ),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
+                                SizedBox(height: 12.w),
+
+                                // Toggle Tabs
+                                if (_contacts.length > 1) ...[
+                                  Row(
+                                    children: List.generate(_contacts.length, (
+                                      index,
+                                    ) {
+                                      final c = _contacts[index];
+                                      final isSelected =
+                                          _selectedContactIndex == index;
+                                      return Expanded(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(
+                                            right: index == _contacts.length - 1
+                                                ? 0
+                                                : 12.w,
+                                          ),
+                                          child: _buildContactTab(
+                                            isSelected: isSelected,
+                                            label:
+                                                c['relation'] ??
+                                                c['name'] ??
+                                                'Parent',
+                                            icon: Icons.person_outline_rounded,
+                                            onTap: () {
+                                              setState(() {
+                                                _selectedContactIndex = index;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                  SizedBox(height: 16.w),
+                                ],
+
+                                // Phone Info Row
+                                Row(
                                   children: [
-                                    const Icon(
-                                      Icons.arrow_back,
-                                      color: Color(0xFF0F172A),
-                                      size: 16,
+                                    Container(
+                                      width: 48.w,
+                                      height: 48.w,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF3F4F6),
+                                        borderRadius: BorderRadius.circular(
+                                          12.w,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.person_outline_rounded,
+                                        color: FigmaColors.ink,
+                                        size: 24.w,
+                                      ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      "Back",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14.0.sp,
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF0F172A),
+                                    SizedBox(width: 14.w),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            contactPhone,
+                                            style: FigmaText.bodyLarge.copyWith(
+                                              color: FigmaColors.ink,
+                                            ),
+                                          ),
+                                          Text(
+                                            "$contactRelation's number",
+                                            style: FigmaText.bodySmall.copyWith(
+                                              color: FigmaColors.body,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ),
 
-                            // Right Status Icons
-                            // Row(
-                            //   children: [
-                            //     GestureDetector(
-                            //       onTap: () => Scaffold.of(context).openDrawer(),
-                            //       child: const Icon(
-                            //         Icons.wb_cloudy_outlined,
-                            //         color: Color(0xFF3B82F6),
-                            //         size: 22,
-                            //       ),
-                            //     ),
-                            //     const SizedBox(width: 16),
-                            //     GestureDetector(
-                            //       onTap: () {
-                            //         context.read<ChildBloc>().add(
-                            //           CheckUsagePermission(),
-                            //         );
-                            //       },
-                            //       child: const Icon(
-                            //         Icons.star_outline_rounded,
-                            //         color: Color(0xFF3B82F6),
-                            //         size: 22,
-                            //       ),
-                            //     ),
-                            //     const SizedBox(width: 16),
-                            //     const Icon(
-                            //       Icons.auto_awesome_outlined,
-                            //       color: Color(0xFF3B82F6),
-                            //       size: 22,
-                            //     ),
-                            //   ],
-                            // ),
-                          ],
-                        ),
+                                SizedBox(height: 16.w),
 
-                        const SizedBox(height: 32),
-
-                        // Heading Text
-                        Text(
-                          "Need Help?",
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13.0.sp,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF64748B),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          "Press SOS to call\nfor help!",
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 30.0.sp,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0F172A),
-                            height: 1.25,
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Center Pulsing SOS Button
-                        Center(
-                          child: PulsingSosButton(
-                            onTap: () {
-                              _callNumber(contactPhone);
-                              _triggerSosAlert();
-                            },
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Parents Contact Details Card
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(28),
-                            border: Border.all(
-                              color: const Color(0xFFEFF2F6),
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF0F172A,
-                                ).withValues(alpha: 0.04),
-                                blurRadius: 16,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Parents Contact Details",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13.0.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF64748B),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Toggle Tabs
-                              if (_contacts.length > 1) ...[
-                                Row(
-                                  children: List.generate(_contacts.length, (
-                                    index,
-                                  ) {
-                                    final c = _contacts[index];
-                                    final isSelected =
-                                        _selectedContactIndex == index;
-                                    return Expanded(
-                                      child: Padding(
-                                        padding: EdgeInsets.only(
-                                          right: index == _contacts.length - 1
-                                              ? 0
-                                              : 12,
+                                // Action Button: Figma blue gradient with a glow.
+                                Opacity(
+                                  opacity: canCall ? 1 : 0.5,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12.w),
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF5B8FF5),
+                                          Color(0xFF1F44B8),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(
+                                            0xFF2F6BF2,
+                                          ).withValues(alpha: 0.35),
+                                          blurRadius: 16.w,
+                                          offset: Offset(0, 6.w),
                                         ),
-                                        child: _buildContactTab(
-                                          isSelected: isSelected,
-                                          label:
-                                              c['relation'] ??
-                                              c['name'] ??
-                                              'Parent',
-                                          icon: Icons.person_outline_rounded,
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedContactIndex = index;
-                                            });
-                                          },
+                                      ],
+                                    ),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(
+                                          12.w,
+                                        ),
+                                        onTap: canCall
+                                            ? () => _callNumber(contactPhone)
+                                            : null,
+                                        child: SizedBox(
+                                          height: 52.w,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.phone_outlined,
+                                                color: Colors.white,
+                                                size: 22.w,
+                                              ),
+                                              SizedBox(width: 8.w),
+                                              Text(
+                                                "Call $contactRelation Now",
+                                                style: FigmaText.bodyMedium
+                                                    .copyWith(
+                                                      color: Colors.white,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    );
-                                  }),
+                                    ),
+                                  ),
                                 ),
-                                const SizedBox(height: 20),
                               ],
-
-                              // Phone Info Row
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 48,
-                                    height: 48,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFEFF6FF),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.person_outline_rounded,
-                                      color: Color(0xFF3B82F6),
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          contactPhone,
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 18.0.sp,
-                                            fontWeight: FontWeight.w800,
-                                            color: const Color(0xFF0F172A),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          "$contactRelation's number",
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 13.0.sp,
-                                            fontWeight: FontWeight.w500,
-                                            color: const Color(0xFF64748B),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 20),
-
-                              // Action Button
-                              SizedBox(
-                                width: double.infinity,
-                                height: 52,
-                                child: ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF0066FF),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  onPressed: () => _callNumber(contactPhone),
-                                  icon: const Icon(
-                                    Icons.phone_outlined,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                  label: Text(
-                                    "Call $contactRelation Now",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 15.0.sp,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Expansion card for original permissions
-                        Theme(
-                          data: Theme.of(
-                            context,
-                          ).copyWith(dividerColor: Colors.transparent),
-                          child: ExpansionTile(
-                            title: Text(
-                              "App Configuration & Diagnostic Logs",
-                              style: GoogleFonts.poppins(
-                                fontSize: 12.0.sp,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF94A3B8),
-                              ),
                             ),
-                            iconColor: const Color(0xFF94A3B8),
-                            collapsedIconColor: const Color(0xFF94A3B8),
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: const Color(0xFFEFF2F6),
-                                    width: 1.5,
-                                  ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // Expansion card for original permissions
+                          Theme(
+                            data: Theme.of(
+                              context,
+                            ).copyWith(dividerColor: Colors.transparent),
+                            child: ExpansionTile(
+                              title: Text(
+                                "App Configuration & Diagnostic Logs",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12.0.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF94A3B8),
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.security_rounded,
-                                          color: Color(0xFF0066FF),
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'App Permissions Status',
-                                          style: GoogleFonts.poppins(
-                                            fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF0F172A),
-                                          ),
-                                        ),
-                                      ],
+                              ),
+                              iconColor: const Color(0xFF94A3B8),
+                              collapsedIconColor: const Color(0xFF94A3B8),
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: const Color(0xFFEFF2F6),
+                                      width: 1.5,
                                     ),
-                                    const SizedBox(height: 8),
-                                    const Divider(color: Color(0xFFEFF2F6)),
-                                    if (Platform.isIOS) ...[
-                                      _buildPermissionItem(
-                                        'Location',
-                                        widget.hasLocationPermission,
-                                        () async {
-                                          LocationPermission permission =
-                                              await Geolocator.checkPermission();
-                                          if (permission ==
-                                              LocationPermission.denied) {
-                                            permission =
-                                                await Geolocator.requestPermission();
-                                          }
-                                          if (permission ==
-                                                  LocationPermission
-                                                      .deniedForever ||
-                                              permission ==
-                                                  LocationPermission
-                                                      .whileInUse) {
-                                            await Geolocator.openAppSettings();
-                                          }
-                                          widget.onPermissionUpdated();
-                                        },
-                                      ),
-                                      _buildPermissionItem(
-                                        'Screen Time & App Blocking',
-                                        widget.hasAccessibilityPermission,
-                                        () => showAccessibilityDisclosure(
-                                          context,
-                                        ),
-                                      ),
-                                      // _buildPermissionItem(
-                                      //   'Notifications',
-                                      //   widget.hasNotificationPermission,
-                                      //   () async {
-                                      //     final status = await Permission
-                                      //         .notification
-                                      //         .request();
-                                      //     if (!status.isGranted) {
-                                      //       await openAppSettings();
-                                      //     }
-                                      //     widget.onPermissionUpdated();
-                                      //   },
-                                      // ),
-                                    ] else ...[
-                                      _buildPermissionItem(
-                                        'Location',
-                                        widget.hasLocationPermission,
-                                        () async {
-                                          LocationPermission permission =
-                                              await Geolocator.checkPermission();
-                                          if (permission ==
-                                              LocationPermission.denied) {
-                                            permission =
-                                                await Geolocator.requestPermission();
-                                          }
-                                          if (permission ==
-                                                  LocationPermission
-                                                      .deniedForever ||
-                                              permission ==
-                                                  LocationPermission
-                                                      .whileInUse) {
-                                            // If they denied it forever or only gave whileInUse, direct to settings.
-                                            await Geolocator.openAppSettings();
-                                          }
-                                          widget.onPermissionUpdated();
-                                        },
-                                      ),
-                                      _buildPermissionItem(
-                                        'Background Work',
-                                        widget.hasBackgroundPermission,
-                                        () async {
-                                          await Permission
-                                              .ignoreBatteryOptimizations
-                                              .request();
-                                          widget.onPermissionUpdated();
-                                        },
-                                      ),
-                                      _buildPermissionItem(
-                                        'App Usage',
-                                        state is ChildDeviceInfoLoaded
-                                            ? state.hasUsagePermission
-                                            : false,
-                                        () => context.read<ChildBloc>().add(
-                                          OpenUsageSettings(),
-                                        ),
-                                      ),
-                                      _buildPermissionItem(
-                                        'Accessibility',
-                                        widget.hasAccessibilityPermission,
-                                        () => showAccessibilityDisclosure(
-                                          context,
-                                        ),
-                                      ),
-                                      _buildPermissionItem(
-                                        'Notifications',
-                                        widget.hasNotificationPermission,
-                                        () async {
-                                          final status = await Permission
-                                              .notification
-                                              .request();
-                                          if (status.isPermanentlyDenied) {
-                                            await openAppSettings();
-                                          }
-                                          widget.onPermissionUpdated();
-                                        },
-                                      ),
-                                    ],
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: OutlinedButton.icon(
-                                            style: OutlinedButton.styleFrom(
-                                              side: const BorderSide(
-                                                color: Color(0xFF0066FF),
-                                                width: 1.5,
-                                              ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                            ),
-                                            icon: const Icon(
-                                              Icons.analytics_outlined,
-                                              size: 16,
-                                              color: Color(0xFF0066FF),
-                                            ),
-                                            label: Text(
-                                              'Diagnostic Logs',
-                                              style: GoogleFonts.poppins(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12.0.sp,
-                                                color: const Color(0xFF0066FF),
-                                              ),
-                                            ),
-                                            onPressed: () {
-                                              showModalBottomSheet(
-                                                context: context,
-                                                isScrollControlled: true,
-                                                backgroundColor:
-                                                    Colors.transparent,
-                                                builder: (context) =>
-                                                    const _DiagnosticLogsSheet(),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (Platform.isIOS &&
-                                        _localMappedApps.isNotEmpty) ...[
-                                      const SizedBox(height: 16),
-                                      const Divider(color: Color(0xFF2C2C2E)),
-                                      const SizedBox(height: 12),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
                                       Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
                                         children: [
+                                          const Icon(
+                                            Icons.security_rounded,
+                                            color: Color(0xFF0066FF),
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
                                           Text(
-                                            'Monitored Apps',
+                                            'App Permissions Status',
                                             style: GoogleFonts.poppins(
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 14.0.sp,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          TextButton(
-                                            onPressed: _addMoreScreenTimeApps,
-                                            child: Text(
-                                              '+ Add More',
-                                              style: GoogleFonts.poppins(
-                                                fontWeight: FontWeight.bold,
-                                                color: const Color(0xFF0066FF),
-                                                fontSize: 13.0.sp,
-                                              ),
+                                              color: const Color(0xFF0F172A),
                                             ),
                                           ),
                                         ],
                                       ),
                                       const SizedBox(height: 8),
-                                      Wrap(
-                                        spacing: 8,
-                                        runSpacing: 8,
-                                        children: _localMappedApps.map((app) {
-                                          return Chip(
-                                            backgroundColor: const Color(
-                                              0xFF1C1C1E,
+                                      const Divider(color: Color(0xFFEFF2F6)),
+                                      if (Platform.isIOS) ...[
+                                        _buildPermissionItem(
+                                          'Location',
+                                          widget.hasLocationPermission,
+                                          () async {
+                                            LocationPermission permission =
+                                                await Geolocator.checkPermission();
+                                            if (permission ==
+                                                LocationPermission.denied) {
+                                              permission =
+                                                  await Geolocator.requestPermission();
+                                            }
+                                            if (permission ==
+                                                    LocationPermission
+                                                        .deniedForever ||
+                                                permission ==
+                                                    LocationPermission
+                                                        .whileInUse) {
+                                              await Geolocator.openAppSettings();
+                                            }
+                                            widget.onPermissionUpdated();
+                                          },
+                                        ),
+                                        _buildPermissionItem(
+                                          'Screen Time & App Blocking',
+                                          widget.hasAccessibilityPermission,
+                                          () => showAccessibilityDisclosure(
+                                            context,
+                                          ),
+                                        ),
+                                        // _buildPermissionItem(
+                                        //   'Notifications',
+                                        //   widget.hasNotificationPermission,
+                                        //   () async {
+                                        //     final status = await Permission
+                                        //         .notification
+                                        //         .request();
+                                        //     if (!status.isGranted) {
+                                        //       await openAppSettings();
+                                        //     }
+                                        //     widget.onPermissionUpdated();
+                                        //   },
+                                        // ),
+                                      ] else ...[
+                                        _buildPermissionItem(
+                                          'Location',
+                                          widget.hasLocationPermission,
+                                          () async {
+                                            LocationPermission permission =
+                                                await Geolocator.checkPermission();
+                                            if (permission ==
+                                                LocationPermission.denied) {
+                                              permission =
+                                                  await Geolocator.requestPermission();
+                                            }
+                                            if (permission ==
+                                                    LocationPermission
+                                                        .deniedForever ||
+                                                permission ==
+                                                    LocationPermission
+                                                        .whileInUse) {
+                                              // If they denied it forever or only gave whileInUse, direct to settings.
+                                              await Geolocator.openAppSettings();
+                                            }
+                                            widget.onPermissionUpdated();
+                                          },
+                                        ),
+                                        _buildPermissionItem(
+                                          'Background Work',
+                                          widget.hasBackgroundPermission,
+                                          () async {
+                                            await Permission
+                                                .ignoreBatteryOptimizations
+                                                .request();
+                                            widget.onPermissionUpdated();
+                                          },
+                                        ),
+                                        _buildPermissionItem(
+                                          'App Usage',
+                                          state is ChildDeviceInfoLoaded
+                                              ? state.hasUsagePermission
+                                              : false,
+                                          () => context.read<ChildBloc>().add(
+                                            OpenUsageSettings(),
+                                          ),
+                                        ),
+                                        _buildPermissionItem(
+                                          'Accessibility',
+                                          widget.hasAccessibilityPermission,
+                                          () => showAccessibilityDisclosure(
+                                            context,
+                                          ),
+                                        ),
+                                        _buildPermissionItem(
+                                          'Notifications',
+                                          widget.hasNotificationPermission,
+                                          () async {
+                                            final status = await Permission
+                                                .notification
+                                                .request();
+                                            if (status.isPermanentlyDenied) {
+                                              await openAppSettings();
+                                            }
+                                            widget.onPermissionUpdated();
+                                          },
+                                        ),
+                                      ],
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: OutlinedButton.icon(
+                                              style: OutlinedButton.styleFrom(
+                                                side: const BorderSide(
+                                                  color: Color(0xFF0066FF),
+                                                  width: 1.5,
+                                                ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                              icon: const Icon(
+                                                Icons.analytics_outlined,
+                                                size: 16,
+                                                color: Color(0xFF0066FF),
+                                              ),
+                                              label: Text(
+                                                'Diagnostic Logs',
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12.0.sp,
+                                                  color: const Color(
+                                                    0xFF0066FF,
+                                                  ),
+                                                ),
+                                              ),
+                                              onPressed: () {
+                                                showModalBottomSheet(
+                                                  context: context,
+                                                  isScrollControlled: true,
+                                                  backgroundColor:
+                                                      Colors.transparent,
+                                                  builder: (context) =>
+                                                      const _DiagnosticLogsSheet(),
+                                                );
+                                              },
                                             ),
-                                            side: const BorderSide(
-                                              color: Color(0xFF2C2C2E),
-                                            ),
-                                            label: Text(
-                                              app['customName'] ??
-                                                  'Unknown App',
+                                          ),
+                                        ],
+                                      ),
+                                      if (Platform.isIOS &&
+                                          _localMappedApps.isNotEmpty) ...[
+                                        const SizedBox(height: 16),
+                                        const Divider(color: Color(0xFF2C2C2E)),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'Monitored Apps',
                                               style: GoogleFonts.poppins(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14.0.sp,
                                                 color: Colors.white,
-                                                fontSize: 12.0.sp,
                                               ),
                                             ),
-                                          );
-                                        }).toList(),
-                                      ),
+                                            TextButton(
+                                              onPressed: _addMoreScreenTimeApps,
+                                              child: Text(
+                                                '+ Add More',
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: const Color(
+                                                    0xFF0066FF,
+                                                  ),
+                                                  fontSize: 13.0.sp,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: _localMappedApps.map((app) {
+                                            return Chip(
+                                              backgroundColor: const Color(
+                                                0xFF1C1C1E,
+                                              ),
+                                              side: const BorderSide(
+                                                color: Color(0xFF2C2C2E),
+                                              ),
+                                              label: Text(
+                                                app['customName'] ??
+                                                    'Unknown App',
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.white,
+                                                  fontSize: 12.0.sp,
+                                                ),
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ],
                                     ],
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
 
-                        const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                        Text(
-                          'Child Code: $childCode',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 12.0.sp,
-                            color: const Color(0xFF94A3B8),
-                            fontWeight: FontWeight.bold,
+                          Text(
+                            'Child Code: $childCode',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.0.sp,
+                              color: const Color(0xFF94A3B8),
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Naviq Dev 1.0.4(Oct 9)',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 10.0.sp,
-                            color: const Color(0xFF94A3B8),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Naviq Dev 1.0.10(Oct 17)',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 10.0.sp,
+                              color: const Color(0xFF94A3B8),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -7,6 +7,10 @@ class ChildTrackingSnapshot {
   final LatestLocation? latestLocation;
   final UiDirective uiDirective;
 
+  /// Present only while the backend has a specific, evidenced problem to report
+  /// about the child's phone (today: its clock is wrong). Null otherwise.
+  final TrackingWarning? trackingWarning;
+
   ChildTrackingSnapshot({
     required this.snapshotId,
     required this.serverTime,
@@ -15,6 +19,7 @@ class ChildTrackingSnapshot {
     required this.permissionStatus,
     this.latestLocation,
     required this.uiDirective,
+    this.trackingWarning,
   });
 
   factory ChildTrackingSnapshot.fromJson(Map<String, dynamic> json) {
@@ -28,6 +33,30 @@ class ChildTrackingSnapshot {
           ? LatestLocation.fromJson(json['latest_location'])
           : null,
       uiDirective: UiDirective.fromJson(json['ui_directive'] ?? {}),
+      trackingWarning: json['tracking_warning'] is Map
+          ? TrackingWarning.fromJson(Map<String, dynamic>.from(json['tracking_warning'] as Map))
+          : null,
+    );
+  }
+}
+
+class TrackingWarning {
+  /// e.g. `CLOCK_SKEW`.
+  final String code;
+
+  /// Seconds the child's phone is behind the server (negative = ahead).
+  final int? offsetSeconds;
+  final DateTime? detectedAt;
+
+  const TrackingWarning({required this.code, this.offsetSeconds, this.detectedAt});
+
+  bool get isClockSkew => code == 'CLOCK_SKEW';
+
+  factory TrackingWarning.fromJson(Map<String, dynamic> json) {
+    return TrackingWarning(
+      code: (json['code'] ?? '').toString(),
+      offsetSeconds: (json['offset_seconds'] as num?)?.round(),
+      detectedAt: json['detected_at'] != null ? DateTime.tryParse(json['detected_at'].toString()) : null,
     );
   }
 }

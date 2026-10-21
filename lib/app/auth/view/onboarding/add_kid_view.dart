@@ -7,7 +7,8 @@ import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/utils/app_logger.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show FilteringTextInputFormatter;
+import 'package:flutter/services.dart'
+    show FilteringTextInputFormatter, LengthLimitingTextInputFormatter;
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/widgets/figma_primary_button.dart';
@@ -40,11 +41,21 @@ class _AddKidViewState extends State<AddKidView> {
   final _sharedPrefsService = SharedPrefsService();
   bool _isLoading = false;
 
-  // Selected avatar state (Boy 1 as default)
-  String _selectedAvatar = 'assets/images/childavatar/Boy 03.png';
+  // Selected avatar state (first Figma avatar as default)
+  String _selectedAvatar = 'assets/images/childavatar/avatar_boy_2.png';
   File? _customAvatarFile;
 
+  // Figma avatar set, in Figma order.
   final List<String> _presetAvatars = [
+    'assets/images/childavatar/avatar_boy_2.png',
+    'assets/images/childavatar/avatar_boy_1.png',
+    'assets/images/childavatar/avatar_girl_1.png',
+    'assets/images/childavatar/avatar_girl_2.png',
+  ];
+
+  // Avatars from before the Figma set: no longer offered, but a kid who has
+  // one keeps it when edited.
+  final List<String> _legacyAvatars = [
     'assets/images/childavatar/Boy 03.png',
     'assets/images/childavatar/Boy 12.png',
     'assets/images/childavatar/Boy 16.png',
@@ -95,11 +106,10 @@ class _AddKidViewState extends State<AddKidView> {
             _customAvatarFile = File(avatarVal);
           }
         } else {
-          final matchingPreset = _presetAvatars.firstWhere(
+          _selectedAvatar = [..._presetAvatars, ..._legacyAvatars].firstWhere(
             (path) => path.endsWith(avatarVal),
             orElse: () => _presetAvatars.first,
           );
-          _selectedAvatar = matchingPreset;
         }
       }
     }
@@ -136,6 +146,9 @@ class _AddKidViewState extends State<AddKidView> {
             padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: Form(
               key: _formKey,
+              // An error clears as soon as that field is fixed, instead of
+              // staying until the next Continue tap.
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -166,25 +179,29 @@ class _AddKidViewState extends State<AddKidView> {
     );
   }
 
+  // Figma Body Medium (labels), Body Large (page title), Body Small (caption).
+  TextStyle get _bodyMedium =>
+      FigmaText.poppins(16, lineHeight: 24, letterSpacing: 0.2);
+
   Widget _buildHeader(bool isEdit) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          isEdit ? 'EDIT CHILD DETAILS' : 'CHILD DETAILS',
-          style: FigmaText.eyebrow,
-        ),
-        SizedBox(height: 8.w),
-        Text(
           isEdit ? 'Update child information' : 'Tell us about your child',
-          style: FigmaText.pageTitle,
+          style: FigmaText.poppins(20, lineHeight: 28, letterSpacing: 0.2),
         ),
         SizedBox(height: 4.w),
         Text(
           isEdit
               ? 'Update the profile name or choose a new avatar.'
               : 'This personalises tracking alerts for their age & routine.',
-          style: FigmaText.caption,
+          style: FigmaText.poppins(
+            12,
+            lineHeight: 20,
+            letterSpacing: 0.2,
+            color: FigmaColors.body,
+          ),
         ),
       ],
     );
@@ -242,7 +259,7 @@ class _AddKidViewState extends State<AddKidView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Choose Avatar', style: FigmaText.sectionLabel),
+        Text('Choose Avatar', style: _bodyMedium),
         SizedBox(height: 8.w),
         // Figma: 48px circles filling the avatar art (no white ring), a grey
         // rounded-square "+" for a custom photo pinned to the right.
@@ -313,10 +330,13 @@ class _AddKidViewState extends State<AddKidView> {
           borderSide: side,
         );
     return InputDecoration(
+      isDense: true,
       filled: true,
       fillColor: Colors.white,
-      constraints: BoxConstraints.tightFor(height: 38.w),
-      contentPadding: EdgeInsets.symmetric(horizontal: 12.w),
+      // No fixed height: it also had to hold the "Year required" error line, so
+      // the field itself shrank and clipped its text. 24px line + 7px above
+      // and below gives the same 38px field, with the error added underneath.
+      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.w),
       border: border(),
       enabledBorder: border(),
       focusedBorder: border(
@@ -338,6 +358,21 @@ class _AddKidViewState extends State<AddKidView> {
   }) => DropdownButtonFormField<T>(
     initialValue: value,
     isExpanded: true,
+    // The shown value is a plain 24px line. Without this it reuses the menu
+    // row, which is at least 48px high, and the field grew to match.
+    isDense: true,
+    itemHeight: null,
+    selectedItemBuilder: (_) => [
+      for (final o in options)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            o.toString(),
+            style: FigmaText.input,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+    ],
     hint: Text(hint, style: FigmaText.input),
     icon: const Icon(Icons.keyboard_arrow_down_rounded, color: FigmaColors.ink),
     decoration: _dropdownDecoration,
@@ -368,40 +403,64 @@ class _AddKidViewState extends State<AddKidView> {
     validator: validator,
   );
 
-  /// Same 10–11 digit rule as the Devices screen's link sheet.
+  /// Same 10–11 digit rule as the Devices screen's link sheet. Optional unless
+  /// the kid is being added as a device-only kid.
   Widget _buildSerialField() => CommonTextField(
     controller: _serialController,
-    hintText: 'Device serial number',
+    hintText: widget.withDevice ? 'Device number' : 'Device number (optional)',
     keyboardType: TextInputType.number,
-    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-    maxLength: 11,
+    inputFormatters: [
+      FilteringTextInputFormatter.digitsOnly,
+      LengthLimitingTextInputFormatter(11),
+    ],
     fillColor: Colors.white,
     borderColor: FigmaColors.fieldBorder,
     borderRadius: 16.w,
     contentPadding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 18.w),
     hintStyle: FigmaText.inputHint,
-    suffixIcon: IconButton(
-      tooltip: 'Where to find the serial number',
-      icon: Icon(Icons.info_outline_rounded, color: FigmaColors.body),
-      onPressed: () => AppSnackbar.showInfo(
-        context,
-        'The 10 or 11-digit serial number is printed on the back of the '
-        'tracker package.',
-      ),
-    ),
     validator: (v) {
       final serial = v?.trim() ?? '';
-      if (serial.isEmpty) return 'Please enter the device serial number';
-      if (serial.length < 10) return 'Serial number must be 10 or 11 digits';
+      if (serial.isEmpty) {
+        return widget.withDevice ? 'Please enter the device number' : null;
+      }
+      if (serial.length < 10) return 'Device number must be 10 or 11 digits';
       return null;
     },
   );
+
+  void _showDeviceNumberInfo() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Device number', style: FigmaText.dialogTitle),
+        content: Text(
+          'If your child carries a NaviQ GPS tracker, enter its 10 or 11-digit '
+          'serial number. It is printed on the back of the tracker and on its '
+          'package. Once the tracker is switched on, its live location shows '
+          "up in the app.\n\nLeave this empty if your child doesn't use a "
+          'tracker. You can link one later from Settings.',
+          style: FigmaText.dialogBody,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'Got it',
+              style: FigmaText.dialogAction.copyWith(
+                color: FigmaColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildDetailsSection(bool isEdit) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Enter Details', style: FigmaText.sectionLabel),
+        Text('Enter Details', style: _bodyMedium),
         SizedBox(height: 12.w),
         // Figma: 58px white pill, 1px dark outline, hint only (no label above,
         // no leading icon).
@@ -412,12 +471,33 @@ class _AddKidViewState extends State<AddKidView> {
           validator: (v) =>
               v == null || v.isEmpty ? 'Please enter child name' : null,
         ),
-        if (widget.withDevice && !isEdit) ...[
-          SizedBox(height: 16.w),
-          _buildSerialField(),
+        if (!isEdit) ...[
+          SizedBox(height: 21.w),
+          Text('Device number', style: _bodyMedium),
+          SizedBox(height: 12.w),
+          // Figma: the field, then a ⓘ outside it that explains the number.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _buildSerialField()),
+              SizedBox(width: 8.w),
+              Padding(
+                padding: EdgeInsets.only(top: 6.w),
+                child: IconButton(
+                  tooltip: 'What is the device number?',
+                  onPressed: _showDeviceNumberInfo,
+                  icon: Icon(
+                    Icons.info_outline_rounded,
+                    color: FigmaColors.body,
+                    size: 28.w,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
         SizedBox(height: 25.w),
-        Text('Age', style: FigmaText.fieldLabel),
+        Text('Age', style: _bodyMedium),
         SizedBox(height: 16.w),
         if (isEdit)
           _outlinedField(
@@ -478,7 +558,13 @@ class _AddKidViewState extends State<AddKidView> {
       children: [
         Text(
           'How does your child travel to school?',
-          style: FigmaText.sectionLabel,
+          // Figma: Poppins SemiBold 12, line height 100%.
+          style: FigmaText.poppins(
+            12,
+            weight: FontWeight.w600,
+            lineHeight: 12,
+            letterSpacing: 0.2,
+          ),
         ),
         SizedBox(height: 8.w),
         Wrap(
@@ -693,7 +779,9 @@ class _AddKidViewState extends State<AddKidView> {
         age: age,
         travelOption: travelOption,
         avatar: avatarValue,
-        deviceImei: widget.withDevice ? _serialController.text.trim() : null,
+        deviceImei: _serialController.text.trim().isEmpty
+            ? null
+            : _serialController.text.trim(),
       );
 
       if (response.isSuccess && response.data != null) {

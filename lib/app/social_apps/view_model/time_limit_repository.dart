@@ -80,12 +80,14 @@ class TimeLimitRepository extends BaseService {
   /// to the calling child's own token server-side).
   Future<BaseResponse> requestExtension({
     required String packageName,
+    String? appName,
     int requestedMinutes = 15,
   }) async {
     final response = await post(
       ApiEndpoints.timeExtensionRequests,
       data: {
         'package_name': packageName,
+        'app_name': ?appName,
         'requested_minutes': requestedMinutes,
       },
     );

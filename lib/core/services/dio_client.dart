@@ -1,3 +1,4 @@
+import 'package:child_track/core/services/api_exception.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
@@ -197,7 +198,8 @@ class DioClient {
                 );
                 // Token was updated by another isolate/process, just retry with it
               } else {
-                final currentRefreshToken = _sharedPrefsService.getRefreshToken();
+                final currentRefreshToken = _sharedPrefsService
+                    .getRefreshToken();
                 if (currentRefreshToken == null) {
                   // No refresh token to call — true for every child session
                   // (child JWTs never expire by design), so a 401 landing
@@ -236,7 +238,8 @@ class DioClient {
                     data: {'refresh_token': currentRefreshToken},
                   );
 
-                  if (response.statusCode == 200 || response.statusCode == 201) {
+                  if (response.statusCode == 200 ||
+                      response.statusCode == 201) {
                     // Structure based on AuthRepository usage: response.data!['token']
                     // But we use Dio directly so it's response.data['data']['token']
                     // or response.data['token'] depending on server wrapper.
@@ -257,8 +260,11 @@ class DioClient {
 
                     if (newToken != null && newToken is String) {
                       await _sharedPrefsService.setAuthToken(newToken);
-                      if (newRefreshToken != null && newRefreshToken is String) {
-                        await _sharedPrefsService.setRefreshToken(newRefreshToken);
+                      if (newRefreshToken != null &&
+                          newRefreshToken is String) {
+                        await _sharedPrefsService.setRefreshToken(
+                          newRefreshToken,
+                        );
                       }
                       AppLogger.info('Token refreshed successfully via API');
                     } else {
@@ -559,36 +565,56 @@ class DioClient {
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode;
         final message = _extractErrorMessage(error.response?.data);
+        final body = error.response?.data;
+        final errorCode = body is Map ? body['error_code']?.toString() : null;
+        final errorData = body is Map && body['data'] is Map
+            ? Map<String, dynamic>.from(body['data'] as Map)
+            : null;
+        // Same text as the plain Exception it replaces; additionally carries the
+        // status / error_code so callers can tell a retryable failure from a
+        // permanent refusal.
+        ApiException api(String text) => ApiException(
+          text,
+          statusCode: statusCode,
+          errorCode: errorCode,
+          data: errorData,
+        );
 
         switch (statusCode) {
           case 400:
             AppLogger.error('Bad request:', message, StackTrace.current);
-            return Exception(
+            return api(
               message.isNotEmpty
                   ? message
                   : 'Bad request: Please check your request',
             );
           case 401:
             AppLogger.error('Unauthorized:', message, StackTrace.current);
-            return Exception('Unauthorized: Please login again to continue');
+            return api('Unauthorized: Please login again to continue');
           case 403:
             AppLogger.error('Access denied:', message, StackTrace.current);
-            return Exception(
+            return api(
               'Access denied: You are not authorized to access this resource',
             );
           case 404:
             AppLogger.error('Not found:', message, StackTrace.current);
-            return Exception('Not found: The requested resource was not found');
+            // Prefer the server's own reason when it gave one ("This app is
+            // not locked by your parent"); the generic line hid it.
+            return api(
+              message.isNotEmpty
+                  ? message
+                  : 'Not found: The requested resource was not found',
+            );
           case 500:
             AppLogger.error(
               'Internal server error:',
               message,
               StackTrace.current,
             );
-            return Exception('Internal server error: Please try again later');
+            return api('Internal server error: Please try again later');
           default:
             AppLogger.error('Server error:', message, StackTrace.current);
-            return Exception('Server error: Please try again later');
+            return api('Server error: Please try again later');
         }
 
       case DioExceptionType.cancel:

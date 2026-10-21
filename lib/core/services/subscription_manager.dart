@@ -21,6 +21,16 @@ class SubscriptionManager extends ChangeNotifier {
 
   bool _hasPremiumAccess = false;
   SubscriptionTier _currentTier = SubscriptionTier.starter;
+  DateTime? _expiresAt;
+
+  /// Whole days left in the active plan (rounded up); null when there is no
+  /// expiry to show (free plan, or a grant without an end date).
+  int? get daysLeft {
+    final end = _expiresAt;
+    if (end == null) return null;
+    final hours = end.difference(DateTime.now()).inHours;
+    return hours <= 0 ? 0 : (hours / 24).ceil();
+  }
 
   /// Synchronous check if the user has any paid access.
   /// Kept in sync via [initialize] and [checkAndUpdateStatus].
@@ -69,7 +79,9 @@ class SubscriptionManager extends ChangeNotifier {
 
   Future<void> _updateAccessFromInfo(CustomerInfo customerInfo) async {
     // Check if the 'premium_access' entitlement is active
-    final isActive = customerInfo.entitlements.active.containsKey('premium_access');
+    final isActive = customerInfo.entitlements.active.containsKey(
+      'premium_access',
+    );
     SubscriptionTier resolvedTier = SubscriptionTier.starter;
 
     if (isActive) {
@@ -102,7 +114,16 @@ class SubscriptionManager extends ChangeNotifier {
       }
     }
 
-    final changed = _hasPremiumAccess != isActive || _currentTier != resolvedTier;
+    final expiry =
+        customerInfo.entitlements.active['premium_access']?.expirationDate;
+    final expiresAt = expiry == null
+        ? null
+        : DateTime.tryParse(expiry)?.toLocal();
+    final changed =
+        _hasPremiumAccess != isActive ||
+        _currentTier != resolvedTier ||
+        _expiresAt != expiresAt;
+    _expiresAt = expiresAt;
     _hasPremiumAccess = isActive;
     _currentTier = resolvedTier;
 

@@ -59,7 +59,12 @@ class _SubscriptionPopupSheetState extends State<_SubscriptionPopupSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.w)),
       ),
-      padding: EdgeInsets.fromLTRB(20.w, 12.w, 20.w, 24.w),
+      padding: EdgeInsets.fromLTRB(
+        20.w,
+        12.w,
+        20.w,
+        24.w + MediaQuery.paddingOf(context).bottom,
+      ),
       child: FutureBuilder<SubscriptionPlan?>(
         future: _planFuture,
         builder: (context, snapshot) {

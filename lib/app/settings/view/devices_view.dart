@@ -8,6 +8,7 @@ import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/core/constants/figma_tokens.dart';
 import 'widgets/device_cards.dart';
+import 'widgets/device_pitch.dart';
 import 'package:child_track/core/services/subscription_manager.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:child_track/core/di/injector.dart';
@@ -120,13 +121,16 @@ class _DevicesViewState extends State<DevicesView> {
       appBar: figmaAppBar(
         context,
         title: _simulatedPurchased ? 'My Device' : 'Device',
-        trailing: FigmaCircleButton(
-          child: SvgPicture.asset(
-            'assets/help/help_search.svg',
-            width: 24.w,
-            height: 24.w,
-          ),
-        ),
+        // The buy pitch (Figma) has no search button.
+        trailing: _simulatedPurchased
+            ? FigmaCircleButton(
+                child: SvgPicture.asset(
+                  'assets/help/help_search.svg',
+                  width: 24.w,
+                  height: 24.w,
+                ),
+              )
+            : null,
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -301,86 +305,24 @@ class _DevicesViewState extends State<DevicesView> {
     );
   }
 
-  // Figma: 34px page margins, content starts 12px under the header.
-  EdgeInsets get _pagePadding => EdgeInsets.fromLTRB(34.w, 12.w, 34.w, 24.w);
+  // 14px page margins, content starts 12px under the header.
+  // Extra room at the bottom so the last card clears the Android
+  // navigation bar.
+  EdgeInsets get _pagePadding => EdgeInsets.fromLTRB(
+    14.w,
+    12.w,
+    14.w,
+    40.w + MediaQuery.viewPaddingOf(context).bottom,
+  );
 
   // ── Non-Purchased View ──────────────────────────────────────────────────────
   Widget _buildNonPurchasedView() {
-    return SingleChildScrollView(
-      physics: BouncingScrollPhysics(),
-      padding: _pagePadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DeviceHeroCard(
-            label: 'GPS Tracker',
-            name: 'TrackPod Pro',
-            metrics: const [
-              ('±2m', 'Accuracy'),
-              ('24H', 'Coverage'),
-              ('7d', 'Battery'),
-            ],
-          ),
-          SizedBox(height: 18.w),
-          DeviceSectionTitle('Features'),
-          SizedBox(height: 12.w),
-          DeviceFeatureGrid(
-            cards: [
-              DeviceFeatureCard(
-                icon: Icons.location_on_outlined,
-                iconColor: FigmaColors.primary,
-                iconBackground: Color(0xFFEFF5FF),
-                title: 'Accuracy',
-                subtitle: '±2m GPS precision',
-              ),
-              DeviceFeatureCard(
-                icon: Icons.schedule_rounded,
-                iconColor: Color(0xFF10B981),
-                iconBackground: Color(0xFFF3F5F8),
-                title: '24H Tracking',
-                subtitle: 'All-day coverage',
-              ),
-              DeviceFeatureCard(
-                icon: Icons.battery_5_bar_rounded,
-                iconColor: Color(0xFFF59E0B),
-                iconBackground: Color(0xFFF3F5F8),
-                title: '7-Day Battery',
-                subtitle: 'Ultra-long life',
-                compact: true,
-              ),
-              DeviceFeatureCard(
-                icon: Icons.shield_outlined,
-                iconColor: FigmaColors.primary,
-                iconBackground: Color(0xFFF3F5F8),
-                title: 'Safe Zone',
-                subtitle: 'Geo-fence alerts',
-                compact: true,
-              ),
-            ],
-          ),
-          SizedBox(height: 18.w),
-          DevicePurchaseCard(
-            onBuy: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => SubscriptionMultiPlanView()),
-            ),
-          ),
-          SizedBox(height: 16.w),
-          Center(
-            child: TextButton(
-              onPressed: () => _showLinkDeviceSheet(context),
-              child: Text(
-                'Already have a tracker? Link Existing Tracker',
-                style: FigmaText.poppins(
-                  13,
-                  weight: FontWeight.w600,
-                  color: FigmaColors.primary,
-                ).copyWith(decoration: TextDecoration.underline),
-              ),
-            ),
-          ),
-        ],
+    return DevicePitch(
+      onBuy: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => SubscriptionMultiPlanView()),
       ),
+      onActivate: () => _showLinkDeviceSheet(context),
     );
   }
 
@@ -729,10 +671,7 @@ class _DevicesViewState extends State<DevicesView> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20.w),
               ),
-              title: Text(
-                "Reboot Tracker?",
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w800),
-              ),
+              title: Text("Reboot Tracker?", style: FigmaText.dialogTitle),
               content: isRebooting
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
@@ -742,33 +681,20 @@ class _DevicesViewState extends State<DevicesView> {
                         SizedBox(height: 16.w),
                         Text(
                           "Sending reboot command...",
-                          style: GoogleFonts.poppins(
-                            fontSize: 14.0.sp,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: FigmaText.dialogBody,
                         ),
                       ],
                     )
                   : Text(
                       "This will remotely restart the tracker device. It may take 1-2 minutes to reconnect online.",
-                      style: GoogleFonts.poppins(
-                        fontSize: 14.0.sp,
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
+                      style: FigmaText.dialogBody,
                     ),
               actions: isRebooting
                   ? null
                   : [
                       TextButton(
                         onPressed: () => Navigator.pop(dialogContext),
-                        child: Text(
-                          "Cancel",
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
+                        child: Text("Cancel", style: FigmaText.dialogAction),
                       ),
                       TextButton(
                         onPressed: () async {
@@ -788,8 +714,7 @@ class _DevicesViewState extends State<DevicesView> {
                         },
                         child: Text(
                           "Reboot",
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold,
+                          style: FigmaText.dialogAction.copyWith(
                             color: Color(0xFFF59E0B),
                           ),
                         ),
@@ -815,9 +740,8 @@ class _DevicesViewState extends State<DevicesView> {
               ),
               title: Text(
                 "Unlink Device?",
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFFEF4444),
+                style: FigmaText.dialogAction.copyWith(
+                  color: FigmaColors.danger,
                 ),
               ),
               content: isUnlinking
@@ -831,20 +755,13 @@ class _DevicesViewState extends State<DevicesView> {
                         SizedBox(height: 16.w),
                         Text(
                           "Removing tracker association...",
-                          style: GoogleFonts.poppins(
-                            fontSize: 14.0.sp,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: FigmaText.dialogBody,
                         ),
                       ],
                     )
                   : Text(
                       "Are you sure you want to unlink this tracker from your account? This child will no longer be tracked using this hardware device.",
-                      style: GoogleFonts.poppins(
-                        fontSize: 14.0.sp,
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
+                      style: FigmaText.dialogBody,
                     ),
               actions: isUnlinking
                   ? null
@@ -853,10 +770,7 @@ class _DevicesViewState extends State<DevicesView> {
                         onPressed: () => Navigator.pop(dialogContext),
                         child: Text(
                           "Keep Linked",
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: FigmaText.dialogAction,
                         ),
                       ),
                       TextButton(
@@ -944,22 +858,11 @@ class _PingSimulationDialogState extends State<_PingSimulationDialog>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              "Locating Device",
-              style: GoogleFonts.poppins(
-                fontSize: 18.0.sp,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
+            Text("Locating Device", style: FigmaText.dialogTitle),
             SizedBox(height: 8.w),
             Text(
               "Sending signal to play alarm...",
-              style: GoogleFonts.poppins(
-                fontSize: 13.0.sp,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-              ),
+              style: FigmaText.dialogBody,
             ),
             SizedBox(height: 40.w),
             AnimatedBuilder(

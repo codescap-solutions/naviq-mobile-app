@@ -13,7 +13,10 @@ import 'package:child_track/core/services/location_state_machine.dart';
 import 'package:child_track/core/services/tracking/tracking_profile_manager.dart';
 import 'package:child_track/core/services/tracking/tracking_config_service.dart';
 import 'package:child_track/core/services/tracking/geofence_tracking_config.dart';
+import 'package:child_track/core/services/tracking/tracking_recovery_policy.dart';
+import 'package:child_track/core/utils/location_payload.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -33,8 +36,9 @@ class BackgroundLocationService {
   /// server if this foreground service itself gets killed (force-kill,
   /// aggressive OEM battery management). No-op on iOS, which already has its
   /// own always-on CLLocationManager background updates (AppDelegate.swift).
-  static const MethodChannel _backgroundLocationChannel =
-      MethodChannel('com.truenyx.naviq/background_location');
+  static const MethodChannel _backgroundLocationChannel = MethodChannel(
+    'com.truenyx.naviq/background_location',
+  );
 
   /// Initialize the background service
   Future<void> initialize() async {
@@ -86,7 +90,10 @@ class BackgroundLocationService {
         StructuredLogger.log(LogTag.BG, 'Starting service manually');
         await service.startService();
       } else {
-        StructuredLogger.log(LogTag.BG, 'Service already running, skipping start');
+        StructuredLogger.log(
+          LogTag.BG,
+          'Service already running, skipping start',
+        );
       }
     } catch (e) {
       StructuredLogger.log(LogTag.BG, 'Failed to start service', error: e);
@@ -95,9 +102,16 @@ class BackgroundLocationService {
     if (Platform.isAndroid) {
       try {
         await _backgroundLocationChannel.invokeMethod('start');
-        StructuredLogger.log(LogTag.BG, 'Native background location ping armed');
+        StructuredLogger.log(
+          LogTag.BG,
+          'Native background location ping armed',
+        );
       } catch (e) {
-        StructuredLogger.log(LogTag.BG, 'Failed to arm native background location ping', error: e);
+        StructuredLogger.log(
+          LogTag.BG,
+          'Failed to arm native background location ping',
+          error: e,
+        );
       }
     }
   }
@@ -114,9 +128,16 @@ class BackgroundLocationService {
     if (Platform.isAndroid) {
       try {
         await _backgroundLocationChannel.invokeMethod('stop');
-        StructuredLogger.log(LogTag.BG, 'Native background location ping disarmed');
+        StructuredLogger.log(
+          LogTag.BG,
+          'Native background location ping disarmed',
+        );
       } catch (e) {
-        StructuredLogger.log(LogTag.BG, 'Failed to disarm native background location ping', error: e);
+        StructuredLogger.log(
+          LogTag.BG,
+          'Failed to disarm native background location ping',
+          error: e,
+        );
       }
     }
   }
@@ -124,6 +145,68 @@ class BackgroundLocationService {
   Future<bool> isRunning() async {
     final service = FlutterBackgroundService();
     return await service.isRunning();
+  }
+
+  static DateTime? _lastRecoveryAttempt;
+
+  @visibleForTesting
+  static void resetRecoveryThrottleForTests() => _lastRecoveryAttempt = null;
+
+  /// Restart the high-accuracy foreground service if it is not running, from a
+  /// context Android allows it (a high-priority FCM message is a documented
+  /// foreground-service-start exemption). Safe to call repeatedly: the policy
+  /// refuses when the device is not a logged-in child, location permission is
+  /// missing, the service already runs, or an attempt was made moments ago.
+  /// Never throws; the native fallback ping is left untouched either way.
+  /// Returns the decision so callers/tests can see why nothing happened.
+  static Future<RecoveryDecision> recoverIfStopped({
+    required String reason,
+    @visibleForTesting TrackingRecoveryProbe? probe,
+  }) async {
+    final p = probe ?? TrackingRecoveryProbe.real();
+    try {
+      final now = DateTime.now();
+      final decision = TrackingRecoveryPolicy.decide(
+        isAndroid: p.isAndroid,
+        isChildDevice: await p.isChildDevice(),
+        hasLocationPermission: await p.hasLocationPermission(),
+        hasBackgroundLocation: await p.hasBackgroundLocation(),
+        serviceRunning: await p.serviceRunning(),
+        sinceLastAttempt: _lastRecoveryAttempt == null
+            ? null
+            : now.difference(_lastRecoveryAttempt!),
+      );
+      if (decision != RecoveryDecision.start) {
+        StructuredLogger.log(
+          LogTag.BG,
+          'Tracking recovery ($reason): skipped → ${decision.name}',
+        );
+        return decision;
+      }
+      _lastRecoveryAttempt = now;
+      try {
+        await p.startService();
+        StructuredLogger.log(
+          LogTag.BG,
+          'Tracking recovery ($reason): foreground service start requested',
+        );
+        return RecoveryDecision.start;
+      } catch (e) {
+        StructuredLogger.log(
+          LogTag.BG,
+          'Tracking recovery ($reason): start failed',
+          error: e,
+        );
+        return RecoveryDecision.startFailed;
+      }
+    } catch (e) {
+      StructuredLogger.log(
+        LogTag.BG,
+        'Tracking recovery ($reason): check failed',
+        error: e,
+      );
+      return RecoveryDecision.startFailed;
+    }
   }
 }
 
@@ -158,6 +241,15 @@ Future<String> _getLocationPermissionStatus() async {
 }
 
 Timer? _boostTimer;
+Timer? _aliveTimer;
+
+/// Epoch-ms heartbeat of this isolate (key shared with TrackingRecovery.kt).
+void _writeAliveMarker(SharedPrefsService prefs) {
+  prefs.setInt(
+    TrackingRecoveryPolicy.aliveMarkerKey,
+    DateTime.now().millisecondsSinceEpoch,
+  );
+}
 
 /// Start/extend a time-boxed boost and make sure the stream actually ends it
 /// even if no further position arrives (e.g. the device goes still).
@@ -171,7 +263,10 @@ void _applyBoost(ServiceInstance service, Duration duration) {
     }
   });
   if (newlyActive) {
-    StructuredLogger.log(LogTag.BG, 'Boost started (${duration.inSeconds}s) → restarting stream');
+    StructuredLogger.log(
+      LogTag.BG,
+      'Boost started (${duration.inSeconds}s) → restarting stream',
+    );
     _startLocationStream(service);
   }
 }
@@ -199,14 +294,14 @@ void _startLocationStream(ServiceInstance service) {
     '• filter=${_profileManager.currentConfig.distanceFilter}m',
   );
 
-  _positionSubscription =
-      Geolocator.getPositionStream(locationSettings: settings).listen(
+  _positionSubscription = Geolocator.getPositionStream(locationSettings: settings).listen(
     (Position position) {
       _stateMachine?.processLocation(position);
 
       // Dynamically adapt tracking profile based on speed
-      final changed =
-          _profileManager.updateFromSpeed(position.speed < 0 ? 0 : position.speed);
+      final changed = _profileManager.updateFromSpeed(
+        position.speed < 0 ? 0 : position.speed,
+      );
       // Geofence-aware: near a saved place the low-power `still` profile is
       // upgraded to precise fixes (see GeofenceTrackingConfig); a finished
       // boost is dropped here too.
@@ -230,7 +325,9 @@ void _startLocationStream(ServiceInstance service) {
         final sm = _stateMachine;
         String content;
         if (sm != null && sm.isTripTracking) {
-          final mode = sm.tripMode == BgTripMode.walking ? 'Walking' : 'Vehicle';
+          final mode = sm.tripMode == BgTripMode.walking
+              ? 'Walking'
+              : 'Vehicle';
           // Use the last distance-filter-accepted speed, not this raw
           // per-callback reading — a filtered/rejected point (e.g. a GPS
           // glitch under 5m of real displacement) could otherwise still
@@ -240,8 +337,7 @@ void _startLocationStream(ServiceInstance service) {
           content =
               'Trip ($mode) • ${(displaySpeed * 3.6).toStringAsFixed(1)} km/h';
         } else {
-          content =
-              'Tracking • ${_profileManager.currentConfig.label} mode';
+          content = 'Tracking • ${_profileManager.currentConfig.label} mode';
         }
         service.setForegroundNotificationInfo(
           title: 'NaviQ Active',
@@ -264,8 +360,12 @@ void _startLocationStream(ServiceInstance service) {
         _resubscribeScheduled = false;
         final status = await _getLocationPermissionStatus();
         final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-        if ((status == 'granted' || status == 'while_using') && serviceEnabled) {
-          StructuredLogger.log(LogTag.BG, 'Resubscribing to location stream after error');
+        if ((status == 'granted' || status == 'while_using') &&
+            serviceEnabled) {
+          StructuredLogger.log(
+            LogTag.BG,
+            'Resubscribing to location stream after error',
+          );
           _startLocationStream(service);
         } else {
           StructuredLogger.log(
@@ -293,12 +393,17 @@ void onStart(ServiceInstance service) async {
 
     // Service control listeners
     if (service is AndroidServiceInstance) {
-      service.on('setAsForeground').listen((_) => service.setAsForegroundService());
-      service.on('setAsBackground').listen((_) => service.setAsBackgroundService());
+      service
+          .on('setAsForeground')
+          .listen((_) => service.setAsForegroundService());
+      service
+          .on('setAsBackground')
+          .listen((_) => service.setAsBackgroundService());
     }
 
     service.on('stopService').listen((_) {
       StructuredLogger.log(LogTag.BG, 'Stop signal received');
+      _aliveTimer?.cancel();
       _positionSubscription?.cancel();
       _serviceStatusSubscription?.cancel();
       _stateMachine?.dispose();
@@ -371,10 +476,22 @@ void onStart(ServiceInstance service) async {
     );
 
     _stateMachine!.onRequestBoost = (d) => _applyBoost(service, d);
-    _stateMachine!.profileLabelProvider = () => _profileManager.effectiveProfileLabel;
+    _stateMachine!.profileLabelProvider = () =>
+        _profileManager.effectiveProfileLabel;
 
     // Start with 'still' profile — adapts on first position
     _startLocationStream(service);
+
+    // Liveness marker for the native layer (TrackingRecovery.kt reads it): the
+    // Android service existing is not proof that THIS isolate is still running
+    // the location stream, and a stationary child emits no fixes to infer it
+    // from. Only the isolate itself can write it.
+    _writeAliveMarker(sharedPrefsService);
+    _aliveTimer?.cancel();
+    _aliveTimer = Timer.periodic(
+      TrackingRecoveryPolicy.aliveMarkerInterval,
+      (_) => _writeAliveMarker(sharedPrefsService),
+    );
 
     _serviceStatusSubscription = Geolocator.getServiceStatusStream().listen(
       (ServiceStatus status) async {
@@ -418,7 +535,11 @@ void onStart(ServiceInstance service) async {
         }
       },
       onError: (e) {
-        StructuredLogger.log(LogTag.BG, 'Service Status Stream Error', error: e);
+        StructuredLogger.log(
+          LogTag.BG,
+          'Service Status Stream Error',
+          error: e,
+        );
       },
     );
   } catch (e) {
@@ -450,7 +571,10 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 
     final childId = prefs.getString('child_id');
     if (childId == null || childId.isEmpty) {
-      StructuredLogger.log(LogTag.BG, 'iOS Background Fetch: no child_id – skipping');
+      StructuredLogger.log(
+        LogTag.BG,
+        'iOS Background Fetch: no child_id – skipping',
+      );
       return true;
     }
 
@@ -460,7 +584,10 @@ Future<bool> onIosBackground(ServiceInstance service) async {
     );
 
     final dioClient = DioClient(sharedPrefsService: prefs);
-    final childRepo = ChildRepo(dioClient: dioClient, sharedPrefsService: prefs);
+    final childRepo = ChildRepo(
+      dioClient: dioClient,
+      sharedPrefsService: prefs,
+    );
 
     final response = await childRepo.postChildLocation({
       'child_id': childId,
@@ -468,8 +595,8 @@ Future<bool> onIosBackground(ServiceInstance service) async {
       'lng': position.longitude,
       'accuracy': position.accuracy,
       'accuracy_m': position.accuracy,
-      'speed': position.speed < 0 ? 0.0 : position.speed,
-      'speed_mps': position.speed < 0 ? 0.0 : position.speed,
+      ...speedFields(position),
+      ...locationDiagnostics(fixSource: 'ios_background_fetch'),
       'bearing': position.heading < 0 ? 0.0 : position.heading,
       // position.timestamp, not DateTime.now() — see location_state_machine.dart's
       // _postChildLocation for why: a stale cached OS fix relabeled with a
@@ -490,7 +617,11 @@ Future<bool> onIosBackground(ServiceInstance service) async {
       buffered: true,
     );
   } catch (e) {
-    StructuredLogger.log(LogTag.BG, 'iOS Background Fetch: failed to post location', error: e);
+    StructuredLogger.log(
+      LogTag.BG,
+      'iOS Background Fetch: failed to post location',
+      error: e,
+    );
     StructuredLogger.log(
       LogTag.LOCATION,
       'source=ios_background_fetch status=failed',

@@ -40,7 +40,7 @@ class ProfileCard extends StatelessWidget {
     required this.onAction,
   });
 
-  static const _blue = Color(0xFF2C67F0);
+  static const _blue = Color(0xFF50A4DF); // Figma profile header
   static const _idleHeader = Color(0xFFBCBEC3); // non-selected child
   static const _divider = Color(0xFFEEF0F4);
   static const _mutedText = Color(0xFF9BA4B5);

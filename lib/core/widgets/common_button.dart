@@ -56,10 +56,7 @@ class CommonButton extends StatelessWidget {
             ),
             padding:
                 padding ??
-                const EdgeInsets.symmetric(
-                  horizontal: AppSizes.paddingL,
-                  vertical: AppSizes.paddingM,
-                ),
+                const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(
                 borderRadius ?? AppSizes.radiusM,
@@ -88,10 +85,8 @@ class CommonButton extends StatelessWidget {
         elevation: 0,
         padding:
             padding ??
-            const EdgeInsets.symmetric(
-              horizontal: AppSizes.paddingL,
-              vertical: AppSizes.paddingM,
-            ),
+            // No vertical padding, so a fixed `height` never clips the label.
+            const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(resolvedRadius),
         ),

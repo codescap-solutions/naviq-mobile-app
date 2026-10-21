@@ -1,5 +1,6 @@
 import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
@@ -14,10 +15,7 @@ class AccountView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      appBar: figmaAppBar(
-        context,
-        title: 'Account',
-      ),
+      appBar: figmaAppBar(context, title: 'Account'),
       body: ListView(
         padding: EdgeInsets.all(AppSizes.paddingL),
         children: [
@@ -112,7 +110,9 @@ class AccountView extends StatelessWidget {
             child: Text("Cancel"),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: FigmaColors.danger,
+            ),
             onPressed: () {
               Navigator.pop(context);
               _openDeleteForm();

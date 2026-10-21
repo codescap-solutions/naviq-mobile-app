@@ -68,5 +68,6 @@ object NativeLocationPingManager {
         val appContext = context.applicationContext
         val client = LocationServices.getFusedLocationProviderClient(appContext)
         client.removeLocationUpdates(pendingIntent(appContext))
+        NearFenceBurst.cancel(appContext)
     }
 }

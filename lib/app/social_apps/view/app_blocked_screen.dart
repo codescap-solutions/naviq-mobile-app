@@ -35,6 +35,7 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
 
     final response = await injector<TimeLimitRepository>().requestExtension(
       packageName: widget.packageName!,
+      appName: widget.appName,
     );
 
     if (!mounted) return;
@@ -249,8 +250,9 @@ class _AppBlockedScreenState extends State<AppBlockedScreen>
       child: Column(
         children: [
           _buildInfoRow(
-            Icons.access_time_rounded,
-            'Time limit reached',
+            Icons.lock_clock_rounded,
+            // Neutral: the app may be locked outright, not only out of time.
+            'This app is locked',
             'Ask your parent to unlock this app.',
           ),
           SizedBox(height: 16.w),

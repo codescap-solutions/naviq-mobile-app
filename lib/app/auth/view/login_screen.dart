@@ -1,9 +1,11 @@
+import 'package:child_track/app/auth/view/onboarding/parent_all_set_screen.dart';
 import 'package:child_track/app/auth/view/onboarding/parent_profile_setup_view.dart';
 import 'package:child_track/app/auth/view_model/bloc/auth_bloc.dart';
 import 'package:child_track/app/auth/view_model/bloc/auth_event.dart';
 import 'package:child_track/app/auth/view_model/bloc/auth_state.dart';
 import 'package:child_track/core/navigation/route_names.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
+import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
@@ -18,27 +20,65 @@ import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/widgets/figma_primary_button.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, this.isFromSignIn = false});
+  const LoginScreen({super.key, this.isFromSignIn = false, this.profile});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
   final bool isFromSignIn;
+  // Set when arriving from the sign-up flow: adds the name field and registers
+  // these answers if the verified number is new.
+  final ParentSignUpProfile? profile;
 }
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
+  final _nameController = TextEditingController();
   final _otpController = TextEditingController();
   final _focusNode = FocusNode();
   final _otpFocusNode = FocusNode();
   bool _isPhoneValid = false;
   bool _agreeToTerms = false;
   bool _otpSent = false;
+  bool _nameError = false;
+
+  bool get _askName => widget.profile != null;
+  bool get _nameValid => _nameController.text.trim().length >= 2;
+
+  // Resend is locked for a while after every send, so it can't be spammed.
+  static const _resendCooldown = 30;
+  int _resendSeconds = 0;
+  Timer? _resendTimer;
+
+  void _startResendCooldown() {
+    _resendTimer?.cancel();
+    setState(() => _resendSeconds = _resendCooldown);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted || _resendSeconds <= 1) {
+        t.cancel();
+        if (mounted) setState(() => _resendSeconds = 0);
+      } else {
+        setState(() => _resendSeconds--);
+      }
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _phoneController.addListener(_onPhoneChanged);
+    _nameController.addListener(_onNameChanged);
+  }
+
+  // Number typed before the name: send as soon as the name is long enough.
+  void _onNameChanged() {
+    final valid = _nameValid;
+    if (_nameError && valid) _nameError = false;
+    if (valid && _isPhoneValid && !_otpSent) {
+      if (!_agreeToTerms) _agreeToTerms = true;
+      _sendOtp();
+    }
+    setState(() {});
   }
 
   void _onPhoneChanged() {
@@ -57,8 +97,9 @@ class _LoginScreenState extends State<LoginScreen> {
       });
     }
 
-    // Automatically trigger OTP send when it reaches 10 digits
-    if (isValid && !_otpSent) {
+    // Automatically trigger OTP send when it reaches 10 digits (and, on
+    // sign-up, a name has been typed first)
+    if (isValid && !_otpSent && (!_askName || _nameValid)) {
       if (!_agreeToTerms) {
         setState(() {
           _agreeToTerms = true;
@@ -71,10 +112,13 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _phoneController.removeListener(_onPhoneChanged);
+    _nameController.removeListener(_onNameChanged);
+    _nameController.dispose();
     _phoneController.dispose();
     _otpController.dispose();
     _focusNode.dispose();
     _otpFocusNode.dispose();
+    _resendTimer?.cancel();
     super.dispose();
   }
 
@@ -86,9 +130,23 @@ class _LoginScreenState extends State<LoginScreen> {
           setState(() {
             _otpSent = true;
           });
+          _startResendCooldown();
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _otpFocusNode.requestFocus(),
+          );
           AppSnackbar.showSuccess(context, 'OTP sent successfully');
+        } else if (state is AuthNewUser && widget.profile != null) {
+          // Sign-up flow: profile already answered, create the account now.
+          context.read<AuthBloc>().add(
+            RegisterUser(
+              phoneNumber: state.phoneNumber,
+              name: _nameController.text.trim(),
+              parentingSituation: widget.profile!.parentingSituation,
+              parentRoutine: widget.profile!.parentRoutine,
+            ),
+          );
         } else if (state is AuthNewUser) {
-          // New user - navigate to Parent Profile setup screen first
+          // New user from Sign In - collect the profile first
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (_) =>
@@ -154,16 +212,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                 SizedBox(height: 38.w),
                                 _buildHeader(),
                                 SizedBox(height: 47.w),
+                                if (_askName) ...[
+                                  _buildNameField(),
+                                  SizedBox(height: 16.w),
+                                ],
                                 _buildPhoneField(),
                                 SizedBox(height: 10.w),
                                 _buildValidationTip(),
                                 _buildOtpField(),
+                                _buildResendOtp(),
                                 SizedBox(height: AppSizes.spacingL.w),
                                 Spacer(),
                                 _buildTermsCheckbox(),
                                 SizedBox(height: AppSizes.spacingL.w),
                                 _buildActionButton(),
-                                _buildResendOtpLink(),
                                 SizedBox(height: 96.w),
                               ],
                             ),
@@ -245,7 +307,13 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Text(
           'Verify and Proceed',
-          style: FigmaText.poppins(32, weight: FontWeight.w700, lineHeight: 40),
+          // Figma HD 03: Poppins Bold 24 / 28, Heading/900.
+          style: FigmaText.poppins(
+            24,
+            weight: FontWeight.w700,
+            lineHeight: 28,
+            color: const Color(0xFF0F1320),
+          ),
         ),
         SizedBox(height: 4.w),
         Text(
@@ -264,6 +332,23 @@ class _LoginScreenState extends State<LoginScreen> {
   TextStyle get _fieldHintStyle =>
       FigmaText.input.copyWith(color: FigmaColors.body);
 
+  Widget _buildNameField() {
+    return CommonTextField(
+      controller: _nameController,
+      hintText: _nameError ? 'Please enter name' : 'Enter your name',
+      hintStyle: _nameError
+          ? _fieldHintStyle.copyWith(color: Colors.red)
+          : _fieldHintStyle,
+      fillColor: Colors.white,
+      borderColor: _nameError ? Colors.red : Colors.black,
+      borderWidth: 0.75,
+      borderRadius: 14,
+      contentPadding: EdgeInsets.fromLTRB(41.w, 18.w, 24.w, 18.w),
+      keyboardType: TextInputType.name,
+      textInputAction: TextInputAction.next,
+    );
+  }
+
   Widget _buildPhoneField() {
     return CommonTextField(
       controller: _phoneController,
@@ -280,10 +365,19 @@ class _LoginScreenState extends State<LoginScreen> {
       suffixIcon: _isPhoneValid
           ? Padding(
               padding: EdgeInsets.only(right: 11.w),
-              child: SvgPicture.asset(
-                'assets/icons/auth_phone_valid_check.svg',
-                width: 25.w,
-                height: 25.w,
+              // Figma: 25 x 25. The suffix slot hands its child tight 48px
+              // constraints, so the Align is what lets the icon stay 25.
+              child: Align(
+                widthFactor: 1,
+                heightFactor: 1,
+                child: SizedBox(
+                  width: 25.w,
+                  height: 25.w,
+                  child: SvgPicture.asset(
+                    'assets/icons/auth_phone_valid_check.svg',
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
             )
           : null,
@@ -308,11 +402,15 @@ class _LoginScreenState extends State<LoginScreen> {
     return Padding(
       padding: EdgeInsets.only(right: 15.w),
       child: Text(
-        'we will generate otp automatically',
+        // Once the OTP has gone out the number is confirmed good.
+        _otpSent
+            ? 'phone number is correct'
+            : 'we will generate otp automatically',
         textAlign: TextAlign.right,
+        // Figma Body Small: Poppins Regular 12 / 20, letter spacing 0.2.
         style: FigmaText.poppins(
-          10,
-          weight: FontWeight.w700,
+          12,
+          lineHeight: 20,
           letterSpacing: 0.2,
           color: const Color(0xFF9BA4B5),
         ),
@@ -453,37 +551,30 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildResendOtpLink() {
+  /// "Resend" under the OTP field, right-aligned like the hint above it
+  /// (Figma). Counts down before it can be used again.
+  Widget _buildResendOtp() {
     if (!_otpSent) return SizedBox.shrink();
 
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        final isLoading = state is AuthLoading;
+        final canResend = _resendSeconds == 0 && state is! AuthLoading;
         return Padding(
-          padding: EdgeInsets.only(top: AppSizes.spacingL.w),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Didn't receive the OTP? ",
-                style: FigmaText.poppins(
-                  14,
-                  weight: FontWeight.w500,
-                  color: const Color(0xFF62748E),
+          padding: EdgeInsets.only(top: 8.w, right: 15.w),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: canResend ? _resendOtp : null,
+              child: Text(
+                _resendSeconds > 0 ? 'Resend in ${_resendSeconds}s' : 'Resend',
+                style: FigmaText.bodySmall.copyWith(
+                  color: canResend
+                      ? const Color(0xFF4A5267)
+                      : const Color(0xFF9BA4B5),
                 ),
               ),
-              GestureDetector(
-                onTap: isLoading ? null : _resendOtp,
-                child: Text(
-                  'Resend OTP',
-                  style: FigmaText.poppins(
-                    14,
-                    weight: FontWeight.w600,
-                    color: const Color(0xFF0066FF),
-                  ).copyWith(decoration: TextDecoration.underline),
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -519,6 +610,11 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         'You must agree to the Terms of Service & Privacy Policy',
       );
+      return;
+    }
+    if (_askName && !_nameValid) {
+      setState(() => _nameError = true);
+      AppSnackbar.showError(context, 'Please enter your name');
       return;
     }
     final phoneNumber = _phoneController.text.trim();

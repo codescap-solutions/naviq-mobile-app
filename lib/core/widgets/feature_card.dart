@@ -18,10 +18,10 @@ class FeatureCard extends StatelessWidget {
     required this.title,
     required this.description,
     required this.iconAsset,
-    required this.borderColor,
+    this.borderColor = const Color(0xFFBED3F0), // Figma colors/blue/100
     this.titleColor = const Color(0xFF16181A),
     this.descriptionColor = const Color(0xFF707784),
-    this.shadowBlur = 5,
+    this.shadowBlur = 10,
     this.onTap,
   });
 
@@ -38,7 +38,7 @@ class FeatureCard extends StatelessWidget {
           border: Border.all(color: borderColor, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withValues(alpha: 0.043),
               blurRadius: shadowBlur,
               offset: const Offset(0, 2),
             ),
@@ -52,17 +52,27 @@ class FeatureCard extends StatelessWidget {
               height: 50,
               alignment: Alignment.center,
               decoration: const BoxDecoration(
-                color: Color(0xFFEBF3FF),
+                color: Color(0xFFF7F8FA), // Neutrals/50
                 shape: BoxShape.circle,
               ),
-              child: SvgPicture.asset(iconAsset, width: 20, height: 20),
+              child: SvgPicture.asset(
+                iconAsset,
+                width: 20,
+                height: 20,
+                // Figma Icon/Main/default (Neutrals/900); the SVGs are blue.
+                colorFilter: const ColorFilter.mode(
+                  Color(0xFF16181A),
+                  BlendMode.srcIn,
+                ),
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               title,
               style: GoogleFonts.poppins(
                 fontSize: 16.0.sp,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
+                height: 24 / 16,
                 color: titleColor,
               ),
             ),

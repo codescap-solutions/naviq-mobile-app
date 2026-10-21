@@ -39,6 +39,10 @@ class LocationPingBroadcastReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val result = LocationResult.extractResult(intent)
+        if (intent.action == NearFenceBurst.ACTION_NEAR_FENCE_BURST) {
+            handleNearFenceBurst(context, result)
+            return
+        }
         val location = result?.lastLocation
         if (location == null) {
             Log.w(TAG, "onReceive: no location in result, ignoring")
@@ -72,13 +76,14 @@ class LocationPingBroadcastReceiver : BroadcastReceiver() {
                     put("lng", location.longitude)
                     put("accuracy", location.accuracy.toDouble())
                     put("accuracy_m", location.accuracy.toDouble())
-                    put("speed", if (location.hasSpeed()) location.speed.toDouble() else 0.0)
-                    put("speed_mps", if (location.hasSpeed()) location.speed.toDouble() else 0.0)
+                    // Unknown speed is omitted (speed_known=false), never sent as 0 m/s.
+                    NativeLocationPayload.putSpeed(this, location.hasSpeed(), location.speed)
                     put("bearing", if (location.hasBearing()) location.bearing.toDouble() else 0.0)
                     put("altitude", if (location.hasAltitude()) location.altitude else 0.0)
                     put("battery", readBatteryPercent(appContext))
                     put("timestamp", isoFromMillis(location.time))
                     put("source", "android_native_background_ping")
+                    NativeLocationPayload.putDiagnostics(appContext, this, "android_native_background_ping", "native_ping")
                 }
 
                 val posted = NativeApiClient.postJson(appContext, "child/location", payload)
@@ -87,9 +92,65 @@ class LocationPingBroadcastReceiver : BroadcastReceiver() {
                 if (!posted) {
                     enqueuePending(appContext, payload)
                 }
+
+                // The real service now owns precise tracking → drop any burst; otherwise,
+                // if the child is near a saved place and only this fallback is running,
+                // take a bounded high-accuracy burst (NearFenceBurst / NearFencePolicy).
+                NearFenceBurst.cancelIfSuperseded(appContext)
+                NearFenceBurst.maybeStart(appContext, location)
             } catch (e: Exception) {
                 Log.e(TAG, "Error handling location ping: ${e.message}", e)
                 NativeFileLogger.log(appContext, "LOCATION_PING", "ERROR ${e.message}")
+            } finally {
+                pendingResult.finish()
+            }
+        }.start()
+    }
+
+    /**
+     * Deliveries of the bounded near-fence burst. Only a fresh (<= 20 s, monotonic
+     * clock) and precise (<= 75 m) fix is posted — never a cached position — and
+     * nothing is queued for later: a stale fix would be worthless as evidence.
+     */
+    private fun handleNearFenceBurst(context: Context, result: LocationResult?) {
+        val fixes = result?.locations ?: return
+        val appContext = context.applicationContext
+        val pendingResult = goAsync()
+        Thread {
+            try {
+                if (TrackingRecovery.isHighAccuracyActive(appContext)) {
+                    NearFenceBurst.cancel(appContext)
+                    return@Thread
+                }
+                val childId = NativeApiClient.getChildId(appContext)
+                if (childId.isNullOrEmpty()) {
+                    NearFenceBurst.cancel(appContext)
+                    return@Thread
+                }
+                for (fix in fixes) {
+                    val age = NearFenceBurst.fixAgeMs(fix)
+                    val accuracy = if (fix.hasAccuracy()) fix.accuracy.toDouble() else null
+                    if (age == null || !NearFencePolicy.isUsableBurstFix(age, accuracy)) {
+                        NativeFileLogger.log(appContext, "NEAR_FENCE_BURST", "discarded fix ageMs=$age accuracy=$accuracy")
+                        continue
+                    }
+                    val payload = JSONObject().apply {
+                        put("child_id", childId)
+                        put("lat", fix.latitude)
+                        put("lng", fix.longitude)
+                        put("accuracy", fix.accuracy.toDouble())
+                        put("accuracy_m", fix.accuracy.toDouble())
+                        NativeLocationPayload.putSpeed(this, fix.hasSpeed(), fix.speed)
+                        put("bearing", if (fix.hasBearing()) fix.bearing.toDouble() else 0.0)
+                        put("battery", readBatteryPercent(appContext))
+                        put("timestamp", isoFromMillis(fix.time))
+                        NativeLocationPayload.putDiagnostics(appContext, this, "android_near_fence_burst", "native_burst")
+                    }
+                    val posted = NativeApiClient.postJson(appContext, "child/location", payload)
+                    NativeFileLogger.log(appContext, "NEAR_FENCE_BURST", "post posted=$posted accuracy=$accuracy")
+                }
+            } catch (e: Exception) {
+                NativeFileLogger.log(appContext, "NEAR_FENCE_BURST", "ERROR ${e.message}")
             } finally {
                 pendingResult.finish()
             }

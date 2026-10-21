@@ -1,3 +1,5 @@
+import 'package:child_track/app/home/model/shared_location_accepted.dart';
+import 'package:child_track/app/home/view/widget/tracking_warning_banner.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
@@ -17,6 +19,9 @@ import 'package:child_track/app/subscription/view_model/subscription_repository.
 import 'package:child_track/app/map/view/map_view.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
+import 'dart:math' as math;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/constants/app_sizes.dart';
@@ -31,6 +36,9 @@ import '../../geofencing/view/geo_fencing_view.dart';
 import '../../geofencing/view_model/bloc/geofence_bloc.dart';
 import '../../geofencing/view_model/bloc/geofence_event.dart';
 import 'package:child_track/core/constants/figma_tokens.dart';
+import 'package:child_track/core/widgets/figma_primary_button.dart';
+import 'package:child_track/core/services/notification_badge.dart';
+import 'package:child_track/app/auth/view/onboarding/add_kid_view.dart';
 import '../../settings/view/help_view.dart';
 import '../../settings/view/settings_view.dart';
 import '../../settings/view/devices_view.dart';
@@ -61,6 +69,14 @@ const double _kPinCanvasHeight =
 const double _kPinScale = 50 / 100;
 const double _kPinAnchorY =
     (_kPinMargin + 2 * 50 + _kPinPointer) / _kPinCanvasHeight;
+
+/// Space under the bottom-nav items. iPhone: only the part of the home
+/// indicator inset the labels really clash with (34 -> 20). Android: the
+/// system navigation bar is solid buttons, so the full inset plus a small gap.
+double navBarBottomSpace(double inset) =>
+    defaultTargetPlatform == TargetPlatform.iOS
+    ? (inset - 14).clamp(6.0, 24.0)
+    : inset + 6;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -277,6 +293,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // Preload subscription plans
     injector<SubscriptionRepository>().getPlans();
 
+    // Unread count on the bell.
+    NotificationBadge.instance.refresh();
+
     // Listen to notification taps
     _notificationSubscription = injector<FirebaseNotificationService>()
         .notificationTapStream
@@ -315,6 +334,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _foregroundSubscription = injector<FirebaseNotificationService>()
         .messageStream
         .listen((message) {
+          NotificationBadge.instance.refreshSoon();
           AppLogger.info(
             '🔥 [FCM FG STREAM] Received message: data=${message.data}',
           );
@@ -453,6 +473,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       injector<FirebaseNotificationService>().childRouter.flushPending();
       _showPendingActionTap();
       _refreshOnResume();
+      NotificationBadge.instance.refresh();
     }
   }
 
@@ -521,36 +542,36 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     AppLogger.info(
       '💡 _handleIncomingLocationShareAccepted called with data: $data',
     );
-    print('💡 [FCM ACCEPTED] Handling accepted share request: $data');
     try {
-      final String childId = data['child_id'] ?? 'mock_rohan';
-      final String childName = data['child_name'] ?? 'Rohan';
-      final double lat =
-          double.tryParse(data['lat']?.toString() ?? '') ?? 12.9716;
-      final double lng =
-          double.tryParse(data['lng']?.toString() ?? '') ?? 77.5946;
-      final String? expiresAtStr = data['expires_at'];
-      final DateTime expiresAt = expiresAtStr != null
-          ? DateTime.tryParse(expiresAtStr) ??
-                DateTime.now().add(const Duration(minutes: 30))
-          : DateTime.now().add(const Duration(minutes: 30));
+      final accepted = SharedLocationAccepted.fromPush(data);
 
-      setState(() {
-        _activeSharedChildData = {
-          'child_id': childId,
-          'child_name': childName,
-          'avatar': data['avatar'] ?? 'Boy 03.png',
-          'lat': lat,
-          'lng': lng,
-          'expires_at': expiresAt,
-        };
-        _viewingSharedChild = true;
-      });
+      if (accepted.canShowOnMap) {
+        setState(() {
+          _activeSharedChildData = {
+            'child_id': accepted.childId,
+            'child_name': accepted.childName,
+            'avatar': accepted.avatar ?? 'Boy 03.png',
+            'lat': accepted.lat,
+            'lng': accepted.lng,
+            'expires_at':
+                accepted.expiresAt ??
+                DateTime.now().add(const Duration(minutes: 30)),
+          };
+          _viewingSharedChild = true;
+        });
+      } else {
+        // The push (silent, data-only) carries no child id or position — never
+        // invent one. The shared child's real, current location arrives with
+        // the home data's shared-children list, so ask for that.
+        injector<HomepageBloc>().add(
+          const GetHomepageData(isSilentRefresh: true),
+        );
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '$childName\'s shared location is now visible on your map',
+            '${accepted.childName}\'s shared location is now visible on your map',
           ),
           backgroundColor: const Color(0xFF10B981),
         ),
@@ -585,7 +606,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 left: 24,
                 right: 24,
                 top: 16,
-                bottom: 24 + MediaQuery.of(sheetContext).viewInsets.bottom,
+                bottom:
+                    24 +
+                    MediaQuery.of(sheetContext).viewInsets.bottom +
+                    // clears the Android system navigation bar (0 while the
+                    // keyboard is up)
+                    MediaQuery.paddingOf(sheetContext).bottom,
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -806,6 +832,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final String packageName = data['package_name'] ?? '';
     final int requestedMinutes =
         int.tryParse(data['requested_minutes']?.toString() ?? '') ?? 15;
+    // "locked": the app is locked outright and the child asks to use it at
+    // all; otherwise the daily limit ran out and they ask for more minutes.
+    final bool isLockedRequest = data['reason'] == 'locked';
 
     if (requestId.isEmpty) return;
 
@@ -845,7 +874,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     content: Text(
                       response.isSuccess
                           ? (approve
-                                ? 'Extra time granted to $childName'
+                                ? (isLockedRequest
+                                      ? '$appName unlocked for $childName'
+                                      : 'Extra time granted to $childName')
                                 : 'Request denied')
                           : (response.message.isNotEmpty
                                 ? response.message
@@ -861,7 +892,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 left: 20,
                 right: 20,
                 top: 10,
-                bottom: 24 + MediaQuery.of(sheetContext).viewInsets.bottom,
+                bottom:
+                    24 +
+                    MediaQuery.of(sheetContext).viewInsets.bottom +
+                    // clears the Android system navigation bar (0 while the
+                    // keyboard is up)
+                    MediaQuery.paddingOf(sheetContext).bottom,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -893,7 +929,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'More Time Request',
+                        isLockedRequest
+                            ? 'Unlock Request'
+                            : 'More Time Request',
                         style: GoogleFonts.poppins(
                           fontSize: 18.0.sp,
                           fontWeight: FontWeight.w800,
@@ -915,7 +953,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                     ),
                     child: Text(
-                      '$childName wants $requestedMinutes more minutes on $appName.',
+                      isLockedRequest
+                          ? '$childName wants to use $appName. It is locked on their device.'
+                          : '$childName wants $requestedMinutes more minutes on $appName.',
                       style: GoogleFonts.poppins(
                         fontSize: 14.0.sp,
                         fontWeight: FontWeight.w700,
@@ -1034,7 +1074,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 left: 20,
                 right: 20,
                 top: 10,
-                bottom: 24 + MediaQuery.of(sheetContext).viewInsets.bottom,
+                bottom:
+                    24 +
+                    MediaQuery.of(sheetContext).viewInsets.bottom +
+                    // clears the Android system navigation bar (0 while the
+                    // keyboard is up)
+                    MediaQuery.paddingOf(sheetContext).bottom,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1181,37 +1226,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
       List<ChildProfile> localChildren = _sharedPrefsService.getChildren();
       AppLogger.info('💡 Children count: ${localChildren.length}');
-      if (localChildren.isEmpty) {
-        localChildren = [
-          ChildProfile(
-            childId: 'mock_aisha',
-            childCode: 'AI123',
-            childName: 'Aisha',
-            authToken: 'dummy',
-            lastActiveAt: DateTime.now(),
-          ),
-          ChildProfile(
-            childId: 'mock_rohan',
-            childCode: 'RO123',
-            childName: 'Rohan',
-            authToken: 'dummy',
-            lastActiveAt: DateTime.now(),
-          ),
-          ChildProfile(
-            childId: 'mock_priya',
-            childCode: 'PR123',
-            childName: 'Priya',
-            authToken: 'dummy',
-            lastActiveAt: DateTime.now(),
-          ),
-        ];
-      }
-
-      final Map<String, String> childAges = {
-        'Aisha': '8 yrs',
-        'Rohan': '11 yrs',
-        'Priya': '6 yrs',
-      };
 
       String selectedDuration = '30 min';
       final List<String> selectedKids = [];
@@ -1240,7 +1254,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   left: 20,
                   right: 20,
                   top: 10,
-                  bottom: 24 + MediaQuery.of(sheetContext).viewInsets.bottom,
+                  bottom:
+                    24 +
+                    MediaQuery.of(sheetContext).viewInsets.bottom +
+                    // clears the Android system navigation bar (0 while the
+                    // keyboard is up)
+                    MediaQuery.paddingOf(sheetContext).bottom,
                 ),
                 child: SingleChildScrollView(
                   child: Column(
@@ -1459,7 +1478,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         children: localChildren.map((kid) {
                           final isSelected = selectedKids.contains(kid.childId);
                           final name = kid.childName;
-                          final displayAge = childAges[name] ?? '8 yrs';
+                          final displayAge = kid.age != null
+                              ? '${kid.age} yrs'
+                              : null;
                           String initials = name.length >= 2
                               ? name.substring(0, 2).toUpperCase()
                               : name.toUpperCase();
@@ -1563,15 +1584,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                       color: const Color(0xFF0C1D37),
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    displayAge,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 10.0.sp,
-                                      color: const Color(0xFF94A3B8),
-                                      fontWeight: FontWeight.w500,
+                                  if (displayAge != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      displayAge,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10.0.sp,
+                                        color: const Color(0xFF94A3B8),
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -1803,24 +1826,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              title: Text(
-                'Reject Request',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF0C1D37),
-                ),
-              ),
+              title: Text('Reject Request', style: FigmaText.dialogTitle),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Please specify the reason for rejection (optional):',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13.0.sp,
-                      color: const Color(0xFF475569),
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: FigmaText.dialogBody,
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -1843,13 +1856,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   onPressed: isRejecting
                       ? null
                       : () => Navigator.pop(dialogContext),
-                  child: Text(
-                    'Cancel',
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFF64748B),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: Text('Cancel', style: FigmaText.dialogAction),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -2375,30 +2382,58 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // showing stale until a manual pull-to-refresh happened to land on a
   // fresher moment — confirmed real complaint.
   int _profileRefreshToken = 0;
+  int _settingsRefreshToken = 0;
+
+  DateTime? _lastBackPressAt;
+
+  void _onSystemBack() {
+    if (_currentIndex != 0) {
+      setState(() => _currentIndex = 0);
+      return;
+    }
+    final now = DateTime.now();
+    final last = _lastBackPressAt;
+    if (last != null && now.difference(last) < const Duration(seconds: 2)) {
+      SystemNavigator.pop();
+      return;
+    }
+    _lastBackPressAt = now;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('Press back again to exit'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+  }
 
   Widget _buildBottomNavigationBar() {
-    // Wrapped in SafeArea(bottom) — without it this Container sits flush
-    // with the physical bottom edge on notch/gesture-nav devices, so the
-    // iOS home-indicator bar draws directly on top of the Explore/Profile
-    // labels instead of below them. SafeArea adds the missing bottom inset
-    // (~34pt) so the nav bar's own content clears it.
-    return SafeArea(
-      top: false,
-      child: Container(
-        // Figma footer: white, 8px vertical padding, 24px between 56px items.
-        padding: EdgeInsets.symmetric(vertical: 8.w),
-        color: Colors.white,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildBottomNavItem(
+    // White fills the whole bar including the bottom inset, so there is no
+    // grey strip under it on any device. The bar is not wrapped in SafeArea:
+    // that left the full system inset (34pt on iPhones with a home indicator)
+    // plus padding under the labels, which read as dead space. Only the part of
+    // the inset the home indicator really covers is kept; the gesture bar sits
+    // in the bottom ~21pt, so labels stay clear of it.
+    final bottomSpace = navBarBottomSpace(MediaQuery.paddingOf(context).bottom);
+    return Container(
+      color: Colors.white,
+      // 12 each side: 4 extra on Home's left and Profile's right.
+      padding: EdgeInsets.fromLTRB(12.w, 8.w, 12.w, bottomSpace),
+      // Four equal cells across the full width, each item centred in its own.
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildBottomNavItem(
               0,
               _currentIndex == 0 ? Icons.home_rounded : Icons.home_outlined,
               'Home',
               svgAsset: 'assets/home/home_nav_home.svg',
             ),
-            SizedBox(width: 24.w),
-            _buildBottomNavItem(
+          ),
+          Expanded(
+            child: _buildBottomNavItem(
               1,
               _currentIndex == 1
                   ? Icons.settings_rounded
@@ -2406,15 +2441,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               'Settings',
               svgAsset: 'assets/home/home_nav_settings.svg',
             ),
-            SizedBox(width: 24.w),
-            _buildBottomNavItem(
+          ),
+          Expanded(
+            child: _buildBottomNavItem(
               2,
               Icons.menu_rounded,
               'Explore',
               svgAsset: 'assets/home/home_nav_explore.svg',
             ),
-            SizedBox(width: 24.w),
-            _buildBottomNavItem(
+          ),
+          Expanded(
+            child: _buildBottomNavItem(
               3,
               _currentIndex == 3
                   ? Icons.person_rounded
@@ -2422,8 +2459,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               'Profile',
               svgAsset: 'assets/home/home_nav_profile.svg',
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -2440,56 +2477,64 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         setState(() {
           _currentIndex = index;
           if (index == 3) _profileRefreshToken++;
+          if (index == 1) _settingsRefreshToken++;
         });
       },
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 56.w,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56.w,
-              height: 53.w,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(44.w),
-                gradient: isSelected
-                    ? LinearGradient(
-                        colors: [Color(0x003DB5E9), Color(0x2E2352BB)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
+      // heightFactor 1: a plain Center would grow to the whole screen height
+      // inside the nav bar's loose constraints.
+      child: Center(
+        heightFactor: 1,
+        child: SizedBox(
+          width: 56.w,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56.w,
+                height: 53.w,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(44.w),
+                  gradient: isSelected
+                      ? LinearGradient(
+                          colors: [Color(0x003DB5E9), Color(0x2E2352BB)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        )
+                      : null,
+                ),
+                // The Figma stroke icons are tinted per state so the same glyph
+                // is used selected (dark) and unselected (grey).
+                child: svgAsset != null
+                    ? SvgPicture.asset(
+                        svgAsset,
+                        colorFilter: ColorFilter.mode(
+                          isSelected ? Color(0xFF16181A) : Color(0xFF9BA4B5),
+                          BlendMode.srcIn,
+                        ),
                       )
-                    : null,
-              ),
-              // The Figma stroke icons are tinted per state so the same glyph
-              // is used selected (dark) and unselected (grey).
-              child: svgAsset != null
-                  ? SvgPicture.asset(
-                      svgAsset,
-                      colorFilter: ColorFilter.mode(
-                        isSelected ? Color(0xFF16181A) : Color(0xFF9BA4B5),
-                        BlendMode.srcIn,
+                    : Icon(
+                        icon,
+                        color: isSelected
+                            ? Color(0xFF16181A)
+                            : Color(0xFF9BA4B5),
+                        size: 24.w,
                       ),
-                    )
-                  : Icon(
-                      icon,
-                      color: isSelected ? Color(0xFF16181A) : Color(0xFF9BA4B5),
-                      size: 24.w,
-                    ),
-            ),
-            SizedBox(height: 4.w),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 12.0.sp,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                height: isSelected ? null : 20 / 12,
-                letterSpacing: 0.2,
-                color: isSelected ? Colors.black : Color(0xFF9BA4B5),
               ),
-            ),
-          ],
+              SizedBox(height: 4.w),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 12.0.sp,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  height: isSelected ? null : 20 / 12,
+                  letterSpacing: 0.2,
+                  color: isSelected ? Colors.black : Color(0xFF9BA4B5),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2529,45 +2574,67 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             }
           }
         },
-        child: Scaffold(
-          backgroundColor: Color(0xFFF8FAFC),
-          body: IndexedStack(
-            index: _currentIndex,
-            children: [
-              _buildHomeTabContent(context),
-              SettingsView(
-                onNavigateToHome: () {
-                  setState(() {
-                    _currentIndex = 0;
-                  });
-                },
-              ),
-              ExploreView(
-                onNavigateToHome: () {
-                  setState(() {
-                    _currentIndex = 0;
-                  });
-                },
-              ),
-              ProfileView(
-                refreshToken: _profileRefreshToken,
-                onNavigateToHome: () {
-                  setState(() {
-                    _currentIndex = 0;
-                  });
-                },
-              ),
-            ],
+        child: PopScope(
+          // Back never closes the app straight away (Android):
+          //  - on Settings / Explore / Profile it returns to the Home tab;
+          //  - on Home the first press asks again, a second one within 2 s exits.
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _onSystemBack();
+          },
+          child: Scaffold(
+            backgroundColor: Color(0xFFF8FAFC),
+            body: IndexedStack(
+              index: _currentIndex,
+              children: [
+                _buildHomeTabContent(context),
+                SettingsView(
+                  refreshToken: _settingsRefreshToken,
+                  onNavigateToHome: () {
+                    setState(() {
+                      _currentIndex = 0;
+                    });
+                  },
+                ),
+                ExploreView(
+                  onNavigateToHome: () {
+                    setState(() {
+                      _currentIndex = 0;
+                    });
+                  },
+                ),
+                ProfileView(
+                  refreshToken: _profileRefreshToken,
+                  onNavigateToHome: () {
+                    setState(() {
+                      _currentIndex = 0;
+                    });
+                  },
+                ),
+              ],
+            ),
+            bottomNavigationBar: _buildBottomNavigationBar(),
           ),
-          bottomNavigationBar: _buildBottomNavigationBar(),
         ),
       ),
     );
   }
 
+  /// A parent who has no kid yet: nothing cached and no kid selected. Not for
+  /// a parent who is only viewing a kid someone shared with them.
+  bool _hasNoKids() {
+    if (_viewingSharedChild) return false;
+    final childId = _sharedPrefsService.getString('child_id');
+    return _sharedPrefsService.isParent &&
+        _sharedPrefsService.getChildren().isEmpty &&
+        (childId == null || childId.isEmpty);
+  }
+
   Widget _buildHomeTabContent(BuildContext context) {
     return BlocBuilder<HomepageBloc, HomepageState>(
       builder: (context, state) {
+        if (_hasNoKids()) return _buildNoChildConnectedUI(context);
+
         if (state is HomepageError) {
           return Center(
             child: Padding(
@@ -2614,7 +2681,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         // has nothing to control.
         final isScrollDisabled = state.deviceInfo?.isDeviceOnly == true;
         final childName =
-            _sharedPrefsService.getString('child_name') ?? 'Ananya';
+            _sharedPrefsService.getString('child_name') ?? 'Your child';
         // Backend already resolves place_name authoritatively (Child.currentPlace,
         // kept in sync by the geofence pipelines — see location.controller.js /
         // geofence.service.js) — trust it first instead of re-deriving a match
@@ -2658,8 +2725,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         // (~575pt of content). The map gets whatever height is left above.
         final double kRestSheetContent = 531
             .w; // 527 of content (feature cards are 140 high) + 4 so the route card's bottom border clears the nav bar
+        // Matches _buildBottomNavigationBar: 8 top + 77 items + the trimmed
+        // bottom space.
         final double navHeight =
-            MediaQueryData.fromView(View.of(context)).padding.bottom + 93.w;
+            navBarBottomSpace(
+              MediaQueryData.fromView(View.of(context)).padding.bottom,
+            ) +
+            85.w;
         final double mapHeaderExtent =
             (screenHeight - navHeight - kRestSheetContent).clamp(
               96.0,
@@ -2811,13 +2883,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                     activeSharedChildData:
                                         _activeSharedChildData,
                                     viewingSharedChild: _viewingSharedChild,
-                                    ownChildLocation:
-                                        state.currentLocation != null
-                                        ? LatLng(
-                                            state.currentLocation!.lat,
-                                            state.currentLocation!.lng,
-                                          )
-                                        : null,
+                                    ownChildLocation: _homeMapLocation(state),
                                   ),
                                 ),
                               ),
@@ -3870,17 +3936,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final isDeviceUnreachable =
         !_viewingSharedChild &&
         (displayState == 'OFFLINE' || displayState == 'UNREACHABLE');
-    // Kid hasn't moved from the last known spot — device not phoning home
-    // right now doesn't mean the location itself is in doubt, it just means
-    // no new fix has come in. Showing plain dwell time ("11h" in the normal
-    // neutral pill) instead of a red "Unreachable" alert tells the parent
-    // what actually matters (child has been at this spot this whole time)
-    // without implying something's broken. Only escalate to the alert
-    // when there's truly no stationarySince to anchor a duration on (no
-    // location history at all to say "how long here").
-    final showUnreachableAlert =
-        isDeviceUnreachable &&
-        trackingSnapshot?.latestLocation?.stationarySince == null;
+    // Always say "Unreachable" when the device is: a plain "Since 2h" dwell
+    // pill hid that we can't reach the phone at all (no network, powered
+    // off, or the kid app was removed — the parent can't tell which, and
+    // we can't know either).
+    final showUnreachableAlert = isDeviceUnreachable;
     // Distinct from isLocationOff: the device/GPS toggle is fine, but the
     // backend itself says this isn't live data right now (OFFLINE,
     // UNREACHABLE, STALE, ...). Reusing showLiveMarker rather than listing
@@ -3948,11 +4008,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             childName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                            // Figma: Poppins Medium 20 / 32, link blue.
                             style: GoogleFonts.poppins(
-                              fontSize: 24.0.sp,
+                              fontSize: 20.0.sp,
                               fontWeight: FontWeight.w500,
-                              height: 1.25,
-                              color: Color(0xFF16181A),
+                              height: 32 / 20,
+                              color: Color(0xFF0069F9),
                             ),
                           ),
                         ),
@@ -4042,27 +4103,72 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           ),
                   ),
                   SizedBox(width: 12.w),
-                  Container(
-                    width: 32.w,
-                    height: 32.w,
-                    decoration: BoxDecoration(
-                      color: Color(0xFFDDE1EA),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      icon: SvgPicture.asset(
-                        'assets/home/home_action_bell.svg',
-                        width: 18.w,
-                        height: 18.w,
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 32.w,
+                        height: 32.w,
+                        decoration: BoxDecoration(
+                          color: Color(0xFFDDE1EA),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: SvgPicture.asset(
+                            'assets/home/home_action_bell.svg',
+                            width: 18.w,
+                            height: 18.w,
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => NotificationPage(),
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => NotificationPage()),
-                        );
-                      },
-                    ),
+                      // Unread count; gone once the notifications are opened.
+                      Positioned(
+                        top: -5.w,
+                        right: -5.w,
+                        child: IgnorePointer(
+                          child: ValueListenableBuilder<int>(
+                            valueListenable: NotificationBadge.instance.unread,
+                            builder: (context, count, _) {
+                              if (count <= 0) return const SizedBox.shrink();
+                              return Container(
+                                constraints: BoxConstraints(
+                                  minWidth: 18.w,
+                                  minHeight: 18.w,
+                                ),
+                                padding: EdgeInsets.symmetric(horizontal: 4.w),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: FigmaColors.danger,
+                                  borderRadius: BorderRadius.circular(9.w),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Text(
+                                  count > 9 ? '9+' : '$count',
+                                  style: FigmaText.poppins(
+                                    10,
+                                    weight: FontWeight.w600,
+                                    lineHeight: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   SizedBox(width: 12.w),
                   Container(
@@ -4265,6 +4371,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             ),
           ],
+          // Evidenced by the backend (child's phone clock is wrong): say so
+          // instead of leaving a silently frozen location.
+          if (!_viewingSharedChild &&
+              trackingSnapshot != null &&
+              TrackingWarningBanner.messageFor(trackingSnapshot) != null) ...[
+            SizedBox(height: 10.w),
+            TrackingWarningBanner(snapshot: trackingSnapshot),
+          ],
           // Figma: 24px between the name/"is at" block and the chips, with the
           // "Location updated" line hidden (kLocationCardOverlap /
           // kRestSheetContent already account for the 176px card).
@@ -4396,12 +4510,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           Text(
             text,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
-              fontSize: 12.0.sp,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.2,
-              color: content,
-            ),
+            style: FigmaText.labelSmall.copyWith(color: content),
           ),
         ],
       ),
@@ -4486,26 +4595,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     SizedBox(height: 8.w),
                     Text(
                       title,
-                      // Figma: Poppins Regular 16 / 24, 0.2px spacing.
+                      // Figma: Poppins SemiBold 16, line height 100%.
                       style: GoogleFonts.poppins(
                         fontSize: 16.0.sp,
-                        fontWeight: FontWeight.w400,
-                        height: 24 / 16,
-                        letterSpacing: 0.2,
+                        fontWeight: FontWeight.w600,
+                        height: 1.0,
                         color: Color(0xFF0F1320),
                       ),
                     ),
-                    SizedBox(height: 2.w),
+                    SizedBox(height: 6.w),
                     Text(
                       statusText,
-                      // Figma "Body Small": 12 / 20.
-                      style: GoogleFonts.poppins(
-                        fontSize: 12.0.sp,
-                        fontWeight: FontWeight.w400,
-                        height: 20 / 12,
-                        letterSpacing: 0.2,
-                        color: statusTextCol,
-                      ),
+                      style: FigmaText.bodySmall.copyWith(color: statusTextCol),
                     ),
                   ],
                 ),
@@ -4529,13 +4630,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ? '${routeData.newLocationsCount.toString().padLeft(2, '0')} new location${routeData.newLocationsCount == 1 ? '' : 's'}'
             : '00 new locations';
 
-        final subStyle = GoogleFonts.poppins(
-          fontSize: 12.0.sp,
-          fontWeight: FontWeight.w400,
-          height: 20 / 12,
-          letterSpacing: 0.2,
-          color: Color(0xFF2D3035),
-        );
+        final subStyle = FigmaText.bodySmall.copyWith(color: Color(0xFF2D3035));
 
         return Container(
           width: double.infinity,
@@ -4564,11 +4659,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         children: [
                           Text(
                             "Today's Route Map",
-                            // Figma "Body Medium": 16 / 24.
-                            style: GoogleFonts.poppins(
-                              fontSize: 16.0.sp,
-                              fontWeight: FontWeight.w400,
-                              height: 24 / 16,
+                            style: FigmaText.bodyMedium.copyWith(
                               color: Color(0xFF16181A),
                             ),
                           ),
@@ -4772,11 +4863,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // The latest stop is orange while it is not a saved place, blue once it
     // matches one; earlier stops are plain white rings.
     final Color accent = unknown ? Color(0xFFF78635) : Color(0xFF0069F9);
-    final labelStyle = GoogleFonts.poppins(
-      fontSize: 12.0.sp,
-      fontWeight: FontWeight.w400,
-      letterSpacing: 0.2,
-      color: isHighlighted ? accent : Color(0xFF4A5267),
+    // An unsaved ("Unknown") stop stays orange whether or not it is the
+    // latest one; saved stops are blue only while they are the latest.
+    final labelStyle = FigmaText.bodySmall.copyWith(
+      color: (isHighlighted || unknown) ? accent : Color(0xFF4A5267),
     );
     return SizedBox(
       width: 76.w,
@@ -4791,7 +4881,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               shape: BoxShape.circle,
               border: isHighlighted
                   ? null
-                  : Border.all(color: Color(0xFF6B7280), width: 2.w),
+                  : Border.all(
+                      color: unknown ? accent : Color(0xFF6B7280),
+                      width: 2.w,
+                    ),
             ),
             child: isHighlighted
                 ? Center(
@@ -4808,14 +4901,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
           SizedBox(height: 8.w),
           // An unsaved place is just "Unknown" (no address lookup).
-          unknown
-              ? Text('Unknown', maxLines: 1, style: labelStyle)
-              : _TimelineStopLabel(
-                  label: label,
-                  lat: lat,
-                  lng: lng,
-                  style: labelStyle,
-                ),
+          // The server could not name this place (reverse geocoding failed), so
+          // look it up on the device from its coordinates; it stays orange
+          // either way and reads "Unknown" if the lookup also fails.
+          _TimelineStopLabel(
+            label: unknown ? 'Unknown' : label,
+            lat: lat,
+            lng: lng,
+            style: labelStyle,
+          ),
         ],
       ),
     );
@@ -4906,21 +5000,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             children: [
                               Text(
                                 totalText,
-                                // Figma "Body Medium": 16 / 24.
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16.0.sp,
-                                  fontWeight: FontWeight.w400,
-                                  height: 24 / 16,
+                                style: FigmaText.bodyMedium.copyWith(
                                   color: Color(0xFF0069F9),
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                               Text(
                                 limitText,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12.0.sp,
-                                  fontWeight: FontWeight.w400,
-                                  height: 20 / 12,
-                                  letterSpacing: 0.2,
+                                style: FigmaText.bodySmall.copyWith(
                                   color: Color(0xFF2D3035),
                                 ),
                               ),
@@ -5023,7 +5110,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
     }
 
-    final displayUsages = appUsages.take(6).toList();
+    // Figma: at most 4 app cards (2 x 2).
+    final displayUsages = appUsages.take(4).toList();
     final List<Widget> rows = [];
     for (int i = 0; i < displayUsages.length; i += 2) {
       final item1 = displayUsages[i];
@@ -5123,25 +5211,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 item.appName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 16.0.sp,
-                  fontWeight: FontWeight.w400,
-                  height: 24 / 16,
-                  letterSpacing: 0.2,
-                  color: Color(0xFF16181A),
-                ),
+                style: FigmaText.bodyMedium.copyWith(color: Color(0xFF16181A)),
               ),
               Text(
                 item.usageDuration,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 12.0.sp,
-                  fontWeight: FontWeight.w400,
-                  height: 20 / 12,
-                  letterSpacing: 0.2,
-                  color: Color(0xFF2D3035),
-                ),
+                style: FigmaText.bodySmall.copyWith(color: Color(0xFF2D3035)),
               ),
             ],
           ),
@@ -5196,7 +5272,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 'Help',
                 icon: Icons.chat_bubble_outline_rounded,
                 iconColor: Color(0xFFF59E0B),
-                tileColor: Color(0xFFF7F8FA),
                 onTap: () {
                   Navigator.of(
                     context,
@@ -5251,13 +5326,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               label,
               textAlign: TextAlign.center,
               maxLines: 2,
-              style: GoogleFonts.poppins(
-                fontSize: 12.0.sp,
-                fontWeight: FontWeight.w400,
-                height: 1.2,
-                letterSpacing: 0.2,
-                color: Color(0xFF4A5267),
-              ),
+              style: FigmaText.bodySmall.copyWith(color: Color(0xFF4A5267)),
             ),
           ],
         ),
@@ -5364,21 +5433,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16.0.sp,
-                      fontWeight: FontWeight.w400,
-                      height: 24 / 16,
-                      letterSpacing: 0.2,
+                    style: FigmaText.bodyMedium.copyWith(
                       color: Color(0xFF16181A),
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12.0.sp,
-                      fontWeight: FontWeight.w400,
-                      height: 20 / 12,
-                      letterSpacing: 0.2,
+                    style: FigmaText.bodySmall.copyWith(
                       color: Color(0xFF2D3035),
                     ),
                   ),
@@ -5386,10 +5447,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             ),
             SizedBox(width: 12.w),
+            // Figma: 16 x 16, #43474F.
             SvgPicture.asset(
               'assets/home/home_chevron.svg',
               width: 16.w,
               height: 16.w,
+              colorFilter: ColorFilter.mode(Color(0xFF43474F), BlendMode.srcIn),
             ),
           ],
         ),
@@ -5397,22 +5460,111 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
+  Future<void> _openAddKid({bool withDevice = false}) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => AddKidView(withDevice: withDevice)),
+    );
+    if (!mounted) return;
+    injector<HomepageBloc>().add(GetHomepageData());
+    setState(() {});
+  }
+
+  /// Home for a parent who has not added a kid yet.
   Widget _buildNoChildConnectedUI(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.paddingL),
-      child: Column(
-        children: [
-          const Icon(Icons.child_care, size: 60, color: Colors.grey),
-          Text("No Child Connected", style: AppTextStyles.headline3),
-          const SizedBox(height: 20),
-          CommonButton(
-            text: "Add Child",
-            onPressed: () => Navigator.of(context).pushNamed('/add-child'),
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFFAFBFD), Color(0xFFEDF4FE)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: 32.w),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 96.w,
+                  height: 96.w,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEBF3FF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.family_restroom_rounded,
+                    size: 48.w,
+                    color: const Color(0xFF0069F9),
+                  ),
+                ),
+                SizedBox(height: 24.w),
+                Text(
+                  'No kids added yet',
+                  textAlign: TextAlign.center,
+                  style: FigmaText.poppins(
+                    20,
+                    weight: FontWeight.w600,
+                    lineHeight: 28,
+                    color: const Color(0xFF0F1320),
+                  ),
+                ),
+                SizedBox(height: 8.w),
+                Text(
+                  'Add your child to see their live location, set safe '
+                  'places and manage their screen time.',
+                  textAlign: TextAlign.center,
+                  style: FigmaText.poppins(
+                    12,
+                    lineHeight: 20,
+                    letterSpacing: 0.2,
+                    color: const Color(0xFF707784),
+                  ),
+                ),
+                SizedBox(height: 32.w),
+                FigmaPrimaryButton(label: 'Add a kid', onPressed: _openAddKid),
+                SizedBox(height: 8.w),
+                TextButton(
+                  onPressed: () => _openAddKid(withDevice: true),
+                  child: Text(
+                    'Add a kid with a GPS device',
+                    style: FigmaText.poppins(
+                      14,
+                      weight: FontWeight.w500,
+                      color: const Color(0xFF0069F9),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
+}
+
+/// Where the map sits for a kid whose device has never reported a fix: the
+/// server sends 0,0 (open sea), which draws as a flat blue map. A fixed sample
+/// spot keeps the map readable until the first real location arrives.
+const LatLng _kSampleMapLocation = LatLng(12.9716, 77.5946);
+
+/// The point the Home map should show for [state]: the child's real location,
+/// the sample spot when there is none yet (never paired), or null while loading.
+LatLng? _homeMapLocation(HomepageState state) {
+  if (state is! HomepageSuccess) return null;
+  final loc = state.currentLocation;
+  if (loc != null && !(loc.lat == 0 && loc.lng == 0)) {
+    return LatLng(loc.lat, loc.lng);
+  }
+  final neverShared =
+      state.trackingSnapshot?.uiDirective.displayState == 'NEVER_SHARED';
+  if (neverShared || (loc != null && !state.isLoading)) {
+    return _kSampleMapLocation;
+  }
+  return null;
 }
 
 class _HomeMapBackground extends StatefulWidget {
@@ -5437,13 +5589,63 @@ class _HomeMapBackground extends StatefulWidget {
 }
 
 class _HomeMapBackgroundState extends State<_HomeMapBackground>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   BitmapDescriptor? _cachedMarkerIcon;
   int? _cachedBatteryPercentage;
   String? _cachedAvatar;
   bool? _cachedIsOnline;
   GoogleMapController? _mapController;
   bool _isFirstLocationAfterLoad = true;
+
+  // The child's pin glides from its last position to each new fix instead of
+  // jumping. Position updates arrive every few seconds, so a ~1.2 s glide
+  // keeps it moving without lagging behind.
+  late final AnimationController _moveCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  );
+  LatLng? _markerFrom;
+  LatLng? _markerTo;
+
+  /// Where the pin is drawn right now (between [_markerFrom] and [_markerTo]).
+  LatLng? get _markerPos {
+    final from = _markerFrom;
+    final to = _markerTo;
+    if (from == null || to == null) return to;
+    final t = Curves.easeInOut.transform(_moveCtrl.value);
+    return LatLng(
+      from.latitude + (to.latitude - from.latitude) * t,
+      from.longitude + (to.longitude - from.longitude) * t,
+    );
+  }
+
+  static double _metersBetween(LatLng a, LatLng b) {
+    const metersPerDegree = 111320.0;
+    final dy = (b.latitude - a.latitude) * metersPerDegree;
+    final dx =
+        (b.longitude - a.longitude) *
+        metersPerDegree *
+        math.cos(a.latitude * math.pi / 180);
+    return math.sqrt(dx * dx + dy * dy);
+  }
+
+  void _retargetMarker(LatLng to) {
+    final from = _markerPos;
+    // First fix, a child switch (far away) or reduced motion: just place it.
+    if (from == null ||
+        _metersBetween(from, to) > 1500 ||
+        MediaQuery.disableAnimationsOf(context)) {
+      _moveCtrl.stop();
+      _markerFrom = to;
+      _markerTo = to;
+      if (mounted) setState(() {});
+      return;
+    }
+    if (from == to) return;
+    _markerFrom = from;
+    _markerTo = to;
+    _moveCtrl.forward(from: 0);
+  }
 
   final Map<String, BitmapDescriptor> _cachedSharedMarkers = {};
   final Set<String> _loadingSharedMarkers = {};
@@ -5557,11 +5759,14 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
       listener: (context, state) {
         if (state is HomepageSuccess && state.isLoading) {
           _isFirstLocationAfterLoad = true;
-        } else if (state is HomepageSuccess && state.currentLocation != null) {
-          final loc = LatLng(
-            state.currentLocation!.lat,
-            state.currentLocation!.lng,
-          );
+          // A reload (e.g. another child was selected): next fix is placed
+          // directly, not glided in from the previous child's position.
+          _markerFrom = null;
+          _markerTo = null;
+        } else if (state is HomepageSuccess &&
+            _homeMapLocation(state) != null) {
+          final loc = _homeMapLocation(state)!;
+          _retargetMarker(loc);
 
           // Load marker icon first
           final battery = state.deviceInfo?.batteryPercentage ?? 0;
@@ -5608,10 +5813,11 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
           final battery = state is HomepageSuccess && state.deviceInfo != null
               ? state.deviceInfo!.batteryPercentage
               : 0;
-          final location =
-              state is HomepageSuccess && state.currentLocation != null
-              ? LatLng(state.currentLocation!.lat, state.currentLocation!.lng)
-              : null;
+          final location = _homeMapLocation(state);
+          if (location != null && _markerTo == null) {
+            _markerFrom = location;
+            _markerTo = location;
+          }
           // Fire-and-forget load; widget will update when ready
           final avatar = state is HomepageSuccess ? state.childAvatar : null;
           final isOnline = state is HomepageSuccess
@@ -5629,104 +5835,113 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
             }
           }
 
-          final markers = <Marker>{
-            if (location != null) ...{
-              if (_cachedMarkerIcon != null)
-                Marker(
-                  markerId: const MarkerId('child_location'),
-                  position: location,
-                  icon: _cachedMarkerIcon!,
-                  anchor: const Offset(0.5, _kPinAnchorY),
-                )
-              else
-                Marker(
-                  markerId: const MarkerId('child_location'),
-                  position: location,
-                ),
-            },
-            if (state is HomepageSuccess) ...{
-              for (final child in state.sharedChildren) ...{
-                Marker(
-                  markerId: MarkerId(child.childId),
-                  position: LatLng(child.latitude, child.longitude),
-                  icon:
-                      _cachedSharedMarkers[child.childId] ??
-                      BitmapDescriptor.defaultMarkerWithHue(
-                        BitmapDescriptor.hueOrange,
-                      ),
-                  infoWindow: InfoWindow(
-                    title: child.childName,
-                    snippet:
-                        'Battery: ${child.batteryPercentage}%${child.expiresAt != null ? " • Expires: ${TimeOfDay.fromDateTime(child.expiresAt!.toLocal()).format(context)}" : ""}',
-                  ),
-                ),
-              },
-            },
-            if (widget.activeSharedChildData != null) ...{
-              Marker(
-                markerId: MarkerId(widget.activeSharedChildData!['child_id']),
-                position: LatLng(
-                  widget.activeSharedChildData!['lat'],
-                  widget.activeSharedChildData!['lng'],
-                ),
-                infoWindow: InfoWindow(
-                  title: widget.activeSharedChildData!['child_name'],
-                  snippet: 'Shared Location',
-                ),
-              ),
-            },
-          };
-
-          return Stack(
-            children: [
-              MapViewWidget(
-                key: const ValueKey('home_map_static'),
-                mapPadding: widget.mapPadding,
-                initialZoom: 16.5,
-                width: double.infinity,
-                height: double.infinity,
-                interactive: true,
-                useEagerGestures: true,
-                currentPosition:
-                    widget.viewingSharedChild &&
-                        widget.activeSharedChildData != null
-                    ? LatLng(
-                        widget.activeSharedChildData!['lat'],
-                        widget.activeSharedChildData!['lng'],
-                      )
-                    : location,
-                markers: markers.toList(),
-                // Parent's own position has no use on this map — only the
-                // child's location matters here, and this flag is what
-                // triggers the native OS location-permission prompt (Google
-                // Maps SDK behavior, not something this app requests
-                // itself), so a parent got asked for location access right
-                // at login for a blue dot nothing on this screen reads.
-                myLocationEnabled: false,
-                minZoom: 0.0,
-                maxZoom: 20,
-                myLocationButtonEnabled:
-                    false, // replaced by our custom Locate Me FAB
-                onMapCreated: (controller) {
-                  _mapController = controller;
-                  final target =
-                      widget.viewingSharedChild &&
-                          widget.activeSharedChildData != null
-                      ? LatLng(
-                          widget.activeSharedChildData!['lat'],
-                          widget.activeSharedChildData!['lng'],
-                        )
-                      : location;
-                  if (target != null) {
-                    Future.delayed(const Duration(milliseconds: 300), () {
-                      if (mounted && _mapController != null) {
-                        _animateTo(target, zoom: 16.5);
-                      }
-                    });
-                  }
+          // Rebuilt on every animation tick so the pin glides.
+          return AnimatedBuilder(
+            animation: _moveCtrl,
+            builder: (context, _) {
+              final pinAt = _markerPos ?? location;
+              final markers = <Marker>{
+                if (location != null) ...{
+                  if (_cachedMarkerIcon != null)
+                    Marker(
+                      markerId: const MarkerId('child_location'),
+                      position: pinAt ?? location,
+                      icon: _cachedMarkerIcon!,
+                      anchor: const Offset(0.5, _kPinAnchorY),
+                    )
+                  else
+                    Marker(
+                      markerId: const MarkerId('child_location'),
+                      position: pinAt ?? location,
+                    ),
                 },
-              ),
-            ],
+                if (state is HomepageSuccess) ...{
+                  for (final child in state.sharedChildren) ...{
+                    Marker(
+                      markerId: MarkerId(child.childId),
+                      position: LatLng(child.latitude, child.longitude),
+                      icon:
+                          _cachedSharedMarkers[child.childId] ??
+                          BitmapDescriptor.defaultMarkerWithHue(
+                            BitmapDescriptor.hueOrange,
+                          ),
+                      infoWindow: InfoWindow(
+                        title: child.childName,
+                        snippet:
+                            'Battery: ${child.batteryPercentage}%${child.expiresAt != null ? " • Expires: ${TimeOfDay.fromDateTime(child.expiresAt!.toLocal()).format(context)}" : ""}',
+                      ),
+                    ),
+                  },
+                },
+                if (widget.activeSharedChildData != null) ...{
+                  Marker(
+                    markerId: MarkerId(
+                      widget.activeSharedChildData!['child_id'],
+                    ),
+                    position: LatLng(
+                      widget.activeSharedChildData!['lat'],
+                      widget.activeSharedChildData!['lng'],
+                    ),
+                    infoWindow: InfoWindow(
+                      title: widget.activeSharedChildData!['child_name'],
+                      snippet: 'Shared Location',
+                    ),
+                  ),
+                },
+              };
+
+              return Stack(
+                children: [
+                  MapViewWidget(
+                    key: const ValueKey('home_map_static'),
+                    mapPadding: widget.mapPadding,
+                    initialZoom: 16.5,
+                    width: double.infinity,
+                    height: double.infinity,
+                    interactive: true,
+                    useEagerGestures: true,
+                    currentPosition:
+                        widget.viewingSharedChild &&
+                            widget.activeSharedChildData != null
+                        ? LatLng(
+                            widget.activeSharedChildData!['lat'],
+                            widget.activeSharedChildData!['lng'],
+                          )
+                        : location,
+                    markers: markers.toList(),
+                    // Parent's own position has no use on this map — only the
+                    // child's location matters here, and this flag is what
+                    // triggers the native OS location-permission prompt (Google
+                    // Maps SDK behavior, not something this app requests
+                    // itself), so a parent got asked for location access right
+                    // at login for a blue dot nothing on this screen reads.
+                    myLocationEnabled: false,
+                    minZoom: 0.0,
+                    maxZoom: 20,
+                    myLocationButtonEnabled:
+                        false, // replaced by our custom Locate Me FAB
+                    onMapCreated: (controller) {
+                      _mapController = controller;
+                      final target =
+                          widget.viewingSharedChild &&
+                              widget.activeSharedChildData != null
+                          ? LatLng(
+                              widget.activeSharedChildData!['lat'],
+                              widget.activeSharedChildData!['lng'],
+                            )
+                          : location;
+                      if (target != null) {
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          if (mounted && _mapController != null) {
+                            _animateTo(target, zoom: 16.5);
+                          }
+                        });
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
           );
         },
       ),
@@ -5735,8 +5950,136 @@ class _HomeMapBackgroundState extends State<_HomeMapBackground>
 
   @override
   void dispose() {
+    _moveCtrl.dispose();
     _mapController = null;
     super.dispose();
+  }
+}
+
+/// One line of text that sits still when it fits and otherwise scrolls
+/// sideways in a seamless loop (pausing briefly at the start), instead of
+/// being cut off with an ellipsis. Edges fade out so no letter is ever shown
+/// half-cut. With system "reduce motion" on it falls back to an ellipsis.
+class _MarqueeText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+
+  const _MarqueeText({required this.text, required this.style});
+
+  @override
+  State<_MarqueeText> createState() => _MarqueeTextState();
+}
+
+class _MarqueeTextState extends State<_MarqueeText>
+    with SingleTickerProviderStateMixin {
+  static const double _gap = 48; // blank run between the end and the repeat
+  static const double _pixelsPerSecond = 45;
+  static const Duration _pause = Duration(milliseconds: 1800);
+
+  late final AnimationController _controller = AnimationController(vsync: this);
+  double _textWidth = 0;
+
+  @override
+  void didUpdateWidget(covariant _MarqueeText old) {
+    super.didUpdateWidget(old);
+    if (old.text != widget.text || old.style != widget.style) {
+      _controller.stop();
+      _textWidth = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _start(double textWidth) {
+    if (_textWidth == textWidth && _controller.isAnimating) return;
+    _textWidth = textWidth;
+    final scrollMs = ((textWidth + _gap) / _pixelsPerSecond * 1000).round();
+    _controller
+      ..duration = Duration(milliseconds: scrollMs + _pause.inMilliseconds)
+      ..repeat();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return LayoutBuilder(
+      builder: (context, box) {
+        final painter = TextPainter(
+          text: TextSpan(text: widget.text, style: widget.style),
+          textDirection: TextDirection.ltr,
+          textScaler: MediaQuery.textScalerOf(context),
+          maxLines: 1,
+        )..layout();
+        final textWidth = painter.width;
+        painter.dispose();
+
+        if (textWidth <= box.maxWidth || reduceMotion) {
+          if (_controller.isAnimating) _controller.stop();
+          return Text(
+            widget.text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: widget.style,
+          );
+        }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _start(textWidth);
+        });
+        final travel = textWidth + _gap;
+        final scrollFraction =
+            (travel / _pixelsPerSecond * 1000) /
+            (travel / _pixelsPerSecond * 1000 + _pause.inMilliseconds);
+
+        return ShaderMask(
+          blendMode: BlendMode.dstIn,
+          shaderCallback: (rect) => const LinearGradient(
+            colors: [
+              Colors.transparent,
+              Colors.black,
+              Colors.black,
+              Colors.transparent,
+            ],
+            stops: [0, 0.03, 0.95, 1],
+          ).createShader(rect),
+          child: ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.centerLeft,
+              minWidth: 0,
+              maxWidth: double.infinity,
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  // Past scrollFraction the offset sits at one full travel,
+                  // which looks identical to 0 (the text is repeated), so the
+                  // pause is just the loop resting at the start.
+                  final t = (_controller.value / scrollFraction).clamp(
+                    0.0,
+                    1.0,
+                  );
+                  return Transform.translate(
+                    offset: Offset(-t * travel, 0),
+                    child: child,
+                  );
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(widget.text, maxLines: 1, style: widget.style),
+                    const SizedBox(width: _gap),
+                    Text(widget.text, maxLines: 1, style: widget.style),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -5844,17 +6187,17 @@ class _DynamicLocationTextState extends State<_DynamicLocationText> {
     // Wrapped in a fixed 36px line box (Figma: name row 32 + this 36 = 68),
     // text vertically centred in it.
     return SizedBox(
-      height: 36.w,
+      height: 32.w,
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text(
-          'is at $displayText',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        child: _MarqueeText(
+          text: 'is at $displayText',
           style: GoogleFonts.poppins(
-            fontSize: 24.0.sp,
+            // Figma: Poppins Medium 20 / 32. Keep the line height above 1.0 or
+            // descenders (the g in "Nagar") get clipped.
+            fontSize: 20.0.sp,
             fontWeight: FontWeight.w500,
-            height: 1.25,  // 1.0 clipped descenders (the g in "Nagar")
+            height: 32 / 20,
             color: const Color(0xFF16181A),
           ),
         ),
@@ -6116,87 +6459,6 @@ class _MapBottomCurvePainter extends CustomPainter {
   @override
   bool shouldRepaint(_MapBottomCurvePainter old) =>
       old.mapBottom != mapBottom || old.radius != radius || old.color != color;
-}
-
-/// Single-line text that only scrolls (right-to-left, looping) when it does
-/// not fit its width; otherwise it renders as a plain [Text].
-class _MarqueeText extends StatefulWidget {
-  final String text;
-  final TextStyle style;
-  const _MarqueeText(this.text, {required this.style});
-
-  @override
-  State<_MarqueeText> createState() => _MarqueeTextState();
-}
-
-class _MarqueeTextState extends State<_MarqueeText>
-    with SingleTickerProviderStateMixin {
-  static const double _gap = 48;
-  static const double _pixelsPerSecond = 40;
-  late final AnimationController _controller = AnimationController(vsync: this);
-  double? _runningFor;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _run(double cycleWidth) {
-    if (_runningFor == cycleWidth) return;
-    _runningFor = cycleWidth;
-    _controller
-      ..duration = Duration(
-        milliseconds: (cycleWidth / _pixelsPerSecond * 1000).round(),
-      )
-      ..repeat();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, box) {
-        final painter = TextPainter(
-          text: TextSpan(text: widget.text, style: widget.style),
-          textDirection: TextDirection.ltr,
-          maxLines: 1,
-        )..layout();
-        final textWidth = painter.width;
-        final height = painter.height;
-        if (textWidth <= box.maxWidth) {
-          if (_controller.isAnimating) _controller.stop();
-          _runningFor = null;
-          return Text(widget.text, style: widget.style, maxLines: 1);
-        }
-        final cycle = textWidth + _gap;
-        _run(cycle);
-        return SizedBox(
-          height: height,
-          child: ClipRect(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, _) => OverflowBox(
-                alignment: Alignment.centerLeft,
-                minWidth: 0,
-                maxWidth: double.infinity,
-                child: Transform.translate(
-                  offset: Offset(-cycle * _controller.value, 0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(widget.text, style: widget.style, maxLines: 1),
-                      const SizedBox(width: _gap),
-                      Text(widget.text, style: widget.style, maxLines: 1),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 }
 
 /// Timeline stop name. Shows the server's label; when that is the

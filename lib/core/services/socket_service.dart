@@ -24,6 +24,15 @@ class SocketService {
   // the first reconnect, then silently nothing until a manual refresh.
   String? _activeRoomChildId;
 
+  // A socket can look connected while the server no longer has it (device
+  // slept, network changed): the join is sent and nothing ever comes back, so
+  // no location arrives. If a join is not acknowledged in a few seconds the
+  // connection is rebuilt, which rejoins the room (see onConnect).
+  Timer? _joinAckTimer;
+  int _joinRetries = 0;
+  static const _joinAckTimeout = Duration(seconds: 6);
+  static const _maxJoinRetries = 3;
+
   // Streams
   final _locationController =
       StreamController<Map<String, dynamic>>.broadcast();
@@ -151,13 +160,21 @@ class SocketService {
     _socket!.on('trip_ended', handleTripEvent);
 
     // --- Room Events ---
-    _socket!.on(
-      'joined_room',
-      (data) => AppLogger.info('[SocketService] Joined room data: $data'),
-    );
+    _socket!.on('joined_room', (data) {
+      _joinAckTimer?.cancel();
+      _joinRetries = 0;
+      AppLogger.info('[SocketService] Joined room data: $data');
+    });
     _socket!.on(
       'room_join_error',
       (data) => AppLogger.error('[SocketService] Room join error: $data'),
+    );
+    // The server answers a refused room join (not linked to this child, too
+    // many joins) with a plain 'error' event; without this it was silent and
+    // the live location simply never arrived.
+    _socket!.on(
+      'error',
+      (data) => AppLogger.error('[SocketService] Server error event: $data'),
     );
   }
 
@@ -171,6 +188,27 @@ class SocketService {
     final joinData = {'childId': childId};
     AppLogger.info('[SocketService] Joining room: $joinData');
     _socket!.emit('join_child_room', joinData);
+    _watchJoinAck(childId);
+  }
+
+  void _watchJoinAck(String childId) {
+    _joinAckTimer?.cancel();
+    _joinAckTimer = Timer(_joinAckTimeout, () {
+      if (_activeRoomChildId != childId || _socket == null) return;
+      if (_joinRetries >= _maxJoinRetries) {
+        AppLogger.warning(
+          '[SocketService] Room join for $childId never acknowledged — giving up',
+        );
+        return;
+      }
+      _joinRetries++;
+      AppLogger.warning(
+        '[SocketService] Room join for $childId not acknowledged — reconnecting (try $_joinRetries)',
+      );
+      _pendingChildIdForRoom = childId;
+      _socket!.disconnect();
+      _socket!.connect();
+    });
   }
 
   void leaveRoom(String childId) {

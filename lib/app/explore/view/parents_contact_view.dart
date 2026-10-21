@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:child_track/core/widgets/figma_app_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
@@ -118,29 +119,20 @@ class _ParentsContactViewState extends State<ParentsContactView> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.w),
         ),
-        title: Text(
-          'Delete Contact',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
+        title: Text('Delete Contact', style: FigmaText.dialogTitle),
         content: Text(
           'Are you sure you want to delete ${contact['name']} from parents contacts?',
-          style: GoogleFonts.poppins(),
+          style: FigmaText.dialogBody,
         ),
         actions: [
           TextButton(
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.poppins(color: Colors.grey),
-            ),
+            child: Text('Cancel', style: FigmaText.dialogAction),
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
             child: Text(
               'Delete',
-              style: GoogleFonts.poppins(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
+              style: FigmaText.dialogAction.copyWith(color: FigmaColors.danger),
             ),
             onPressed: () async {
               final contactId = contact['id'];

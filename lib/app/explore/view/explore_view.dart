@@ -27,30 +27,20 @@ class ExploreView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Color(0xFFF4F8FE),
-      appBar: figmaAppBar(
-        context,
-        title: 'Explore',
-        onBack: onNavigateToHome,
-        trailing: FigmaCircleButton(
-          child: SvgPicture.asset(
-            'assets/help/help_search.svg',
-            width: 24.w,
-            height: 24.w,
-          ),
-        ),
-      ),
+      appBar: figmaAppBar(context, title: 'Explore', onBack: onNavigateToHome),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(10.w, 16.w, 10.w, 16.w),
           child: Column(
             children: [
+              _sectionLabel('Main Features'),
               // CARD 1: Core Parental Controls
               _buildSectionCard(
                 children: [
                   _buildExploreItem(
                     iconAsset: 'assets/icons/explore_scroll.svg',
                     title: 'Scroll',
-                    subtitle: "Contacts shown on kid's device",
+                    subtitle: 'Screentime Tracker & Controller',
                     onTap: () {
                       Navigator.push(
                         context,
@@ -102,6 +92,7 @@ class ExploreView extends StatelessWidget {
 
               SizedBox(height: 12.w),
 
+              _sectionLabel('Additionals'),
               // CARD 2: Additional Controls
               _buildSectionCard(
                 children: [
@@ -158,6 +149,18 @@ class ExploreView extends StatelessWidget {
       ),
     );
   }
+
+  /// Group label above a card (Figma Body Small: Poppins Regular 12 / 20).
+  Widget _sectionLabel(String text) => Align(
+    alignment: Alignment.centerLeft,
+    child: Padding(
+      padding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 4.w),
+      child: Text(
+        text,
+        style: FigmaText.bodySmall.copyWith(color: const Color(0xFF707784)),
+      ),
+    ),
+  );
 
   /// White 24px-radius card; rows are separated by a 1px #EEF0F4 divider
   /// inset 20px on both sides, followed by an 8px gap (Figma Explore).
@@ -325,7 +328,12 @@ class __ActiveOutgoingSharesSheetContentState
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.w),
+      padding: EdgeInsets.fromLTRB(
+        20.w,
+        16.w,
+        20.w,
+        16.w + MediaQuery.paddingOf(context).bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

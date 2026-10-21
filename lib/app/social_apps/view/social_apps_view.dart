@@ -147,7 +147,10 @@ class _SocialAppsViewState extends State<SocialAppsView> {
               final data = _selectedTabIndex == 2
                   ? state.data.summaryApps
                   : state.data.dailyUsage[state.selectedDate] ?? [];
-              allPackages = data.map((a) => a.packageName).toList();
+              allPackages = data
+                  .where((a) => !isEssentialApp(a.packageName, a.appName))
+                  .map((a) => a.packageName)
+                  .toList();
             }
             return _ScreenTimeHeader(
               totalUsageSeconds: state is SocialAppsLoaded
@@ -355,6 +358,10 @@ class _SocialAppsViewState extends State<SocialAppsView> {
                                 ? app.usageTime / maxUsage
                                 : 0,
                             isLocked: isLocked,
+                            lockable: !isEssentialApp(
+                              app.packageName,
+                              displayName,
+                            ),
                             onLockToggle: (isLocked, duration) {
                               if (!_guardScreenTimeAction(context)) return;
                               _appLockBloc.add(
@@ -477,7 +484,7 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Unblocking ${widget.allPackages.length} apps...'),
+        content: Text('Removing time limit...'),
       ),
     );
   }
@@ -792,28 +799,34 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                width: 14.w,
-                height: 14.w,
+                width: 16.w,
+                height: 16.w,
                 child: allBlocked
                     ? Icon(
                         Icons.lock_open_rounded,
-                        size: 14.w,
+                        size: 16.w,
                         color: Color(0xFFF7F8FA),
                       )
                     : Center(
                         child: SvgPicture.asset(
                           'assets/icons/scroll_clock_white.svg',
-                          width: 11.4.w,
-                          height: 11.4.w,
+                          width: 13.3.w,
+                          height: 13.3.w,
                         ),
                       ),
               ),
-              SizedBox(width: 4.w),
+              SizedBox(width: 5.w),
               Text(
-                allBlocked ? "Unblock All" : "Set New Limit",
+                allBlocked ? "Remove Time Limit" : "Set New Limit",
+                // height 1 + even leading: the text's visual centre sits on
+                // the row's centre, level with the icon.
+                textHeightBehavior: TextHeightBehavior(
+                  leadingDistribution: TextLeadingDistribution.even,
+                ),
                 style: GoogleFonts.poppins(
-                  fontSize: 12.0.sp,
+                  fontSize: 14.0.sp,
                   fontWeight: FontWeight.w600,
+                  height: 1.0,
                   letterSpacing: 0.2,
                   color: Color(0xFFF7F8FA),
                 ),
@@ -980,7 +993,7 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
                       borderRadius: BorderRadius.circular(14.w),
                     ),
                     child: Text(
-                      allBlocked ? "Unblock All" : "Change Time Limit",
+                      allBlocked ? "Remove Time Limit" : "Change Time Limit",
                       style: GoogleFonts.poppins(
                         fontSize: 20.0.sp,
                         fontWeight: FontWeight.w400,

@@ -75,13 +75,12 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
                     put("lat", fix.latitude)
                     put("lng", fix.longitude)
                     put("accuracy_m", fix.accuracy.toDouble())
-                    put("speed_mps", if (fix.hasSpeed()) fix.speed.toDouble() else 0.0)
+                    // Unknown speed is omitted (speed_known=false), never sent as 0 m/s.
+                    NativeLocationPayload.putSpeed(this, fix.hasSpeed(), fix.speed, legacyAlias = false)
                     put("bearing", if (fix.hasBearing()) fix.bearing.toDouble() else 0.0)
                     put("timestamp", isoAt(if (fix.time > 0) fix.time else System.currentTimeMillis()))
                     // Engineering diagnostics only.
-                    put("platform", "android")
-                    put("tracking_profile", "native_region")
-                    put("fix_source", source)
+                    NativeLocationPayload.putDiagnostics(context, this, source, "native_region")
                 }
                 val ok = NativeApiClient.postJson(context, "child/location", payload)
                 Log.i(TAG, "fresh evidence fix posted=$ok acc=${fix.accuracy}m source=$source")
@@ -225,6 +224,16 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
         if (triggeringIds.isEmpty()) {
             Log.w(TAG, "onReceive: no triggering geofences in event")
             return
+        }
+
+        // A geofencing transition is one of the moments Android lets us start the
+        // foreground service from the background: if the high-accuracy service has
+        // stopped, request it back (guarded + rate-limited; a refusal is recorded and
+        // the native fallback below carries on regardless).
+        try {
+            TrackingRecovery.ensureRunning(context, TrackingRecovery.Reason.GEOFENCE)
+        } catch (e: Exception) {
+            Log.w(TAG, "tracking recovery failed: ${e.javaClass.simpleName}")
         }
 
         Log.i(TAG, "Geofence transition $transitionType for: $triggeringIds")

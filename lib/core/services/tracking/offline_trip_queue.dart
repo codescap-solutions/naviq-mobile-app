@@ -27,24 +27,24 @@ class QueueEntry {
   });
 
   factory QueueEntry.fromJson(Map<String, dynamic> json) => QueueEntry(
-        type: OfflineEntryType.values.byName(json['type'] as String),
-        childId: json['child_id'] as String,
-        payload: Map<String, dynamic>.from(json['payload'] as Map),
-        createdAt: DateTime.parse(json['created_at'] as String),
-        retryCount: json['retry_count'] as int? ?? 0,
-        backoffUntil: json['backoff_until'] != null
-            ? DateTime.parse(json['backoff_until'] as String)
-            : null,
-      );
+    type: OfflineEntryType.values.byName(json['type'] as String),
+    childId: json['child_id'] as String,
+    payload: Map<String, dynamic>.from(json['payload'] as Map),
+    createdAt: DateTime.parse(json['created_at'] as String),
+    retryCount: json['retry_count'] as int? ?? 0,
+    backoffUntil: json['backoff_until'] != null
+        ? DateTime.parse(json['backoff_until'] as String)
+        : null,
+  );
 
   Map<String, dynamic> toJson() => {
-        'type': type.name,
-        'child_id': childId,
-        'payload': payload,
-        'created_at': createdAt.toIso8601String(),
-        'retry_count': retryCount,
-        'backoff_until': backoffUntil?.toIso8601String(),
-      };
+    'type': type.name,
+    'child_id': childId,
+    'payload': payload,
+    'created_at': createdAt.toIso8601String(),
+    'retry_count': retryCount,
+    'backoff_until': backoffUntil?.toIso8601String(),
+  };
 }
 
 /// Strongly typed persistent offline queue with exponential backoff and retry.
@@ -72,7 +72,11 @@ class OfflineTripQueue {
           '[OfflineQ] Loaded ${_entries.length} queued entries',
         );
       } catch (e) {
-        StructuredLogger.log(LogTag.TRIP, '[OfflineQ] Failed to load', error: e);
+        StructuredLogger.log(
+          LogTag.TRIP,
+          '[OfflineQ] Failed to load',
+          error: e,
+        );
       }
     }
     _loaded = true;
@@ -80,7 +84,10 @@ class OfflineTripQueue {
 
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefsKey, jsonEncode(_entries.map((e) => e.toJson()).toList()));
+    await prefs.setString(
+      _prefsKey,
+      jsonEncode(_entries.map((e) => e.toJson()).toList()),
+    );
   }
 
   Future<void> enqueuePoints({
@@ -90,22 +97,26 @@ class OfflineTripQueue {
     await load();
     // Anti-duplicate: check if the exact same timestamp is already queued
     final newTs = points.isNotEmpty ? points.first.ts : '';
-    final exists = _entries.any((e) =>
-        e.type == OfflineEntryType.tripPoints &&
-        e.childId == childId &&
-        (e.payload['points'] as List?)?.firstOrNull?['ts'] == newTs);
+    final exists = _entries.any(
+      (e) =>
+          e.type == OfflineEntryType.tripPoints &&
+          e.childId == childId &&
+          (e.payload['points'] as List?)?.firstOrNull?['ts'] == newTs,
+    );
 
     if (exists) {
       StructuredLogger.log(LogTag.TRIP, '[OfflineQ] Duplicate points ignored');
       return;
     }
 
-    _entries.add(QueueEntry(
-      type: OfflineEntryType.tripPoints,
-      childId: childId,
-      payload: {'points': points.map((p) => p.toJson()).toList()},
-      createdAt: DateTime.now(),
-    ));
+    _entries.add(
+      QueueEntry(
+        type: OfflineEntryType.tripPoints,
+        childId: childId,
+        payload: {'points': points.map((p) => p.toJson()).toList()},
+        createdAt: DateTime.now(),
+      ),
+    );
     await _persist();
     StructuredLogger.log(
       LogTag.TRIP,
@@ -119,21 +130,28 @@ class OfflineTripQueue {
   }) async {
     await load();
     // Anti-duplicate
-    final exists = _entries.any((e) =>
-        e.type == OfflineEntryType.tripEnd &&
-        e.childId == childId &&
-        e.payload['ended_at'] == endedAt.toIso8601String());
+    final exists = _entries.any(
+      (e) =>
+          e.type == OfflineEntryType.tripEnd &&
+          e.childId == childId &&
+          e.payload['ended_at'] == endedAt.toIso8601String(),
+    );
 
     if (exists) return;
 
-    _entries.add(QueueEntry(
-      type: OfflineEntryType.tripEnd,
-      childId: childId,
-      payload: {'ended_at': endedAt.toIso8601String()},
-      createdAt: DateTime.now(),
-    ));
+    _entries.add(
+      QueueEntry(
+        type: OfflineEntryType.tripEnd,
+        childId: childId,
+        payload: {'ended_at': endedAt.toIso8601String()},
+        createdAt: DateTime.now(),
+      ),
+    );
     await _persist();
-    StructuredLogger.log(LogTag.TRIP, '[OfflineQ] Queued trip-end for $childId');
+    StructuredLogger.log(
+      LogTag.TRIP,
+      '[OfflineQ] Queued trip-end for $childId',
+    );
   }
 
   Future<void> enqueueLocation({
@@ -142,21 +160,43 @@ class OfflineTripQueue {
   }) async {
     await load();
     // Anti-duplicate
-    final exists = _entries.any((e) =>
-        e.type == OfflineEntryType.location &&
-        e.childId == childId &&
-        e.payload['timestamp'] == payload['timestamp']);
+    final exists = _entries.any(
+      (e) =>
+          e.type == OfflineEntryType.location &&
+          e.childId == childId &&
+          e.payload['timestamp'] == payload['timestamp'],
+    );
 
     if (exists) return;
 
-    _entries.add(QueueEntry(
-      type: OfflineEntryType.location,
-      childId: childId,
-      payload: payload,
-      createdAt: DateTime.now(),
-    ));
+    _entries.add(
+      QueueEntry(
+        type: OfflineEntryType.location,
+        childId: childId,
+        payload: payload,
+        createdAt: DateTime.now(),
+      ),
+    );
+
+    // A phone that stays offline for hours would otherwise queue one entry per
+    // fix without bound, and every enqueue rewrites the whole persisted list.
+    // Keep the NEWEST fixes; the oldest are the least useful once replayed.
+    final locationEntries = _entries
+        .where((e) => e.type == OfflineEntryType.location)
+        .toList();
+    final overflow = locationEntries.length - maxLocationEntries;
+    if (overflow > 0) {
+      locationEntries.take(overflow).forEach(_entries.remove);
+      StructuredLogger.log(
+        LogTag.TRIP,
+        '[OfflineQ] Location queue full — dropped $overflow oldest fix(es)',
+      );
+    }
     await _persist();
   }
+
+  /// Ceiling for queued location fixes (see [enqueueLocation]).
+  static const int maxLocationEntries = 500;
 
   Future<void> enqueueGeofenceEvent({
     required String childId,
@@ -164,21 +204,25 @@ class OfflineTripQueue {
   }) async {
     await load();
     // Anti-duplicate: same geofence + event type + timestamp already queued
-    final exists = _entries.any((e) =>
-        e.type == OfflineEntryType.geofenceEvent &&
-        e.childId == childId &&
-        e.payload['geofenceId'] == payload['geofenceId'] &&
-        e.payload['eventType'] == payload['eventType'] &&
-        e.payload['timestamp'] == payload['timestamp']);
+    final exists = _entries.any(
+      (e) =>
+          e.type == OfflineEntryType.geofenceEvent &&
+          e.childId == childId &&
+          e.payload['geofenceId'] == payload['geofenceId'] &&
+          e.payload['eventType'] == payload['eventType'] &&
+          e.payload['timestamp'] == payload['timestamp'],
+    );
 
     if (exists) return;
 
-    _entries.add(QueueEntry(
-      type: OfflineEntryType.geofenceEvent,
-      childId: childId,
-      payload: payload,
-      createdAt: DateTime.now(),
-    ));
+    _entries.add(
+      QueueEntry(
+        type: OfflineEntryType.geofenceEvent,
+        childId: childId,
+        payload: payload,
+        createdAt: DateTime.now(),
+      ),
+    );
     await _persist();
     StructuredLogger.log(
       LogTag.BG,
@@ -227,9 +271,7 @@ class OfflineTripQueue {
 
   /// Drain the queue by calling the uploader function.
   /// Handles backoff updates dynamically and removes succeeded entries transactionally.
-  Future<void> drain(
-    Future<bool> Function(QueueEntry entry) uploader,
-  ) async {
+  Future<void> drain(Future<bool> Function(QueueEntry entry) uploader) async {
     await load();
     if (_entries.isEmpty) return;
 

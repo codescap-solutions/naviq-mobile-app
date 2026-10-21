@@ -39,7 +39,7 @@ class _GeoFencingViewState extends State<GeoFencingView> {
   late final bool _isPrimaryParent;
 
   String _getChildName() {
-    return SharedPrefsService().getString('child_name') ?? 'Ananya';
+    return SharedPrefsService().getString('child_name') ?? 'Your child';
   }
 
   @override

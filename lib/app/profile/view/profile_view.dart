@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/services/shared_prefs_service.dart';
 import 'package:child_track/core/di/injector.dart';
@@ -176,7 +177,7 @@ class _ProfileViewState extends State<ProfileView> with WidgetsBindingObserver {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Remove', style: TextStyle(color: Colors.red)),
+            child: Text('Remove', style: TextStyle(color: FigmaColors.danger)),
           ),
         ],
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import '../models/subscription_plan.dart';
 
 /// One plan card of the Subscription screen (Figma): a tinted left panel with
@@ -14,6 +15,18 @@ class SubscriptionPlanCard extends StatelessWidget {
   final bool isYearly;
   final VoidCallback onTap;
 
+  /// The plan the user is on right now: gets a blue outline and a green
+  /// "Current Plan" button (no "Recommended" chip).
+  final bool isCurrent;
+
+  /// Days left in the current plan; shown in place of the price on the
+  /// current plan's card when set.
+  final int? daysLeft;
+
+  /// false: no "Recommended" chip, blue outline or "Most Popular" label on the
+  /// Smart card (the user is already on a higher plan).
+  final bool showRecommendation;
+
   /// The card previews this many features; "View all features" (the detail
   /// screen) lists the rest. Same count on every card (Figma).
   static const previewFeatureCount = 6;
@@ -23,9 +36,13 @@ class SubscriptionPlanCard extends StatelessWidget {
     required this.plan,
     required this.isYearly,
     required this.onTap,
+    this.isCurrent = false,
+    this.daysLeft,
+    this.showRecommendation = true,
   });
 
   static const _blue = Color(0xFF0069F9);
+  static const _green = Color(0xFF43A047);
   static const _orange = Color(0xFFF5A623);
   static const _navy = Color(0xFF0F1320);
   static const _slate = Color(0xFF4A5267);
@@ -94,7 +111,7 @@ class SubscriptionPlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = _style;
-    final isSmart = plan.tier == SubscriptionTier.smart;
+    final isSmart = plan.tier == SubscriptionTier.smart && showRecommendation;
     final radius = BorderRadius.circular(14.w);
 
     return GestureDetector(
@@ -116,7 +133,7 @@ class SubscriptionPlanCard extends StatelessWidget {
             ),
             // The 1.5px Smart border is painted on top so it does not change
             // the card's size (Figma strokes sit inside the frame).
-            foregroundDecoration: isSmart
+            foregroundDecoration: isCurrent || isSmart
                 ? BoxDecoration(
                     borderRadius: radius,
                     border: Border.all(color: _blue, width: 1.5),
@@ -124,24 +141,29 @@ class SubscriptionPlanCard extends StatelessWidget {
                 : null,
             child: ClipRRect(
               borderRadius: radius,
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(flex: 126, child: _leftPanel(s)),
-                    Expanded(flex: 222, child: _rightPanel(s)),
-                  ],
+              // Figma: 232 high, 127 wide left panel. Grows if a long feature
+              // name wraps instead of overflowing.
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: 232.w),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(width: 127.w, child: _leftPanel(s)),
+                      Expanded(child: _rightPanel(s)),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-          if (isSmart)
+          if (isSmart && !isCurrent)
             Positioned(
-              top: -13,
-              right: 4.w,
+              top: -13.w,
+              right: 18.w,
               child: Container(
-                height: 27.w,
-                padding: EdgeInsets.symmetric(horizontal: 7.w),
+                height: 26.w,
+                padding: EdgeInsets.symmetric(horizontal: 12.w),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: _blue,
@@ -149,11 +171,8 @@ class SubscriptionPlanCard extends StatelessWidget {
                 ),
                 child: Text(
                   'Recommended',
-                  style: GoogleFonts.poppins(
-                    fontSize: 9.0.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
+                  // Figma: Poppins SemiBold 12, line height 100%, 0.2 spacing.
+                  style: FigmaText.labelSmall.copyWith(color: Colors.white),
                 ),
               ),
             ),
@@ -164,8 +183,11 @@ class SubscriptionPlanCard extends StatelessWidget {
 
   // ── Left panel ────────────────────────────────────────────────────────────
   Widget _leftPanel(_TierStyle s) {
-    final label =
-        plan.badge ?? (plan.tier == SubscriptionTier.starter ? 'Free' : null);
+    final hideBadge =
+        plan.tier == SubscriptionTier.smart && !showRecommendation;
+    final label = hideBadge
+        ? null
+        : plan.badge ?? (plan.tier == SubscriptionTier.starter ? 'Free' : null);
     final isFree = plan.isFree;
 
     final top = Column(
@@ -233,18 +255,18 @@ class SubscriptionPlanCard extends StatelessWidget {
             Text(
               '₹',
               style: GoogleFonts.poppins(
-                fontSize: 13.0.sp,
-                fontWeight: FontWeight.w700,
+                fontSize: 16.0.sp,
+                fontWeight: FontWeight.w600,
                 color: isFree ? _slate : _navy,
               ),
             ),
-            SizedBox(width: 1.w),
+            SizedBox(width: 4.w),
             Text(
               isFree ? '0' : '${plan.monthlyPrice.toInt()}',
               style: GoogleFonts.poppins(
-                fontSize: 24.0.sp,
-                fontWeight: FontWeight.w800,
-                height: 0.9,
+                fontSize: 28.0.sp,
+                fontWeight: FontWeight.w700,
+                height: 1.0,
                 color: isFree ? _slate : _navy,
               ),
             ),
@@ -252,39 +274,66 @@ class SubscriptionPlanCard extends StatelessWidget {
         ),
         Text(
           isFree ? 'forever free' : '/month',
-          style: GoogleFonts.poppins(
-            fontSize: 10.0.sp,
-            fontWeight: FontWeight.w400,
-            height: 14 / 10,
-            color: _slate,
-          ),
+          style: FigmaText.bodySmall.copyWith(color: _slate),
         ),
         // Figma (Yearly selected): the yearly price sits in a small chip under
         // the monthly price.
         if (!isFree && isYearly && plan.yearlyPrice != null) ...[
-          SizedBox(height: 6.w),
           Container(
-            height: 17.w,
-            padding: EdgeInsets.symmetric(horizontal: 6.w),
+            height: 24.w,
+            padding: EdgeInsets.symmetric(horizontal: 12.w),
             decoration: BoxDecoration(
               color: s.chipBg,
-              borderRadius: BorderRadius.circular(9.w),
+              borderRadius: BorderRadius.circular(12.w),
             ),
             child: Center(
               widthFactor: 1,
               child: Text(
                 '₹${plan.yearlyPrice!.toInt()}/yr',
-                style: GoogleFonts.poppins(
-                  fontSize: 10.0.sp,
-                  fontWeight: FontWeight.w600,
-                  color: s.chipText,
-                ),
+                style: FigmaText.bodySmall.copyWith(color: _slate, height: 1.0),
               ),
             ),
           ),
         ],
       ],
     );
+
+    final days = isCurrent ? daysLeft : null;
+    final daysLeftBox = days == null
+        ? null
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        days == 1 ? '1 DAY LEFT' : '$days DAYS LEFT',
+                        maxLines: 1,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13.0.sp,
+                          fontWeight: FontWeight.w700,
+                          height: 18 / 13,
+                          color: _green,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'in your plan',
+                      style: FigmaText.bodySmall.copyWith(
+                        color: _slate,
+                        height: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
 
     return Container(
       decoration: s.panel == null
@@ -296,7 +345,7 @@ class SubscriptionPlanCard extends StatelessWidget {
                 colors: s.panel!,
               ),
             ),
-      padding: EdgeInsets.fromLTRB(12.w, 22.w, 8.w, 16.w),
+      padding: EdgeInsets.fromLTRB(12.w, 22.w, 8.w, 14.w),
       child: isFree
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,7 +358,7 @@ class SubscriptionPlanCard extends StatelessWidget {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [top, price],
+              children: [top, daysLeftBox ?? price],
             ),
     );
   }
@@ -321,12 +370,12 @@ class SubscriptionPlanCard extends StatelessWidget {
   Widget _rightPanel(_TierStyle s) {
     return Container(
       color: s.rightBg,
-      padding: EdgeInsets.fromLTRB(12.w, 13.w, 12.w, 13.w),
+      padding: EdgeInsets.fromLTRB(12.w, 21.w, 12.w, 12.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (var i = 0; i < _preview.length; i++) ...[
-            if (i > 0) SizedBox(height: 6.5.w),
+            if (i > 0) SizedBox(height: 6.w),
             Row(
               children: [
                 Container(
@@ -351,12 +400,8 @@ class SubscriptionPlanCard extends StatelessWidget {
                     // Access Logins"): wrap instead of cutting it off.
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11.0.sp,
-                      fontWeight: FontWeight.w400,
-                      height: 16 / 11,
-                      color: _slate,
-                    ),
+                    // Figma Body Small: 12 / 20.
+                    style: FigmaText.bodySmall.copyWith(color: _slate),
                   ),
                 ),
               ],
@@ -374,31 +419,64 @@ class SubscriptionPlanCard extends StatelessWidget {
               ),
             ),
           ] else ...[
-            SizedBox(height: 13.w),
-            Container(
-              height: 34.w,
-              decoration: BoxDecoration(
-                color: s.cta,
-                borderRadius: BorderRadius.circular(17.w),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'View all features',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12.0.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(width: 6.w),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: 16.w,
-                    color: Colors.white,
-                  ),
-                ],
+            // Button sits on the bottom edge (12 up from it), Figma 198 x 36.
+            SizedBox(height: 12.w),
+            const Spacer(),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                width: 198.w,
+                height: 36.w,
+                decoration: BoxDecoration(
+                  color: isCurrent ? _green : s.cta,
+                  borderRadius: BorderRadius.circular(18.w),
+                ),
+                child: isCurrent
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 20.w,
+                            height: 20.w,
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.check_rounded,
+                              size: 14.w,
+                              color: _green,
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Text(
+                            'CURRENT PLAN',
+                            style: FigmaText.bodySmall.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              height: 1.0,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'View all Features',
+                            style: FigmaText.bodySmall.copyWith(
+                              color: Colors.white,
+                              height: 1.0,
+                            ),
+                          ),
+                          SizedBox(width: 6.w),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 16.w,
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
               ),
             ),
           ],

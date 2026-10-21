@@ -1,4 +1,3 @@
-import 'package:child_track/core/constants/app_strings.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/main.dart';
 import 'package:flutter/widgets.dart' show SizedBox;
@@ -17,7 +16,8 @@ void main() {
   testWidgets('App starts with splash screen', (WidgetTester tester) async {
     await tester.pumpWidget(const ChildTrackApp());
 
-    expect(find.text(AppStrings.appName), findsOneWidget);
+    // The splash is the logo image with the tagline under it.
+    expect(find.text('Accuracy. Safety. Protection'), findsOneWidget);
 
     // Unmount, then let the splash's 2 s auth-check timer fire harmlessly.
     await tester.pumpWidget(const SizedBox.shrink());

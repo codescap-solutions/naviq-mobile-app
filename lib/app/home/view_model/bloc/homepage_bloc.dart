@@ -34,6 +34,10 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
   String? _tripsRequestChildId;
   String? _tripDetailRequestChildId;
   DateTime? _lastAppliedLocationTs;
+
+  // When the last live (socket) location arrived, to tell a quiet child from a
+  // dead connection.
+  DateTime? _lastSocketLocationAt;
   String? _lastChildId;
   // Which child's data state.currentLocation actually reflects right now.
   // See _isNewerLocationUpdate's use of this below — needed because
@@ -128,7 +132,25 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
       final waitingForFirstFix =
           current is HomepageSuccess &&
           current.trackingSnapshot?.uiDirective.displayState == 'NEVER_SHARED';
-      if (waitingForFirstFix || ++snapshotTick % 6 == 0) {
+      // No live location while the socket is down, or while it claims to be up
+      // but has been silent for a while (a dead connection still reports
+      // "connected"): the pin would stand still. Fall back to a silent REST
+      // refresh; it only applies a point newer than the one on screen and
+      // re-opens the socket. A silent socket is polled every 30 s, not 10, so
+      // a child who simply is not moving does not cost a request every tick.
+      final socketSilentFor = _lastSocketLocationAt == null
+          ? const Duration(days: 1)
+          : DateTime.now().difference(_lastSocketLocationAt!);
+      final socketDown = !_socketService.isConnected;
+      final socketQuiet =
+          socketSilentFor > const Duration(seconds: 30) &&
+          snapshotTick % 3 == 0;
+      snapshotTick++;
+      if (current is HomepageSuccess &&
+          !current.isLoading &&
+          (socketDown || socketQuiet)) {
+        add(const GetHomepageData(isSilentRefresh: true));
+      } else if (waitingForFirstFix || snapshotTick % 6 == 0) {
         add(const RefreshTrackingSnapshot());
       }
     });
@@ -146,6 +168,11 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
 
     try {
       final response = await _homeRepository.getTrackingSnapshot(childId);
+      // Same identity guard as getHomeData / getTrips: childId was captured
+      // before the await, so a slow response for the previously selected child
+      // must not land on the screen (and show its tracking warning) of the
+      // child selected meanwhile.
+      if (childId != _sharedPrefsService.getString('child_id')) return;
       if (response.isSuccess && response.data != null) {
         final freshState = state is HomepageSuccess
             ? state as HomepageSuccess
@@ -305,7 +332,10 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
         if (applyRestLocation) {
           _mapBloc.add(
             UpdateChildLocation(
-              LatLng(homeData.currentLocation.lat, homeData.currentLocation.lng),
+              LatLng(
+                homeData.currentLocation.lat,
+                homeData.currentLocation.lng,
+              ),
               zoom: 16.5,
             ),
           );
@@ -584,7 +614,8 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
 
     final currentState = state;
     final displayedSince =
-        currentState is HomepageSuccess && _currentLocationChildId == _lastChildId
+        currentState is HomepageSuccess &&
+            _currentLocationChildId == _lastChildId
         ? DateTime.tryParse(currentState.currentLocation?.since ?? '')
         : null;
     final baseline = displayedSince ?? _lastAppliedLocationTs;
@@ -610,6 +641,7 @@ class HomepageBloc extends Bloc<HomepageEvent, HomepageState> {
 
     try {
       final data = event.locationData;
+      _lastSocketLocationAt = DateTime.now();
       AppLogger.info('[HomepageBloc] Processing socket location update: $data');
 
       // The socket connection accumulates a joined room for every child the

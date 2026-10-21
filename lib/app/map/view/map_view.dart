@@ -122,7 +122,8 @@ class _MapViewWidgetState extends State<MapViewWidget> {
               MapType.terrain,
               Icons.terrain,
             ),
-            const SizedBox(height: 8),
+            // keeps the last option clear of the Android system navigation bar
+            SizedBox(height: 8 + MediaQuery.paddingOf(context).bottom),
           ],
         ),
       ),

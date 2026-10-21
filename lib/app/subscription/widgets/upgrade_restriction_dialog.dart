@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 
 import '../models/subscription_plan.dart';
@@ -102,22 +102,13 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
             SizedBox(height: 18.w),
             Text(
               title,
-              style: GoogleFonts.poppins(
-                fontSize: 20.0.sp,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF0C1D37),
-              ),
+              style: FigmaText.dialogTitle,
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 8.w),
             Text(
               message,
-              style: GoogleFonts.poppins(
-                fontSize: 13.5.sp,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF64748B),
-                height: 1.4,
-              ),
+              style: FigmaText.dialogBody,
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 24.w),
@@ -139,12 +130,7 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
               },
               child: Text(
                 ctaText,
-                style: GoogleFonts.poppins(
-                  fontSize: 14.5.sp,
-                  fontWeight: FontWeight.bold,
-                  height: 1.3,
-                  color: Colors.white,
-                ),
+                style: FigmaText.dialogBody.copyWith(color: Colors.white),
               ),
             ),
             SizedBox(height: 8.w),
@@ -157,15 +143,7 @@ class _UpgradeRestrictionDialogContent extends StatelessWidget {
                 ),
               ),
               onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Not Now',
-                style: GoogleFonts.poppins(
-                  fontSize: 14.0.sp,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
-                  color: Color(0xFF64748B),
-                ),
-              ),
+              child: Text('Not Now', style: FigmaText.dialogBody),
             ),
           ],
         ),

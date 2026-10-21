@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:child_track/core/constants/figma_tokens.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
 import 'package:child_track/core/di/injector.dart';
 import 'package:child_track/core/services/dio_client.dart';
 import 'package:child_track/core/services/base_service.dart';
 import 'package:child_track/core/widgets/figma_app_bar.dart';
+import 'package:child_track/core/services/subscription_manager.dart';
 import '../models/subscription_plan.dart';
 import '../view_model/subscription_repository.dart';
 import '../widgets/subscription_plan_card.dart';
@@ -31,26 +31,34 @@ class _SubscriptionMultiPlanViewState extends State<SubscriptionMultiPlanView> {
     super.initState();
     _repository = SubscriptionRepository(dioClient: injector<DioClient>());
     _plansFuture = _repository.getPlans();
+    // The "Current Plan" chip follows the live entitlement.
+    SubscriptionManager.instance.addListener(_onPlanChanged);
+    SubscriptionManager.instance.checkAndUpdateStatus();
+  }
+
+  void _onPlanChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    SubscriptionManager.instance.removeListener(_onPlanChanged);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFF7F8FA),
-      appBar: figmaAppBar(
-        context,
-        title: 'Subscription',
-        trailing: FigmaCircleButton(
-          child: SvgPicture.asset(
-            'assets/help/help_search.svg',
-            width: 24.w,
-            height: 24.w,
-          ),
-        ),
-      ),
+      appBar: figmaAppBar(context, title: 'Subscription'),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(40.w, 12.w, 40.w, 30.w),
+          padding: EdgeInsets.fromLTRB(
+            12.w,
+            12.w,
+            12.w,
+            30.w,
+          ), // Figma: 12 each side
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -102,6 +110,14 @@ class _SubscriptionMultiPlanViewState extends State<SubscriptionMultiPlanView> {
                         SubscriptionPlanCard(
                           plan: plans[i],
                           isYearly: _isYearly,
+                          isCurrent:
+                              plans[i].tier ==
+                              SubscriptionManager.instance.currentTier,
+                          daysLeft: SubscriptionManager.instance.daysLeft,
+                          // Already on Premium: nothing to recommend above it.
+                          showRecommendation:
+                              SubscriptionManager.instance.currentTier !=
+                              SubscriptionTier.premium,
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(

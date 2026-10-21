@@ -29,6 +29,10 @@ class LocationWatchdogWorker(context: Context, params: WorkerParameters) : Worke
             Log.i("LocationWatchdog", "Re-arming native background location updates")
             NativeFileLogger.log(applicationContext, "WATCHDOG", "re-arming location pings")
             NativeLocationPingManager.start(applicationContext)
+            // Only a REQUEST: on a device that is not battery-optimization-exempt Android
+            // may refuse a foreground-service start from WorkManager. A refusal is recorded
+            // and backed off; the native fallback above keeps running either way.
+            TrackingRecovery.ensureRunning(applicationContext, TrackingRecovery.Reason.WATCHDOG)
 
             val persistedFences = NativeGeofenceManager.getPersistedGeofences(applicationContext)
             if (persistedFences.isNotEmpty()) {

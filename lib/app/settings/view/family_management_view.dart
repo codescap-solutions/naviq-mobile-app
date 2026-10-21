@@ -570,29 +570,20 @@ class _FamilyManagementViewState extends State<FamilyManagementView> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.w),
         ),
-        title: Text(
-          'Delete Guardian',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
+        title: Text('Delete Guardian', style: FigmaText.dialogTitle),
         content: Text(
           'Are you sure you want to delete ${guardian['name']} as a guardian?',
-          style: GoogleFonts.poppins(),
+          style: FigmaText.dialogBody,
         ),
         actions: [
           TextButton(
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.poppins(color: Colors.grey),
-            ),
+            child: Text('Cancel', style: FigmaText.dialogAction),
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
             child: Text(
               'Delete',
-              style: GoogleFonts.poppins(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
+              style: FigmaText.dialogAction.copyWith(color: FigmaColors.danger),
             ),
             onPressed: () async {
               Navigator.pop(context);

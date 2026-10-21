@@ -1,3 +1,4 @@
+import 'package:child_track/core/utils/location_payload.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:child_track/app/childapp/model/scree_time_model.dart';
@@ -399,7 +400,9 @@ class ChildBloc extends Bloc<ChildEvent, ChildState> with WidgetsBindingObserver
         "lat": event.childLocation.latitude,
         "lng": event.childLocation.longitude,
         "accuracy_m": event.childLocation.accuracy,
-        "speed_mps": event.childLocation.speed,
+        // Unknown speed is omitted (speed_known=false), never sent as 0 m/s.
+        ...speedFields(event.childLocation, legacyAlias: false),
+        ...locationDiagnostics(fixSource: 'foreground_ui'),
         "bearing": event.childLocation.heading,
         // event.childLocation.timestamp — see location_state_machine.dart's
         // _postChildLocation for why DateTime.now() here is wrong: it

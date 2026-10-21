@@ -24,8 +24,12 @@ import 'package:child_track/core/services/location_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:child_track/core/services/tracking/geofence_tracking_config.dart';
+import 'package:child_track/core/services/background_location_service.dart'
+    show BackgroundLocationService;
+import 'package:child_track/core/utils/location_payload.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter/material.dart' show GlobalKey, NavigatorState, MaterialPageRoute;
+import 'package:flutter/material.dart'
+    show GlobalKey, NavigatorState, MaterialPageRoute;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:child_track/app/chat/view/chat_screen.dart';
 import 'package:child_track/app/chat/view_model/bloc/chat_bloc.dart';
@@ -36,7 +40,8 @@ import 'package:child_track/core/models/child_profile.dart';
 import 'package:child_track/core/services/notifications/child_notification_router.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:child_track/app/childapp/view_model/repository/device_info_service.dart';
-import 'package:child_track/core/services/device_info_service.dart' show DeviceInfoService;
+import 'package:child_track/core/services/device_info_service.dart'
+    show DeviceInfoService;
 
 /// Top-level function for handling background messages
 /// This must be a top-level function, not a class method
@@ -44,10 +49,10 @@ import 'package:child_track/core/services/device_info_service.dart' show DeviceI
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   await dotenv.load(fileName: ".env");
-  
+
   // Initialize CSV Logger for background isolates
   await CsvFileLogger.instance.init();
-  
+
   AppLogger.info('Background message received: ${message.messageId}');
   AppLogger.info('Background message data: ${message.data}');
 
@@ -56,13 +61,20 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await SharedPrefsService.init();
     final prefs = SharedPrefsService();
     if (prefs.isParent) {
-      final parsed = FirebaseNotificationService.parseNotificationContent(message);
-      if (parsed['type'] != 'SYNC_SCREEN_TIME' && parsed['type'] != 'SYNC_LOCKED_APPS') {
+      final parsed = FirebaseNotificationService.parseNotificationContent(
+        message,
+      );
+      if (parsed['type'] != 'SYNC_SCREEN_TIME' &&
+          parsed['type'] != 'SYNC_LOCKED_APPS') {
         await prefs.addNotification({
-          'id': message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+          'id':
+              message.messageId ??
+              DateTime.now().millisecondsSinceEpoch.toString(),
           'title': parsed['title'],
           'body': parsed['body'],
-          'timestamp': FirebaseNotificationService._eventTimestampOrNow(message),
+          'timestamp': FirebaseNotificationService._eventTimestampOrNow(
+            message,
+          ),
           'type': parsed['type'],
           'isRead': false,
         });
@@ -70,7 +82,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
         // Save pending request to local SharedPrefs
         if (message.data['type'] == 'location_share_request') {
-          await prefs.setString('pending_location_share_request', json.encode(message.data));
+          await prefs.setString(
+            'pending_location_share_request',
+            json.encode(message.data),
+          );
           AppLogger.info('Saved pending location share request to SharedPrefs');
         }
       }
@@ -138,7 +153,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         // Attempt to sync natively for iOS from background isolate
         if (Platform.isIOS) {
           try {
-            const iosChannel = MethodChannel('com.truenyx.naviq/parental_control');
+            const iosChannel = MethodChannel(
+              'com.truenyx.naviq/parental_control',
+            );
             await iosChannel.invokeMethod<bool>('updateLockList', packages);
             AppLogger.info('$action (bg): Synced to iOS native');
           } catch (iosErr) {
@@ -146,9 +163,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
           }
         }
       } else {
-        AppLogger.error(
-          '$action (bg): API failed: ${response.message}',
-        );
+        AppLogger.error('$action (bg): API failed: ${response.message}');
       }
     } catch (e) {
       AppLogger.error('$action background sync error: $e');
@@ -175,6 +190,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       await _performForceRefresh(
         childId,
         geofenceProbe: message.data['purpose'] == 'GEOFENCE_VERIFY',
+        requestId: message.data['request_id']?.toString(),
       );
       AppLogger.info('FORCE_REFRESH_DATA (bg): Sync completed successfully');
     } catch (e) {
@@ -193,7 +209,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       final prefs = SharedPrefsService();
       await prefs.setBool('block_18plus', enabled);
 
-      AppLogger.info('WEB_FILTER_UPDATE (bg): Updated block_18plus to $enabled');
+      AppLogger.info(
+        'WEB_FILTER_UPDATE (bg): Updated block_18plus to $enabled',
+      );
 
       // Android's enforcement (AppLockService) polls the SharedPreferences value
       // above directly, so it's already live. iOS's enforcement (ManagedSettings)
@@ -201,7 +219,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       // for an already-logged-in child never actually changed the filter on iOS.
       if (Platform.isIOS) {
         try {
-          const iosChannel = MethodChannel('com.truenyx.naviq/parental_control');
+          const iosChannel = MethodChannel(
+            'com.truenyx.naviq/parental_control',
+          );
           await iosChannel.invokeMethod('setWebFiltering', enabled);
           AppLogger.info('WEB_FILTER_UPDATE (bg): Synced to iOS native');
         } catch (iosErr) {
@@ -215,7 +235,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   // Handle DELETION_RESTRICTION_UPDATE in background
   if (message.data['type'] == 'DELETION_RESTRICTION_UPDATE') {
-    AppLogger.info('Received DELETION_RESTRICTION_UPDATE command via FCM (background)');
+    AppLogger.info(
+      'Received DELETION_RESTRICTION_UPDATE command via FCM (background)',
+    );
     try {
       final isAllowDeleteStr = message.data['isallowdelete']?.toString();
       final isAllowDelete = isAllowDeleteStr == 'true';
@@ -240,6 +262,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> _performForceRefresh(
   String childId, {
   bool geofenceProbe = false,
+  String? requestId,
 }) async {
   try {
     AppLogger.info(
@@ -255,6 +278,16 @@ Future<void> _performForceRefresh(
     // fresh would count as fresh evidence) and no client-side reverse
     // geocoding (the server resolves addresses itself).
     final childRepo = injector<ChildRepo>();
+
+    // A high-priority FCM message is one of the moments Android lets an app
+    // start a foreground service from the background. If the high-accuracy
+    // tracking service has stopped, ask for it back (policy-guarded, never
+    // throws, native fallback unaffected). This proves nothing about tracking
+    // health by itself — it only requests a restart.
+    await BackgroundLocationService.recoverIfStopped(
+      reason: geofenceProbe ? 'fcm_geofence_probe' : 'fcm_force_refresh',
+    );
+
     final fixCount = geofenceProbe ? 2 : 1;
     for (var i = 0; i < fixCount; i++) {
       if (i > 0) await Future.delayed(const Duration(seconds: 12));
@@ -263,19 +296,14 @@ Future<void> _performForceRefresh(
           desiredAccuracy: LocationAccuracy.high,
           timeLimit: const Duration(seconds: 15),
         );
-        final locationResponse = await childRepo.postChildLocation({
-          'child_id': childId,
-          'lat': fix.latitude,
-          'lng': fix.longitude,
-          'accuracy_m': fix.accuracy,
-          'speed_mps': fix.speed < 0 ? 0.0 : fix.speed,
-          'bearing': fix.heading < 0 ? 0.0 : fix.heading,
-          'timestamp': fix.timestamp.toUtc().toIso8601String(),
-          // Engineering diagnostics only.
-          'platform': Platform.isIOS ? 'ios' : 'android',
-          'tracking_profile': geofenceProbe ? 'probe' : 'force_refresh',
-          'fix_source': geofenceProbe ? 'geofence_probe' : 'force_refresh',
-        });
+        final locationResponse = await childRepo.postChildLocation(
+          forceRefreshLocationPayload(
+            childId: childId,
+            fix: fix,
+            geofenceProbe: geofenceProbe,
+            requestId: requestId,
+          ),
+        );
         AppLogger.info(
           locationResponse.isSuccess
               ? '✅ Force Refresh: Location synced (acc ${fix.accuracy.toStringAsFixed(0)}m)'
@@ -342,10 +370,12 @@ Future<void> _performForceRefresh(
     // the OEM telemetry above — see LocationService.getBackgroundLocationStatus
     // for why this is checked separately from location_permission above.
     try {
-      statusData['background_location_permission'] =
-          await LocationService().getBackgroundLocationStatus();
+      statusData['background_location_permission'] = await LocationService()
+          .getBackgroundLocationStatus();
     } catch (e) {
-      AppLogger.error('Force Refresh: background location status lookup failed: $e');
+      AppLogger.error(
+        'Force Refresh: background location status lookup failed: $e',
+      );
     }
 
     final statusResponse = await childRepo.postChildData(statusData);
@@ -360,11 +390,13 @@ Future<void> _performForceRefresh(
     // 5. Post Screen Time
     try {
       if (!injector.isRegistered<ScreenTimeSyncService>()) {
-         AppLogger.warning('Force Refresh: ScreenTimeSyncService not registered in injector yet');
+        AppLogger.warning(
+          'Force Refresh: ScreenTimeSyncService not registered in injector yet',
+        );
       } else {
-         final screenTimeService = injector<ScreenTimeSyncService>();
-         await screenTimeService.syncScreenTime();
-         AppLogger.info('✅ Force Refresh: Screen time synced');
+        final screenTimeService = injector<ScreenTimeSyncService>();
+        await screenTimeService.syncScreenTime();
+        AppLogger.info('✅ Force Refresh: Screen time synced');
       }
     } catch (e) {
       AppLogger.error('❌ Force Refresh: Screen time sync failed: $e');
@@ -408,7 +440,8 @@ class FirebaseNotificationService {
       _notificationTapController.stream;
 
   RemoteMessage? _pendingLocationShareRequest;
-  RemoteMessage? get pendingLocationShareRequest => _pendingLocationShareRequest;
+  RemoteMessage? get pendingLocationShareRequest =>
+      _pendingLocationShareRequest;
 
   // Parent "approve / deny" prompts (child asks for logout / more time) whose
   // notification was tapped before HomePage was listening — a cold start emits
@@ -421,6 +454,21 @@ class FirebaseNotificationService {
     final m = _pendingActionTap;
     _pendingActionTap = null;
     return m;
+  }
+
+  /// Re-opens the approve / reject sheet for a location-share request picked
+  /// from the in-app Notifications list (the push itself may be long gone).
+  /// HomePage listens on the tap stream and shows the sheet.
+  void replayLocationShareRequest(Map<String, dynamic> data) {
+    final message = RemoteMessage(
+      data: {
+        for (final e in data.entries)
+          if (e.value != null) e.key: e.value.toString(),
+        'type': 'location_share_request',
+      },
+    );
+    _pendingLocationShareRequest = message;
+    _notificationTapController.add(message);
   }
 
   void clearPendingLocationShareRequest() {
@@ -618,12 +666,15 @@ class FirebaseNotificationService {
 
     // Save to SharedPreferences for parent app
     final parsed = parseNotificationContent(message);
-    if (parsed['type'] != 'SYNC_SCREEN_TIME' && parsed['type'] != 'SYNC_LOCKED_APPS') {
+    if (parsed['type'] != 'SYNC_SCREEN_TIME' &&
+        parsed['type'] != 'SYNC_LOCKED_APPS') {
       try {
         final prefs = SharedPrefsService();
         if (prefs.isParent) {
           await prefs.addNotification({
-            'id': message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            'id':
+                message.messageId ??
+                DateTime.now().millisecondsSinceEpoch.toString(),
             'title': parsed['title'],
             'body': parsed['body'],
             'timestamp': _eventTimestampOrNow(message),
@@ -634,8 +685,13 @@ class FirebaseNotificationService {
 
           // Save pending request to local SharedPrefs
           if (message.data['type'] == 'location_share_request') {
-            await prefs.setString('pending_location_share_request', json.encode(message.data));
-            AppLogger.info('Saved pending location share request from foreground to SharedPrefs');
+            await prefs.setString(
+              'pending_location_share_request',
+              json.encode(message.data),
+            );
+            AppLogger.info(
+              'Saved pending location share request from foreground to SharedPrefs',
+            );
           }
         }
       } catch (e) {
@@ -667,6 +723,7 @@ class FirebaseNotificationService {
           await _performForceRefresh(
             childId,
             geofenceProbe: message.data['purpose'] == 'GEOFENCE_VERIFY',
+            requestId: message.data['request_id']?.toString(),
           );
           AppLogger.info('FORCE_REFRESH_DATA (fg): Sync triggered');
         }
@@ -684,7 +741,9 @@ class FirebaseNotificationService {
 
         final prefs = injector<SharedPrefsService>();
         await prefs.setBool('block_18plus', enabled);
-        AppLogger.info('WEB_FILTER_UPDATE (fg): Updated block_18plus to $enabled');
+        AppLogger.info(
+          'WEB_FILTER_UPDATE (fg): Updated block_18plus to $enabled',
+        );
 
         // Android's enforcement (AppLockService) polls the SharedPreferences
         // value above directly. iOS's ManagedSettings-based filter needs this
@@ -742,7 +801,9 @@ class FirebaseNotificationService {
     final notification = message.notification;
 
     // Diagnostic logging for parent app fcm
-    AppLogger.info('🔥 [FCM DEBUG] type="$type", data=$data, notificationTitle="${notification?.title}", notificationBody="${notification?.body}"');
+    AppLogger.info(
+      '🔥 [FCM DEBUG] type="$type", data=$data, notificationTitle="${notification?.title}", notificationBody="${notification?.body}"',
+    );
 
     String title = notification?.title ?? '';
     String body = notification?.body ?? '';
@@ -803,15 +864,31 @@ class FirebaseNotificationService {
           break;
         case 'time_extension_request':
           final requesterChildName = data['child_name'] ?? childName;
-          title = '$requesterChildName is asking for more time';
-          body = '$requesterChildName wants more time on ${data['app_name'] ?? 'an app'}. Tap to review.';
+          final requestedApp = data['app_name'] ?? 'an app';
+          if (data['reason'] == 'locked') {
+            title = '$requesterChildName wants to use $requestedApp';
+            body =
+                '$requestedApp is locked on $requesterChildName\'s device. Tap to review.';
+          } else {
+            title = '$requesterChildName is asking for more time';
+            body =
+                '$requesterChildName wants more time on $requestedApp. Tap to review.';
+          }
           break;
         case 'time_extension_result':
           final approved = data['approved'] == 'true';
-          title = approved ? 'More time granted!' : 'Request denied';
+          final resultApp = data['app_name'] ?? 'the app';
+          final wasLocked = data['reason'] == 'locked';
+          title = approved
+              ? (wasLocked ? '$resultApp unlocked' : 'More time granted!')
+              : 'Request denied';
           body = approved
-              ? 'You have more time for ${data['app_name'] ?? 'the app'}.'
-              : 'Your parent said no to more time for ${data['app_name'] ?? 'the app'}.';
+              ? (wasLocked
+                    ? 'Your parent unlocked $resultApp.'
+                    : 'You have more time for $resultApp.')
+              : (wasLocked
+                    ? 'Your parent kept $resultApp locked.'
+                    : 'Your parent said no to more time for $resultApp.');
           break;
         default:
           title = 'NaviQ';
@@ -822,11 +899,7 @@ class FirebaseNotificationService {
     if (title.isEmpty) title = 'NaviQ';
     if (body.isEmpty) body = 'You have a new notification';
 
-    return {
-      'title': title,
-      'body': body,
-      'type': type,
-    };
+    return {'title': title, 'body': body, 'type': type};
   }
 
   /// Payload of the local notification shown for a foreground push: the whole
@@ -892,8 +965,11 @@ class FirebaseNotificationService {
       final prefs = SharedPrefsService();
       if (!prefs.isParent) return;
       final parsed = parseNotificationContent(message);
-      if (parsed['type'] == 'SYNC_SCREEN_TIME' || parsed['type'] == 'SYNC_LOCKED_APPS') return;
-      final id = message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString();
+      if (parsed['type'] == 'SYNC_SCREEN_TIME' ||
+          parsed['type'] == 'SYNC_LOCKED_APPS')
+        return;
+      final id =
+          message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString();
       if (prefs.getNotifications().any((n) => n['id'] == id)) return;
       await prefs.addNotification({
         'id': id,
@@ -923,7 +999,10 @@ class FirebaseNotificationService {
       _pendingLocationShareRequest = message;
       try {
         final prefs = injector<SharedPrefsService>();
-        prefs.setString('pending_location_share_request', json.encode(message.data));
+        prefs.setString(
+          'pending_location_share_request',
+          json.encode(message.data),
+        );
       } catch (e) {
         AppLogger.error('Failed to save tapped request to SharedPrefs: $e');
       }
@@ -955,7 +1034,8 @@ class FirebaseNotificationService {
     _notificationTapController.add(message);
 
     // Automatic navigation for CHAT_MESSAGE
-    if (message.data['type'] == 'CHAT_MESSAGE' && _navigatorKey?.currentState != null) {
+    if (message.data['type'] == 'CHAT_MESSAGE' &&
+        _navigatorKey?.currentState != null) {
       final chatId = message.data['chat_id'];
       final senderId = message.data['sender_id'];
       final senderName = message.data['sender_name'] ?? 'Support';

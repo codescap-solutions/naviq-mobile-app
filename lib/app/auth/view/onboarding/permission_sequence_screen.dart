@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'package:child_track/core/constants/app_colors.dart';
 import 'package:child_track/core/services/location_service.dart';
 import 'package:child_track/core/services/background_location_service.dart';
 import 'package:child_track/core/services/device_info_service.dart';
@@ -18,6 +16,8 @@ import 'package:child_track/app/auth/view/onboarding/oem_battery_screen.dart';
 import 'package:child_track/core/services/oem_battery_helper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:child_track/core/utils/responsive_font.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
+import 'package:child_track/app/auth/view/onboarding/all_set_content.dart';
 
 enum PermissionStep {
   location,
@@ -42,6 +42,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
   int _currentStepIndex = 0;
   final PageController _pageController = PageController();
   bool _isRequesting = false;
+  // "How does it work" panel; closed again whenever the step changes.
+  bool _showHow = false;
 
   @override
   void initState() {
@@ -51,7 +53,6 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
     // Build the permission steps list dynamically based on platform
     if (Platform.isAndroid) {
       _steps = [
-        PermissionStep.location,
         PermissionStep.notification,
         PermissionStep.battery,
         PermissionStep.usageData,
@@ -60,7 +61,6 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
       ];
     } else {
       _steps = [
-        PermissionStep.location,
         PermissionStep.notification,
         PermissionStep
             .usageData, // Usage Data on iOS maps to Family Controls / Screen Time Access
@@ -166,6 +166,7 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
     if (_currentStepIndex < _steps.length - 1) {
       setState(() {
         _currentStepIndex++;
+        _showHow = false;
       });
       _pageController.animateToPage(
         _currentStepIndex,
@@ -191,6 +192,7 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
     if (_currentStepIndex > 0) {
       setState(() {
         _currentStepIndex--;
+        _showHow = false;
       });
       _pageController.animateToPage(
         _currentStepIndex,
@@ -366,61 +368,37 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFFE6EFFF), // soft sky blue
-              Color(0xFFF1F7FF), // very light blue
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildAppBar(),
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  physics: NeverScrollableScrollPhysics(),
-                  itemCount: _steps.length,
-                  itemBuilder: (context, index) {
-                    return _buildStepContent(_steps[index]);
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
     final isSuccessStep =
         _currentStepIndex < _steps.length &&
         _steps[_currentStepIndex] == PermissionStep.success;
-    if (isSuccessStep) {
-      return SizedBox(height: 30.w);
-    }
-    return SizedBox(
-      height: 30.w,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Padding(
-          padding: EdgeInsets.only(left: 8.0.w),
-          child: IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new,
-              size: 18.w,
-              color: AppColors.textPrimary,
+    // The Figma permission screens have no back arrow: the system back
+    // gesture / button steps back through the permissions instead.
+    return PopScope(
+      canPop: _currentStepIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goToPreviousStep();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Container(
+          decoration: isSuccessStep
+              ? BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFE6EFFF), Color(0xFFF1F7FF)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                )
+              : null,
+          child: SafeArea(
+            child: PageView.builder(
+              controller: _pageController,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: _steps.length,
+              itemBuilder: (context, index) {
+                return _buildStepContent(_steps[index]);
+              },
             ),
-            onPressed: _goToPreviousStep,
           ),
         ),
       ),
@@ -433,48 +411,50 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
     }
 
     String title;
-    String subtitle;
+    // Figma sub-copy is two-tone: a dark lead sentence, then a grey rest.
+    String lead;
+    String rest = '';
     String imagePath;
     List<Widget> pills = [];
 
     switch (step) {
       case PermissionStep.location:
         title = "Location Access";
-        subtitle =
-            "NaviQ collects location data to enable parental monitoring and safety tracking even when the app is closed or not in use.";
-        imagePath = 'assets/images/location-access device-preview (1) 1.png';
+        lead = "We just wanna be accurate. No data sharing or theft.";
+        imagePath = 'assets/images/onboarding_perm_location.png';
         pills = [
-          _buildPill("Live Tracking", Icons.location_on_rounded),
-          _buildPill("Safe Boundaries", Icons.notifications_active_rounded),
-          _buildPill("Encrypted", Icons.lock_rounded),
+          _buildPill("No Data Sharing", Icons.verified_user_rounded),
+          _buildPill("Encryption", Icons.lock_rounded),
+          _buildPill("Optimised battery use", Icons.battery_std_rounded),
         ];
         break;
       case PermissionStep.notification:
         title = "Notification Access";
-        subtitle =
-            "Personalised Alerts only. We'll alert you only when something truly matters changes—no spam, no irrelevant notifications.";
-        imagePath = 'assets/images/notification-access-device-preview 1.png';
+        lead = "Personalised Alerts only.";
+        rest = " We'll alert you only when something truly matters";
+        imagePath = 'assets/images/onboarding_perm_notification.png';
         pills = [
-          _buildPill("No Spam", Icons.check_circle_rounded),
-          _buildPill("Smart Alerts", Icons.notifications_active_rounded),
+          _buildPill("No Spam", Icons.verified_user_rounded),
+          _buildPill("Smart Alerts", Icons.notifications_rounded),
           _buildPill("Personalised", Icons.lock_rounded),
         ];
         break;
       case PermissionStep.battery:
         title = "Battery Access";
-        subtitle =
-            "Efficient battery use. More accurate background tracking—smart, battery-efficient, with full visibility into usage so you're always informed.";
-        imagePath = 'assets/images/battery_access-device-preview 1.png';
+        lead = "Efficient battery use.";
+        rest = " More accurate background tracking";
+        imagePath = 'assets/images/onboarding_perm_battery.png';
         pills = [
-          _buildPill("Smart Tracking", Icons.check_circle_rounded),
-          _buildPill("Battery Safe", Icons.battery_std_rounded),
+          _buildPill("Smart Tracking", Icons.verified_user_rounded),
+          _buildPill("Battery Life", Icons.battery_std_rounded),
           _buildPill("Full Visibility", Icons.lock_rounded),
         ];
         break;
       case PermissionStep.usageData:
         title = Platform.isIOS ? "Screen Time Access" : "Usage Data Access";
-        subtitle =
-            "Safety ensured power for you. Empowers you to access and block apps from your usage data—no third-party access, full privacy control.";
+        lead = "Safety ensured power for you.";
+        rest =
+            " Empowers you to access and block apps from your usage data—no third-party access, full privacy control.";
         imagePath = 'assets/images/usage_data-access-device-preview 1.png';
         pills = [
           _buildPill("No 3rd Party", Icons.lock_rounded),
@@ -484,214 +464,218 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
         break;
       case PermissionStep.accessibility:
         title = "Accessibility Access";
-        subtitle =
-            "Personalised Alerts only. Enables app usage monitoring via accessibility—your data stays private, no third-party access, full control assured.";
+        lead = "Personalised Alerts only.";
+        rest =
+            " Enables app usage monitoring via accessibility—your data stays private, no third-party access, full control assured.";
         imagePath = 'assets/images/accebility-service-access.png';
         pills = [
-          _buildPill("Private", Icons.check_circle_rounded),
+          _buildPill("Private", Icons.verified_user_rounded),
           _buildPill("Full Control", Icons.settings_rounded),
           _buildPill("No Sharing", Icons.lock_rounded),
         ];
         break;
       default:
         title = "";
-        subtitle = "";
+        lead = "";
         imagePath = "";
     }
 
-    return Stack(
+    final how = switch (step) {
+      PermissionStep.location =>
+        'NaviQ uses your location only to show your parents you are safe and to '
+            'alert them about safe places. Choose "Always" so it keeps working '
+            'when the app is closed.',
+      PermissionStep.notification =>
+        'You get a heads-up when your parent changes a limit, answers your '
+            'time request or a safety alert fires. No spam, only what matters.',
+      PermissionStep.battery =>
+        'Phones pause background apps to save battery. Allowing this keeps '
+            'tracking and app blocking working even when the screen is off.',
+      PermissionStep.usageData =>
+        Platform.isIOS
+            ? 'Screen Time access lets NaviQ see which apps are used and apply '
+                  'the limits your parent sets. It stays on your device and is '
+                  'never shared.'
+            : 'Usage access lets NaviQ see how long each app is used so your '
+                  "parent's time limits work. It is never shared with anyone.",
+      PermissionStep.accessibility =>
+        'Accessibility lets NaviQ notice which app or site is open so it can '
+            'block locked apps and adult content. It never reads your messages '
+            'or passwords.',
+      _ => '',
+    };
+
+    final subtitleStyle = FigmaText.poppins(
+      16,
+      lineHeight: 24,
+      letterSpacing: 0.2,
+      color: Color(0xFF43474F),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Top Half: preview device PNG positioned at top and extending downwards
-        Positioned(
-          top: -20, // push it slightly up to align nicely below the back button
-          left: 0.w,
-          right: 0.w,
-          bottom:
-              120, // allows the bottom portion to extend far below the white card top edge
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Image.asset(
-              imagePath,
-              fit: BoxFit.contain,
-              alignment: Alignment.topCenter,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(Icons.broken_image, size: 64.w, color: Colors.grey);
-              },
-            ),
+        // Illustration: full width under the status bar (Figma 428 x 375).
+        Expanded(
+          child: Image.asset(
+            imagePath,
+            fit: BoxFit.contain,
+            alignment: Alignment.topCenter,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(Icons.broken_image, size: 64.w, color: Colors.grey);
+            },
           ),
         ),
-
-        // Bottom Half: White Card overlapping the device image
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(32.w)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 16.w,
-                  offset: Offset(0, -4.w),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
+          // stretch: the Allow Access button and the dots row need the full
+          // width; the icon is aligned left explicitly.
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: _buildFloatingIcon(step),
+              ),
+              SizedBox(height: 12.w),
+              // Figma Heading H2: Poppins Bold 32 / 40.
+              Text(
+                title,
+                style: FigmaText.poppins(
+                  32,
+                  weight: FontWeight.w700,
+                  lineHeight: 40,
+                  color: Color(0xFF0F1320),
                 ),
-              ],
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // Overlapping floating permission icon
-                Positioned(
-                  top: -28,
-                  left: 28.w,
-                  child: _buildFloatingIcon(step),
+              ),
+              SizedBox(height: 4.w),
+              // Figma Body Medium: Poppins Regular 16 / 24, 0.2 spacing.
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: lead,
+                      style: subtitleStyle.copyWith(color: FigmaColors.ink),
+                    ),
+                    if (rest.isNotEmpty)
+                      TextSpan(
+                        text: rest,
+                        style: subtitleStyle.copyWith(color: Color(0xFF707784)),
+                      ),
+                  ],
                 ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(28.w, 42.w, 28.w, 28.w),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Title
-                      Text(
-                        title,
-                        style: GoogleFonts.poppins(
-                          fontSize: 22.0.sp,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      SizedBox(height: 12.w),
-                      // Subtitle
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13.5.sp,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF475569),
-                          height: 1.45,
-                        ),
-                      ),
-                      SizedBox(height: 20.w),
-                      // Pills/Badges row
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: BouncingScrollPhysics(),
-                        child: Row(
-                          children: pills.map((pill) {
-                            return Padding(
-                              padding: EdgeInsets.only(right: 8.0.w),
-                              child: pill,
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                      SizedBox(height: 24.w),
-                      Divider(color: Color(0xFFF1F5F9), height: 1),
-                      SizedBox(height: 16.w),
+              ),
+              SizedBox(height: 16.w),
+              Wrap(spacing: 10.w, runSpacing: 10.w, children: pills),
+              SizedBox(height: 28.w),
 
-                      // How it works info and step dots
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline_rounded,
-                                color: Color(0xFF0F172A),
-                                size: 18.w,
-                              ),
-                              SizedBox(width: 8.w),
-                              Text(
-                                "How does it work",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13.0.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F172A),
-                                ),
-                              ),
-                            ],
+              // How it works info and step dots
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => setState(() => _showHow = !_showHow),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          color: FigmaColors.ink,
+                          size: 20.w,
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          "How does it work",
+                          style: FigmaText.poppins(
+                            12,
+                            lineHeight: 20,
+                            letterSpacing: 0.2,
+                            color: Color(0xFF2D3035),
                           ),
-                          _buildStepDots(),
-                        ],
-                      ),
-                      SizedBox(height: 24.w),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildStepDots(),
+                ],
+              ),
+              AnimatedSize(
+                duration: Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                alignment: Alignment.topCenter,
+                child: _showHow && how.isNotEmpty
+                    ? Container(
+                        margin: EdgeInsets.only(top: 12.w),
+                        padding: EdgeInsets.all(16.w),
+                        decoration: BoxDecoration(
+                          color: Color(0xFFBBEBCE),
+                          borderRadius: BorderRadius.circular(16.w),
+                        ),
+                        child: Text(
+                          how,
+                          style: FigmaText.poppins(
+                            12,
+                            lineHeight: 20,
+                            letterSpacing: 0.2,
+                            color: FigmaColors.ink,
+                          ),
+                        ),
+                      )
+                    : SizedBox(width: double.infinity),
+              ),
+              SizedBox(height: 16.w),
 
-                      // Action Buttons Row
-                      Row(
-                        children: [
-                          // Skip Button
-                          SizedBox(
-                            width: 100.w,
-                            height: 52.w,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                  width: 1.5.w,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16.w),
-                                ),
-                              ),
-                              onPressed: _isRequesting
-                                  ? null
-                                  : _advanceToNextStep,
-                              child: Text(
-                                "Skip",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 15.0.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F172A),
-                                ),
-                              ),
-                            ),
+              // Allow Access: solid blue, 56 high, 14 radius.
+              SizedBox(
+                height: 56.w,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: FigmaColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14.w),
+                    ),
+                    elevation: 0,
+                  ),
+                  onPressed: _isRequesting ? null : _handlePermissionRequest,
+                  child: _isRequesting
+                      ? SizedBox(
+                          width: 20.w,
+                          height: 20.w,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation(Colors.white),
                           ),
-                          SizedBox(width: 12.w),
-                          // Allow Access Button
-                          Expanded(
-                            child: SizedBox(
-                              height: 52.w,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFF0066FF),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16.w),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                onPressed: _isRequesting
-                                    ? null
-                                    : _handlePermissionRequest,
-                                child: _isRequesting
-                                    ? SizedBox(
-                                        width: 20.w,
-                                        height: 20.w,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.5,
-                                          valueColor: AlwaysStoppedAnimation(
-                                            Colors.white,
-                                          ),
-                                        ),
-                                      )
-                                    : Text(
-                                        "Allow Access",
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 15.0.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                              ),
-                            ),
+                        )
+                      : Text(
+                          "Allow Access",
+                          style: FigmaText.poppins(
+                            20,
+                            lineHeight: 28,
+                            letterSpacing: 0.2,
+                            color: Colors.white,
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                ),
+              ),
+              SizedBox(height: 8.w),
+              // Skip: plain text under the button.
+              Center(
+                child: TextButton(
+                  onPressed: _isRequesting ? null : _advanceToNextStep,
+                  child: Text(
+                    "Skip",
+                    style: FigmaText.poppins(
+                      18,
+                      lineHeight: 28,
+                      letterSpacing: 0.2,
+                      color: Color(0xFF4A5267),
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              SizedBox(height: 8.w),
+            ],
           ),
         ),
       ],
@@ -700,36 +684,15 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
 
   Widget _buildFloatingIcon(PermissionStep step) {
     IconData iconData;
-    Widget? badge;
-
     switch (step) {
       case PermissionStep.location:
-        iconData = Icons.location_on_rounded;
+        iconData = Icons.location_on_outlined;
         break;
       case PermissionStep.notification:
-        iconData = Icons.notifications_rounded;
-        badge = Positioned(
-          top: 6.w,
-          right: 6.w,
-          child: Container(
-            padding: EdgeInsets.all(3.w),
-            decoration: BoxDecoration(
-              color: Color(0xFFEF4444),
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              "3",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 8.0.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        );
+        iconData = Icons.notifications_none_rounded;
         break;
       case PermissionStep.battery:
-        iconData = Icons.battery_std_rounded;
+        iconData = Icons.battery_charging_full_rounded;
         break;
       case PermissionStep.usageData:
         iconData = Icons.bar_chart_rounded;
@@ -741,54 +704,43 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
         iconData = Icons.check_circle_rounded;
     }
 
+    // Figma: 62px pale-blue circle, outlined blue glyph.
     return Container(
-      width: 56.w,
-      height: 56.w,
+      width: 62.w,
+      height: 62.w,
       decoration: BoxDecoration(
-        color: Color(0xFFEFF6FF),
         shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF0066FF).withValues(alpha: 0.12),
-            blurRadius: 12.w,
-            spreadRadius: 4.w,
-            offset: Offset(0, 4.w),
-          ),
-        ],
-        border: Border.all(color: Colors.white, width: 2),
+        gradient: LinearGradient(
+          colors: [Color(0xFFEAF2FF), Color(0xFFD5E5FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Icon(iconData, color: Color(0xFF0066FF), size: 26.w),
-          if (badge != null) badge,
-        ],
-      ),
+      child: Icon(iconData, color: FigmaColors.primary, size: 28.w),
     );
   }
 
+  /// Outlined blue pill, Figma Body Small (Poppins Regular 12 / 20).
   Widget _buildPill(String text, IconData icon) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.w),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20.w),
-        border: Border.all(
-          color: Color(0xFF0066FF).withValues(alpha: 0.18),
-          width: 1.5.w,
-        ),
+        borderRadius: BorderRadius.circular(40.w),
+        border: Border.all(color: FigmaColors.primary, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Color(0xFF0066FF), size: 14.w),
+          Icon(icon, color: FigmaColors.primary, size: 13.w),
           SizedBox(width: 6.w),
           Text(
             text,
-            style: GoogleFonts.poppins(
-              fontSize: 12.0.sp,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0066FF),
+            style: FigmaText.poppins(
+              12,
+              lineHeight: 20,
+              letterSpacing: 0.2,
+              color: FigmaColors.primary,
             ),
           ),
         ],
@@ -806,11 +758,11 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
         final isActive = index == _currentStepIndex;
         return AnimatedContainer(
           duration: Duration(milliseconds: 300),
-          margin: EdgeInsets.only(left: 4.w),
-          width: isActive ? 20 : 6,
+          margin: EdgeInsets.only(left: 6.w),
+          width: isActive ? 24.w : 6.w,
           height: 6.w,
           decoration: BoxDecoration(
-            color: isActive ? Color(0xFF0066FF) : Color(0xFFCBD5E1),
+            color: isActive ? FigmaColors.ink : Color(0xFFD5D6D9),
             borderRadius: BorderRadius.circular(3.w),
           ),
         );
@@ -819,252 +771,8 @@ class _PermissionSequenceScreenState extends State<PermissionSequenceScreen>
   }
 
   Widget _buildSuccessStep() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: IntrinsicHeight(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 24.0.w,
-                  vertical: 16.0.w,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Spacer(flex: 2),
-
-                    // Title
-                    Text(
-                      "All Set!",
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 32.0.sp,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                    SizedBox(height: 12.w),
-
-                    // Subtitle
-                    Text(
-                      "Your security and privacy settings\nare now configured.",
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 15.0.sp,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF64748B),
-                        height: 1.4,
-                      ),
-                    ),
-
-                    Spacer(flex: 2),
-
-                    // White card containing details
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24.w),
-                        border: Border.all(
-                          color: Color(0xFFEFF2F6),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0xFF0F172A).withValues(alpha: 0.04),
-                            blurRadius: 16.w,
-                            offset: Offset(0, 8.w),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          _buildSuccessRow(
-                            icon: Icons.lock_outline_rounded,
-                            title: "Security",
-                            subtitle: "Your account is protected",
-                          ),
-                          Divider(
-                            color: Color(0xFFEFF2F6),
-                            height: 1,
-                            indent: 16,
-                            endIndent: 16,
-                          ),
-                          _buildSuccessRow(
-                            icon: Icons.visibility_outlined,
-                            title: "Privacy",
-                            subtitle: "Your information is private",
-                          ),
-                          Divider(
-                            color: Color(0xFFEFF2F6),
-                            height: 1,
-                            indent: 16,
-                            endIndent: 16,
-                          ),
-                          _buildSuccessRow(
-                            icon: Icons.shield_outlined,
-                            title: "Permissions",
-                            subtitle: "App access is set",
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    Spacer(flex: 3),
-
-                    // Celebration Text
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "🎉 ",
-                          style: GoogleFonts.poppins(fontSize: 14.0.sp),
-                        ),
-                        Text(
-                          "You're ready to use the app securely!",
-                          style: GoogleFonts.poppins(
-                            fontSize: 14.0.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF475569),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 24.w),
-
-                    // Go Home Button
-                    SizedBox(
-                      height: 54.w,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF0066FF),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16.w),
-                          ),
-                          elevation: 0,
-                        ),
-                        onPressed: _isRequesting
-                            ? null
-                            : _handlePermissionRequest,
-                        icon: Icon(
-                          Icons.home_outlined,
-                          color: Colors.white,
-                          size: 20.w,
-                        ),
-                        label: Text(
-                          "Go Home",
-                          style: GoogleFonts.poppins(
-                            fontSize: 15.0.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 12.w),
-
-                    // Watch Tutorial Button
-                    SizedBox(
-                      height: 54.w,
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: Color(0xFF0F172A),
-                            width: 2.w,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16.w),
-                          ),
-                          backgroundColor: Colors.transparent,
-                        ),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("Tutorial coming soon!"),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        icon: Icon(
-                          Icons.play_arrow_outlined,
-                          color: Color(0xFF0F172A),
-                          size: 20.w,
-                        ),
-                        label: Text(
-                          "Watch Tutorial",
-                          style: GoogleFonts.poppins(
-                            fontSize: 15.0.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Spacer(flex: 1),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSuccessRow({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.0.w, vertical: 16.0.w),
-      child: Row(
-        children: [
-          // Icon Container
-          Container(
-            width: 44.w,
-            height: 44.w,
-            decoration: BoxDecoration(
-              color: Color(0xFFEFF6FF),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: Color(0xFF3B82F6), size: 22.w),
-          ),
-          SizedBox(width: 14.w),
-          // Texts
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 15.0.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.5.sp,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Checkmark
-          Icon(
-            Icons.check_circle_rounded,
-            color: Color(0xFF10B981),
-            size: 24.w,
-          ),
-        ],
-      ),
+    return AllSetContent(
+      onGoHome: _isRequesting ? null : _handlePermissionRequest,
     );
   }
 }

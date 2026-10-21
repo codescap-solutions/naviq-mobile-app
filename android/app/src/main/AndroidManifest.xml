@@ -97,10 +97,23 @@
             android:exported="false"
             tools:replace="android:exported" />
             
+        <!-- flutter_background_service ships its own boot/app-update receiver. It starts
+             the location foreground service unconditionally — no logged-in-child check and
+             no location-permission check (a parent phone, or a child who revoked location,
+             would get a service that can't call startForeground → a crash) — and holds a
+             PARTIAL_WAKE_LOCK without timeout. It is removed from the merged manifest and
+             replaced by the guarded .BootReceiver below (same BOOT_COMPLETED /
+             QUICKBOOT_POWERON / MY_PACKAGE_REPLACED coverage), so boot and app-update
+             recovery keep working. See TrackingRecovery.kt. -->
+        <receiver
+            android:name="id.flutter.flutter_background_service.BootReceiver"
+            tools:node="remove" />
+
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
 

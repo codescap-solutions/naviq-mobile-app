@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 import 'package:battery_plus/battery_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:child_track/core/utils/structured_logger.dart';
@@ -15,6 +14,9 @@ import 'package:child_track/core/services/tracking/offline_trip_queue.dart';
 import 'package:child_track/core/services/tracking/local_geofence_engine.dart';
 import 'package:child_track/core/services/tracking/tracking_config_service.dart';
 import 'package:child_track/core/services/tracking/geofence_tracking_config.dart';
+import 'package:child_track/core/utils/location_payload.dart';
+import 'package:child_track/core/services/base_service.dart';
+import 'package:child_track/core/services/tracking/post_outcome.dart';
 
 export 'package:child_track/core/services/tracking/trip_classification_engine.dart'
     show BgTripMode;
@@ -94,10 +96,14 @@ class LocationStateMachine {
     // arrives meant a stationary device (no new points) could sit on a queued
     // location/geofence event indefinitely — one of the ways fresh evidence
     // reached the server minutes late.
-    _queueFlushTimer = Timer.periodic(GeofenceTrackingConfig.queueFlushInterval, (_) {
-      final childId = _prefs.getString('child_id');
-      if (childId != null && childId.isNotEmpty) _tryDrainOfflineQueue(childId);
-    });
+    _queueFlushTimer = Timer.periodic(
+      GeofenceTrackingConfig.queueFlushInterval,
+      (_) {
+        final childId = _prefs.getString('child_id');
+        if (childId != null && childId.isNotEmpty)
+          _tryDrainOfflineQueue(childId);
+      },
+    );
   }
 
   void dispose() {
@@ -164,7 +170,8 @@ class LocationStateMachine {
     _stopDetector.processPosition(position, _ar.current);
 
     // ── Fetch config periodically ──────────────────────────────────────────
-    if (_lastConfigFetch == null || DateTime.now().difference(_lastConfigFetch!).inHours >= 1) {
+    if (_lastConfigFetch == null ||
+        DateTime.now().difference(_lastConfigFetch!).inHours >= 1) {
       _lastConfigFetch = DateTime.now();
       _configService.fetchConfigFromServer();
     }
@@ -202,12 +209,16 @@ class LocationStateMachine {
   /// + [GeofenceTrackingConfig.nearFenceBufferMeters])? Has hysteresis so GPS
   /// jitter at the zone edge doesn't thrash the location stream.
   bool updateNearFence(Position position) {
-    final edge = _geoEngine.nearestEdgeDistanceMeters(position.latitude, position.longitude);
+    final edge = _geoEngine.nearestEdgeDistanceMeters(
+      position.latitude,
+      position.longitude,
+    );
     if (edge == null) {
       _isNearFence = false;
       return false;
     }
-    final limit = GeofenceTrackingConfig.nearFenceBufferMeters +
+    final limit =
+        GeofenceTrackingConfig.nearFenceBufferMeters +
         (_isNearFence ? GeofenceTrackingConfig.nearFenceExitExtraMeters : 0);
     _isNearFence = edge <= limit;
     return _isNearFence;
@@ -246,7 +257,11 @@ class LocationStateMachine {
           );
           await _postChildLocation(pos, childId, source: reason);
         } catch (e) {
-          StructuredLogger.log(LogTag.BG, '[Geofence] Fresh fix failed ($reason)', error: e);
+          StructuredLogger.log(
+            LogTag.BG,
+            '[Geofence] Fresh fix failed ($reason)',
+            error: e,
+          );
         }
       }
     } finally {
@@ -258,7 +273,11 @@ class LocationStateMachine {
   // LOCATION POSTING
   // ══════════════════════════════════════════════════════════════════════════
 
-  Future<void> _postChildLocation(Position pos, String childId, {String source = 'stream'}) async {
+  Future<void> _postChildLocation(
+    Position pos,
+    String childId, {
+    String source = 'stream',
+  }) async {
     try {
       int batteryLevel = 100;
       try {
@@ -273,8 +292,8 @@ class LocationStateMachine {
         'lng': pos.longitude,
         'accuracy': pos.accuracy,
         'accuracy_m': pos.accuracy,
-        'speed': pos.speed < 0 ? 0.0 : pos.speed,
-        'speed_mps': pos.speed < 0 ? 0.0 : pos.speed,
+        // Unknown speed is omitted (speed_known=false), never sent as 0 m/s.
+        ...speedFields(pos),
         'bearing': pos.heading < 0 ? 0.0 : pos.heading,
         'altitude': pos.altitude,
         'speed_accuracy': pos.speedAccuracy,
@@ -297,9 +316,10 @@ class LocationStateMachine {
         'battery': batteryLevel,
         // Engineering diagnostics only (never shown to a parent): which
         // platform/tracking profile produced this fix and why it was taken.
-        'platform': Platform.isIOS ? 'ios' : 'android',
-        'tracking_profile': profileLabelProvider?.call() ?? 'unknown',
-        'fix_source': source,
+        ...locationDiagnostics(
+          fixSource: source,
+          trackingProfile: profileLabelProvider?.call() ?? 'unknown',
+        ),
       };
 
       StructuredLogger.log(LogTag.BG, 'Posting location → $requestBody');
@@ -308,46 +328,76 @@ class LocationStateMachine {
         LogTag.BG,
         'Location post: [${response.statusCode}] ${response.message}',
       );
-      StructuredLogger.log(
-        LogTag.LOCATION,
-        'source=$source lat=${pos.latitude} lng=${pos.longitude} '
-        'acc=${pos.accuracy.toStringAsFixed(1)}m status=posted',
-        buffered: true,
-      );
-    } catch (e) {
-      StructuredLogger.log(LogTag.BG, 'Failed to post location', error: e);
-      String status = 'failed';
-      try {
-        final int battery = await _battery.batteryLevel;
-        await _offlineQueue.enqueueLocation(
-          childId: childId,
-          payload: {
-            // The server rejects a location post without child_id (400);
-            // queued entries used to omit it and were dead-lettered after
-            // their retries, i.e. an offline fix was never actually delivered.
-            'child_id': childId,
-            'lat': pos.latitude,
-            'lng': pos.longitude,
-            'accuracy_m': pos.accuracy,
-            'speed_mps': pos.speed < 0 ? 0.0 : pos.speed,
-            'bearing': pos.heading < 0 ? 0.0 : pos.heading,
-            // The fix's own capture time (not the time the upload failed), so
-            // the server can tell how old the evidence is when it replays.
-            'timestamp': pos.timestamp.toUtc().toIso8601String(),
-            'accuracy': pos.accuracy,
-            'battery': battery,
-            'platform': Platform.isIOS ? 'ios' : 'android',
-            'fix_source': source,
-          },
-        );
-        status = 'queued';
-      } catch (_) {}
+      // BaseService.post never throws — a failed upload comes back as an error
+      // response — so the answer itself decides whether the point is kept.
+      final outcome = classifyPostResponse(response);
+      var status = 'posted';
+      if (outcome == PostOutcome.retryable) {
+        status = await _queueLocation(pos, childId, source)
+            ? 'queued'
+            : 'failed';
+      } else if (outcome == PostOutcome.clockSkew) {
+        status = 'refused_clock_skew';
+      } else if (outcome == PostOutcome.permanent) {
+        status = 'refused';
+      }
       StructuredLogger.log(
         LogTag.LOCATION,
         'source=$source lat=${pos.latitude} lng=${pos.longitude} '
         'acc=${pos.accuracy.toStringAsFixed(1)}m status=$status',
         buffered: true,
       );
+    } catch (e) {
+      StructuredLogger.log(LogTag.BG, 'Failed to post location', error: e);
+      final status = await _queueLocation(pos, childId, source)
+          ? 'queued'
+          : 'failed';
+      StructuredLogger.log(
+        LogTag.LOCATION,
+        'source=$source lat=${pos.latitude} lng=${pos.longitude} '
+        'acc=${pos.accuracy.toStringAsFixed(1)}m status=$status',
+        buffered: true,
+      );
+    }
+  }
+
+  /// Keep a fix that could not be delivered so the offline-queue drain re-sends
+  /// it. The payload carries the fix's OWN capture time (never the time the
+  /// upload failed), and the queue already ignores a second entry with the same
+  /// timestamp, so a retry of the same fix cannot be queued twice. Returns
+  /// whether the point is now safely queued.
+  Future<bool> _queueLocation(
+    Position pos,
+    String childId,
+    String source,
+  ) async {
+    try {
+      // A failing battery read must never be the reason a fix is lost.
+      var battery = 100;
+      try {
+        battery = await _battery.batteryLevel;
+      } catch (_) {}
+      await _offlineQueue.enqueueLocation(
+        childId: childId,
+        payload: {
+          // The server rejects a location post without child_id (400);
+          // queued entries used to omit it and were dead-lettered after
+          // their retries, i.e. an offline fix was never actually delivered.
+          'child_id': childId,
+          'lat': pos.latitude,
+          'lng': pos.longitude,
+          'accuracy_m': pos.accuracy,
+          ...speedFields(pos, legacyAlias: false),
+          'bearing': pos.heading < 0 ? 0.0 : pos.heading,
+          'timestamp': pos.timestamp.toUtc().toIso8601String(),
+          'accuracy': pos.accuracy,
+          'battery': battery,
+          ...locationDiagnostics(fixSource: source),
+        },
+      );
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -391,24 +441,30 @@ class LocationStateMachine {
     double totalDistance = 0;
     for (int i = 0; i < newWindow.length - 1; i++) {
       totalDistance += Geolocator.distanceBetween(
-        newWindow[i].latitude, newWindow[i].longitude,
-        newWindow[i + 1].latitude, newWindow[i + 1].longitude,
+        newWindow[i].latitude,
+        newWindow[i].longitude,
+        newWindow[i + 1].latitude,
+        newWindow[i + 1].longitude,
       );
     }
 
     final startPt = newWindow.first;
     final endPt = newWindow.last;
     final straightDist = Geolocator.distanceBetween(
-      startPt.latitude, startPt.longitude,
-      endPt.latitude, endPt.longitude,
+      startPt.latitude,
+      startPt.longitude,
+      endPt.latitude,
+      endPt.longitude,
     );
-    final durationSeconds =
-        endPt.timestamp.difference(startPt.timestamp).inSeconds;
+    final durationSeconds = endPt.timestamp
+        .difference(startPt.timestamp)
+        .inSeconds;
     if (durationSeconds < 1) return;
 
     final avgSpeed = totalDistance / durationSeconds;
-    final consistencyRatio =
-        totalDistance > 0 ? straightDist / totalDistance : 0.0;
+    final consistencyRatio = totalDistance > 0
+        ? straightDist / totalDistance
+        : 0.0;
 
     StructuredLogger.log(
       LogTag.TRIP,
@@ -454,10 +510,7 @@ class LocationStateMachine {
     }
 
     if (rulesMet) {
-      StructuredLogger.log(
-        LogTag.TRIP,
-        'TRIP CONFIRMED! Mode: $estimatedMode',
-      );
+      StructuredLogger.log(LogTag.TRIP, 'TRIP CONFIRMED! Mode: $estimatedMode');
       await _startTripTracking(estimatedMode, childId);
     } else {
       _candidatePoints = newWindow;
@@ -532,17 +585,16 @@ class LocationStateMachine {
         data: requestBody,
       );
 
-      StructuredLogger.log(
-        LogTag.TRIP,
-        'Trip post response: ${response.data}',
-      );
+      StructuredLogger.log(LogTag.TRIP, 'Trip post response: ${response.data}');
 
       if (response.isSuccess && response.data != null) {
         if (_shouldStopTrip(response.data)) {
           StructuredLogger.log(LogTag.TRIP, 'Backend → STOP signal');
           _stopTripTracking();
         }
-      } else {
+      } else if (classifyPostResponse(response) == PostOutcome.retryable) {
+        // Only a failure a re-send can cure is queued; a permanent refusal
+        // would just be dropped by the drain after a pointless round trip.
         await _offlineQueue.enqueuePoints(
           childId: childId,
           points: enhancedPoints,
@@ -578,7 +630,10 @@ class LocationStateMachine {
   Future<void> _postTripEnd(String childId, DateTime endedAt) async {
     final payload = {'ended_at': endedAt.toIso8601String()};
     try {
-      final response = await _childRepo.postTripEnd(childId: childId, data: payload);
+      final response = await _childRepo.postTripEnd(
+        childId: childId,
+        data: payload,
+      );
       if (!response.isSuccess) {
         await _offlineQueue.enqueueTripEnd(childId: childId, endedAt: endedAt);
       }
@@ -609,7 +664,11 @@ class LocationStateMachine {
         );
       }
     } catch (e) {
-      StructuredLogger.log(LogTag.BG, '[Geofence] Failed to refresh fences', error: e);
+      StructuredLogger.log(
+        LogTag.BG,
+        '[Geofence] Failed to refresh fences',
+        error: e,
+      );
     }
   }
 
@@ -667,7 +726,11 @@ class LocationStateMachine {
         );
       }
     } catch (e) {
-      StructuredLogger.log(LogTag.BG, '[Geofence] Failed to post event – queuing', error: e);
+      StructuredLogger.log(
+        LogTag.BG,
+        '[Geofence] Failed to post event – queuing',
+        error: e,
+      );
       await _offlineQueue.enqueueGeofenceEvent(
         childId: childId,
         payload: {
@@ -703,19 +766,19 @@ class LocationStateMachine {
               'child_id': entry.childId,
               ...entry.payload,
             });
-            return response.isSuccess;
+            return _settled(response);
           case OfflineEntryType.tripPoints:
             final response = await _childRepo.postTripLocation(
               childId: entry.childId,
               data: entry.payload,
             );
-            return response.isSuccess;
+            return _settled(response);
           case OfflineEntryType.tripEnd:
             final response = await _childRepo.postTripEnd(
               childId: entry.childId,
               data: entry.payload,
             );
-            return response.isSuccess;
+            return _settled(response);
           case OfflineEntryType.geofenceEvent:
             final response = await _childRepo.postGeofenceEvent(
               childId: entry.childId,
@@ -723,12 +786,27 @@ class LocationStateMachine {
               eventType: entry.payload['eventType'] as String,
               timestamp: entry.payload['timestamp'] as String,
             );
-            return response.isSuccess;
+            return _settled(response);
         }
       } catch (_) {
         return false;
       }
     });
+  }
+
+  /// Whether a replayed queue entry is finished with: delivered, or refused for
+  /// a reason a re-send cannot fix (dropped now rather than retried to the cap).
+  /// Only a retryable failure keeps the entry queued.
+  bool _settled(BaseResponse response) {
+    final outcome = classifyPostResponse(response);
+    if (outcome == PostOutcome.permanent || outcome == PostOutcome.clockSkew) {
+      StructuredLogger.log(
+        LogTag.BG,
+        '[OfflineQ] dropping entry the server refused permanently '
+        '(${response.statusCode} ${response.errorCode ?? response.message})',
+      );
+    }
+    return outcome != PostOutcome.retryable;
   }
 
   // ══════════════════════════════════════════════════════════════════════════

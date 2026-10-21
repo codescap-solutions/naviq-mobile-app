@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:flutter/cupertino.dart' show CupertinoIcons, CupertinoSwitch;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -1008,33 +1009,15 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18.w),
         ),
-        title: Text(
-          'Delete Geofence',
-          style: GoogleFonts.poppins(
-            fontSize: 18.0.sp,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF0C1D37),
-          ),
-        ),
+        title: Text('Delete Geofence', style: FigmaText.dialogTitle),
         content: Text(
           'Are you sure you want to delete "${widget.geofence?.name}"?',
-          style: GoogleFonts.poppins(
-            fontSize: 14.0.sp,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF475569),
-          ),
+          style: FigmaText.dialogBody,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dlgContext),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.poppins(
-                fontSize: 14.0.sp,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF64748B),
-              ),
-            ),
+            child: Text('Cancel', style: FigmaText.dialogAction),
           ),
           TextButton(
             onPressed: () {
@@ -1047,11 +1030,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
             },
             child: Text(
               'Delete',
-              style: GoogleFonts.poppins(
-                fontSize: 14.0.sp,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFEF4444),
-              ),
+              style: FigmaText.dialogBody.copyWith(color: FigmaColors.danger),
             ),
           ),
         ],

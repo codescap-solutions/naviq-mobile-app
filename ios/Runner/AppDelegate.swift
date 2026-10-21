@@ -386,7 +386,9 @@ import os.log
                     d?.set(fresh.coordinate.latitude,            forKey: self.kCachedLat)
                     d?.set(fresh.coordinate.longitude,           forKey: self.kCachedLng)
                     d?.set(fresh.horizontalAccuracy,             forKey: self.kCachedAcc)
-                    d?.set(max(0, fresh.speed),                  forKey: self.kCachedSpd)
+                    // CoreLocation: a NEGATIVE speed means "invalid / unknown" — keep it
+                    // negative here; it is omitted from the upload instead of becoming 0 m/s.
+                    d?.set(fresh.speed,                          forKey: self.kCachedSpd)
                     // The fix's OWN capture time, not "now".
                     d?.set(fresh.timestamp.timeIntervalSince1970, forKey: self.kCachedLocTs)
                     print("AppDelegate: 📍 Fresh location acquired")
@@ -478,7 +480,8 @@ import os.log
         let lat      = defaults?.double(forKey: kCachedLat) ?? 0
         let lng      = defaults?.double(forKey: kCachedLng) ?? 0
         let accuracy = defaults?.double(forKey: kCachedAcc) ?? 0
-        let speed    = defaults?.double(forKey: kCachedSpd) ?? 0
+        // Never-cached or negative = UNKNOWN speed (not 0 m/s).
+        let speed    = defaults?.object(forKey: kCachedSpd) == nil ? -1.0 : (defaults?.double(forKey: kCachedSpd) ?? -1.0)
 
         UIDevice.current.isBatteryMonitoringEnabled = true
 
@@ -526,12 +529,11 @@ import os.log
             // — Payload 2: Location —
             // Field names match Dart _onPostChildLocation exactly.
             // No geocoding: address/place_name are empty strings — server resolves from coords.
-            let locationPayload: [String: Any] = [
+            var locationPayload: [String: Any] = [
                 "child_id":              childId,
                 "lat":                   lat,
                 "lng":                   lng,
                 "accuracy_m":            accuracy,
-                "speed_mps":             speed,
                 "bearing":               0.0,
                 "address":               "",
                 "place_name":            "",
@@ -543,6 +545,18 @@ import os.log
                 "tracking_profile":      "native_sync",
                 "fix_source":            fixSource
             ]
+            // Device wall clock at SEND time — lets the backend tell a wrong phone clock from a late upload.
+            locationPayload["device_time"] = ISO8601DateFormatter().string(from: Date())
+            if let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String { locationPayload["app_version"] = v }
+            if let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String { locationPayload["app_build"] = b }
+            // Unknown speed is omitted and flagged, never sent as 0 m/s (the backend's
+            // drive-by arrival guard only trusts a KNOWN slow speed).
+            if speed >= 0 {
+                locationPayload["speed_mps"] = speed
+                locationPayload["speed_known"] = true
+            } else {
+                locationPayload["speed_known"] = false
+            }
 
             // — Payload 3: Screen Time (only if records exist) —
             // Field names match Dart ScreenTimeSyncService.uploadScreenTimeData exactly
@@ -1046,7 +1060,8 @@ extension AppDelegate: CLLocationManagerDelegate {
         let d = sharedDefaults
         d?.set(loc.coordinate.latitude,               forKey: kCachedLat)
         d?.set(loc.coordinate.longitude,              forKey: kCachedLng)
-        d?.set(max(0, loc.speed),                     forKey: kCachedSpd)
+        // Negative = unknown (see above); never coerced to 0 m/s.
+        d?.set(loc.speed,                             forKey: kCachedSpd)
         d?.set(loc.horizontalAccuracy,                forKey: kCachedAcc)
         // The fix's own capture time (iOS can deliver deferred/batched
         // updates late) — not the delivery time.
@@ -1101,7 +1116,7 @@ extension AppDelegate: CLLocationManagerDelegate {
         let d = sharedDefaults
         d?.set(lat, forKey: kCachedLat)
         d?.set(lng, forKey: kCachedLng)
-        d?.set(0.0, forKey: kCachedSpd)
+        d?.set(-1.0, forKey: kCachedSpd) // a visit carries no speed reading → unknown
         d?.set(10.0, forKey: kCachedAcc)
         d?.set(ts, forKey: kCachedLocTs)
         
@@ -1794,6 +1809,22 @@ extension AppDelegate {
         logToExtension("🔔 Notification Will Present (foreground): type=\(type ?? "nil") action=\(action ?? "nil")")
         
         if #available(iOS 16.0, *) { handleLockPayloadIfNeeded(userInfo) }
+
+        // FCM pushes must go through super so firebase_messaging can raise onMessage in Dart;
+        // without it in-app handlers (e.g. LOGOUT_RESULT) never fire in the foreground. Dart
+        // shows its own local banner for them, so suppress the native one to avoid a duplicate.
+        if userInfo["gcm.message_id"] != nil {
+            var completed = false
+            let finish: (UNNotificationPresentationOptions) -> Void = { _ in
+                guard !completed else { return }
+                completed = true
+                completionHandler([])
+            }
+            super.userNotificationCenter(center, willPresent: notification, withCompletionHandler: finish)
+            // Safety net: never leave the completion handler uncalled if no plugin answered.
+            DispatchQueue.main.async { finish([]) }
+            return
+        }
         completionHandler([.banner, .badge, .sound])
     }
 
