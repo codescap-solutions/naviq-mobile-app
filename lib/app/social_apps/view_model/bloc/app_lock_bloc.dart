@@ -34,6 +34,7 @@ class AppLockBloc extends Bloc<AppLockEvent, AppLockState> {
     on<ToggleAppLock>(_onToggleAppLock);
     on<UpdateLockedApps>(_onUpdateLockedApps);
     on<BlockAllApps>(_onBlockAllApps);
+    on<UnblockAllApps>(_onUnblockAllApps);
   }
 
   // ─── Permission Handlers ───
@@ -265,6 +266,62 @@ class AppLockBloc extends Bloc<AppLockEvent, AppLockState> {
       }
     } catch (e) {
       AppLogger.error('BlockAll error: $e');
+    }
+
+    // Re-fetch canonical server state
+    await _fetchParentLockedApps(emit);
+  }
+
+  // ─── Unblock All Apps (parent side) ───
+  // One bulk request per platform. Firing a ToggleAppLock per app raced on the
+  // server and left some apps locked.
+
+  Future<void> _onUnblockAllApps(
+    UnblockAllApps event,
+    Emitter<AppLockState> emit,
+  ) async {
+    if (!_isParent) return;
+    final childId =
+        _prefs.getString('selected_child_id') ??
+        _prefs.getString('child_id') ??
+        '';
+    if (childId.isEmpty || event.packageNames.isEmpty) return;
+
+    final currentState = state is AppLockLoaded
+        ? state as AppLockLoaded
+        : const AppLockLoaded();
+    final optimistic = Set<String>.from(currentState.lockedPackages)
+      ..removeAll(event.packageNames);
+    emit(currentState.copyWith(lockedPackages: optimistic));
+
+    final androidPkgs = event.packageNames
+        .where(
+          (p) => !p.startsWith('usage_cat_') && !p.startsWith('usage_app_'),
+        )
+        .toList();
+    final iosPkgs = event.packageNames
+        .where((p) => p.startsWith('usage_cat_') || p.startsWith('usage_app_'))
+        .toList();
+
+    try {
+      if (androidPkgs.isNotEmpty) {
+        await _repository.unlockApps(
+          childId: childId,
+          tokens: androidPkgs,
+          platform: 'android',
+        );
+        AppLogger.info('UnblockAll: unlocked ${androidPkgs.length} Android apps');
+      }
+      if (iosPkgs.isNotEmpty) {
+        await _repository.unlockApps(
+          childId: childId,
+          tokens: iosPkgs,
+          platform: 'ios',
+        );
+        AppLogger.info('UnblockAll: unlocked ${iosPkgs.length} iOS apps');
+      }
+    } catch (e) {
+      AppLogger.error('UnblockAll error: $e');
     }
 
     // Re-fetch canonical server state

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:child_track/app/childapp/view_model/repository/logout_request_repository.dart';
 import 'package:child_track/app/home/view_model/home_repo.dart';
+import 'package:child_track/app/social_apps/view_model/time_limit_repository.dart';
 import 'package:child_track/core/constants/figma_tokens.dart';
 import 'package:child_track/core/utils/app_snackbar.dart';
 import 'package:child_track/core/di/injector.dart';
@@ -24,6 +25,7 @@ class NotificationPage extends StatefulWidget {
 class _NotificationPageState extends State<NotificationPage> {
   static const _pageSize = 20;
   static const _hiddenKey = 'hidden_notification_ids';
+  static const _kindTimeExtension = 'time_extension';
 
   final SharedPrefsService _prefs = SharedPrefsService();
   final ScrollController _scroll = ScrollController();
@@ -162,14 +164,34 @@ class _NotificationPageState extends State<NotificationPage> {
       repo.listByStatus('approved'),
       repo.listByStatus('denied'),
     ]);
+    final extensions = await injector<TimeLimitRepository>()
+        .listPendingRequests();
     if (!mounted) return;
     final pending = results[0];
     setState(() {
-      if (pending.isSuccess) {
-        _pending = (pending.data ?? [])
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
-      }
+      // Keep whichever kind failed to load this time instead of dropping it.
+      final logoutCards = pending.isSuccess
+          ? (pending.data ?? [])
+                .map((e) => Map<String, dynamic>.from(e as Map))
+                .toList()
+          : _pending.where((r) => r['_kind'] != _kindTimeExtension).toList();
+      final extensionCards = extensions.isSuccess
+          ? (extensions.data ?? [])
+                .map(
+                  (r) => <String, dynamic>{
+                    '_id': r.id,
+                    '_kind': _kindTimeExtension,
+                    'child_id': r.childId,
+                    'app_name': r.appName,
+                    'package_name': r.packageName,
+                    'requested_minutes': r.requestedMinutes,
+                    'reason': r.reason,
+                    'created_at': r.createdAt.toIso8601String(),
+                  },
+                )
+                .toList()
+          : _pending.where((r) => r['_kind'] == _kindTimeExtension).toList();
+      _pending = [...logoutCards, ...extensionCards];
       for (final entry in {
         'approved': results[1],
         'denied': results[2],
@@ -189,10 +211,55 @@ class _NotificationPageState extends State<NotificationPage> {
     return 'Your child';
   }
 
+  Future<void> _resolveExtension(
+    Map<String, dynamic> request,
+    bool approve,
+  ) async {
+    final id = request['_id'].toString();
+    final name = _childName(request['child_id']?.toString());
+    final appName = request['app_name']?.toString() ?? 'the app';
+    final packageName = request['package_name']?.toString() ?? '';
+    // Same iOS-token vs Android-package heuristic home_page uses for this push.
+    final platform =
+        packageName.startsWith('usage_cat_') ||
+            packageName.startsWith('usage_app_')
+        ? 'ios'
+        : 'android';
+    setState(() => _resolving.add(id));
+    final response = await injector<TimeLimitRepository>()
+        .resolveExtensionRequest(
+          requestId: id,
+          approve: approve,
+          platform: platform,
+        );
+    if (!mounted) return;
+    setState(() => _resolving.remove(id));
+    if (response.isSuccess) {
+      setState(() => _logoutStatus[id] = approve ? 'approved' : 'denied');
+      AppSnackbar.showSuccess(
+        context,
+        approve
+            ? (request['reason'] == 'locked'
+                  ? '$appName unlocked for $name'
+                  : 'Extra time granted to $name')
+            : 'Request denied',
+      );
+    } else {
+      AppSnackbar.showError(
+        context,
+        response.message.isEmpty ? 'Something went wrong' : response.message,
+      );
+      _loadPending();
+    }
+  }
+
   Future<void> _resolveLogout(
     Map<String, dynamic> request,
     bool approve,
   ) async {
+    if (request['_kind'] == _kindTimeExtension) {
+      return _resolveExtension(request, approve);
+    }
     final id = request['_id'].toString();
     final name = _childName(request['child_id']?.toString());
     setState(() => _resolving.add(id));
@@ -247,7 +314,8 @@ class _NotificationPageState extends State<NotificationPage> {
         .where(
           (n) =>
               !_hidden.contains(n['id']) &&
-              !(n['type'] == 'LOGOUT_REQUEST' &&
+              !((n['type'] == 'LOGOUT_REQUEST' ||
+                      n['type'] == 'TIME_EXTENSION_REQUEST') &&
                   pendingIds.contains(n['request_id']?.toString())),
         )
         .toList();
@@ -600,6 +668,21 @@ class _NotificationPageState extends State<NotificationPage> {
     final id = request['_id'].toString();
     final name = _childName(request['child_id']?.toString());
     final busy = _resolving.contains(id);
+    final isExtension = request['_kind'] == _kindTimeExtension;
+    final appName = request['app_name']?.toString() ?? 'the app';
+    final isLockedApp = request['reason'] == 'locked';
+    final type = isExtension ? 'TIME_EXTENSION_REQUEST' : 'LOGOUT_REQUEST';
+    // Same wording the server uses for the matching push.
+    final title = !isExtension
+        ? '$name wants to log out'
+        : (isLockedApp
+              ? '$name wants to use $appName'
+              : '$name is asking for more time');
+    final subtitle = !isExtension
+        ? 'Allow $name to log out of the app?'
+        : (isLockedApp
+              ? '$appName is locked on $name\'s device. Unlock it?'
+              : '$name wants ${request['requested_minutes'] ?? 15} more minutes on $appName.');
     Widget button(String label, bool approve) => Expanded(
       child: Padding(
         padding: EdgeInsets.zero,
@@ -666,11 +749,11 @@ class _NotificationPageState extends State<NotificationPage> {
                 height: 36.w,
                 width: 36.w,
                 decoration: BoxDecoration(
-                  color: _getColorForType('LOGOUT_REQUEST'),
+                  color: _getColorForType(type),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  _getIconForType('LOGOUT_REQUEST'),
+                  _getIconForType(type),
                   color: Colors.white,
                   size: 18.w,
                 ),
@@ -681,7 +764,7 @@ class _NotificationPageState extends State<NotificationPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '$name wants to log out',
+                      title,
                       style: FigmaText.poppins(
                         16,
                         color: Color(0xFF0F1320),
@@ -691,7 +774,7 @@ class _NotificationPageState extends State<NotificationPage> {
                     Padding(
                       padding: EdgeInsets.only(top: 2.w),
                       child: Text(
-                        'Allow $name to log out of the app?',
+                        subtitle,
                         style: FigmaText.poppins(
                           12,
                           color: Color(0xFF6B7280),

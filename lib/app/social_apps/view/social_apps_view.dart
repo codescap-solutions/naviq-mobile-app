@@ -475,13 +475,13 @@ class _ScreenTimeHeaderState extends State<_ScreenTimeHeader> {
 
   void _onUnblockAll(BuildContext context) {
     if (!_guardScreenTimeAction(context)) return;
-    for (final pkg in widget.allPackages) {
-      if (widget.lockedPackages.contains(pkg)) {
-        widget.appLockBloc?.add(
-          ToggleAppLock(packageName: pkg, isLocked: false),
-        );
-      }
-    }
+    widget.appLockBloc?.add(
+      UnblockAllApps(
+        packageNames: widget.allPackages
+            .where(widget.lockedPackages.contains)
+            .toList(),
+      ),
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Removing time limit...'),

@@ -34,6 +34,9 @@ class TimeExtensionRequestItem {
   final String status;
   final DateTime createdAt;
 
+  /// 'locked' (parent locked the app outright) or 'time_limit'.
+  final String reason;
+
   TimeExtensionRequestItem({
     required this.id,
     required this.childId,
@@ -42,6 +45,7 @@ class TimeExtensionRequestItem {
     required this.requestedMinutes,
     required this.status,
     required this.createdAt,
+    this.reason = 'time_limit',
   });
 
   factory TimeExtensionRequestItem.fromJson(Map<String, dynamic> json) {
@@ -55,6 +59,7 @@ class TimeExtensionRequestItem {
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at']) ?? DateTime.now()
           : DateTime.now(),
+      reason: json['reason'] ?? 'time_limit',
     );
   }
 }

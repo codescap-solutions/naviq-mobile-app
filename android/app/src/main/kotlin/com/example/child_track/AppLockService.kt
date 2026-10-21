@@ -187,6 +187,30 @@ class AppLockService : AccessibilityService() {
         }
     }
 
+    // shortcut: launcher/keyboard sets are cached 60s, so a just-installed keyboard
+    // stays blockable for up to a minute; fine unless it becomes a bypass.
+    private var exemptPackages: Set<String> = emptySet()
+    private var exemptPackagesAt: Long = 0L
+
+    private fun isLauncherOrKeyboard(packageName: String): Boolean {
+        val now = System.currentTimeMillis()
+        if (now - exemptPackagesAt > 60_000L) {
+            try {
+                val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+                val launchers = packageManager.queryIntentActivities(home, 0)
+                    .map { it.activityInfo.packageName }
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE)
+                    as android.view.inputmethod.InputMethodManager
+                val keyboards = imm.enabledInputMethodList.map { it.packageName }
+                exemptPackages = (launchers + keyboards).toSet()
+                exemptPackagesAt = now
+            } catch (e: Exception) {
+                Log.e(TAG, ">>> Failed to resolve launcher/keyboard packages: ${e.message}")
+            }
+        }
+        return packageName in exemptPackages
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         
@@ -228,6 +252,13 @@ class AppLockService : AccessibilityService() {
             if (webFilteringEnabled && BROWSER_PACKAGES.contains(packageName)) {
                 checkWebFiltering(packageName, event)
             }
+            return
+        }
+
+        // "Block All" can sweep the launcher / keyboard into the locked list; blocking
+        // them pops the block screen while the child just types in launcher search.
+        if (isLauncherOrKeyboard(packageName)) {
+            Log.d(TAG, ">>> Skipping block for launcher/keyboard: $packageName")
             return
         }
 

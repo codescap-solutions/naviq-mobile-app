@@ -53,3 +53,13 @@ class BlockAllApps extends AppLockEvent {
   @override
   List<Object> get props => [packageNames, durationMinutes];
 }
+
+/// Unlocks every package in [packageNames] in one bulk request per platform.
+class UnblockAllApps extends AppLockEvent {
+  final List<String> packageNames;
+
+  const UnblockAllApps({required this.packageNames});
+
+  @override
+  List<Object> get props => [packageNames];
+}
