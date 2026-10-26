@@ -9,10 +9,17 @@ import '../../../home/view_model/home_repo.dart';
 import 'geofence_event.dart';
 import 'geofence_state.dart';
 import 'package:http/http.dart' as http;
+import 'package:uuid/uuid.dart';
 
 class GeofenceBloc extends Bloc<GeofenceEvent, GeofenceState> {
   final GeofenceRepository _repository;
   final HomeRepository _homeRepository;
+
+  // Autocomplete is billed per request while typing; the debounce drops keystrokes
+  // that are superseded within 300 ms, and one session token groups the whole
+  // search (autocomplete requests + the final details call) into one billed session.
+  int _searchSeq = 0;
+  String? _placesSessionToken;
 
   GeofenceBloc({
     required GeofenceRepository repository,
@@ -151,12 +158,16 @@ class GeofenceBloc extends Bloc<GeofenceEvent, GeofenceState> {
     Emitter<GeofenceState> emit,
   ) async {
     final query = event.query.trim();
+    final seq = ++_searchSeq;
 
     // If empty → clear suggestions
     if (query.isEmpty) {
       emit(const LocationSuggestionsCleared());
       return;
     }
+
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (seq != _searchSeq || emit.isDone) return;
 
     try {
       final apiKey = AppStrings.googleMapsApiKey;
@@ -168,10 +179,12 @@ class GeofenceBloc extends Bloc<GeofenceEvent, GeofenceState> {
           "input": query,
           "key": apiKey,
           "components": "country:in", // optional: restrict country
+          "sessiontoken": _placesSessionToken ??= const Uuid().v4(),
         },
       );
 
       final response = await http.get(uri);
+      if (seq != _searchSeq || emit.isDone) return;
 
       if (response.statusCode != 200) {
         emit(const LocationSuggestionsCleared());
@@ -238,11 +251,13 @@ class GeofenceBloc extends Bloc<GeofenceEvent, GeofenceState> {
         "place_id": placeId,
         "key": apiKey,
         "fields": "geometry", // IMPORTANT: only request what you need
+        if (_placesSessionToken != null) "sessiontoken": _placesSessionToken!,
       },
     );
 
     try {
       final response = await http.get(uri);
+      _placesSessionToken = null; // the details call ends the billed session
 
       if (response.statusCode != 200) return null;
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -259,6 +260,8 @@ class _AddPlaceDialogState extends State<_AddPlaceDialog> {
   late final SavedPlacesService _savedPlacesService;
   final GeocodingService _geocodingService = GeocodingService();
   GoogleMapController? _mapController;
+  Timer? _searchDebounce;
+  int _searchSeq = 0;
 
   LatLng _selectedLocation = const LatLng(
     13.082680,
@@ -315,6 +318,9 @@ class _AddPlaceDialogState extends State<_AddPlaceDialog> {
   }
 
   Future<void> _searchPlaces(String query) async {
+    // Debounced: Text Search is billed per request, and this fires on every keystroke.
+    _searchDebounce?.cancel();
+    final seq = ++_searchSeq;
     if (query.isEmpty) {
       setState(() {
         _showSearchResults = false;
@@ -323,13 +329,15 @@ class _AddPlaceDialogState extends State<_AddPlaceDialog> {
       return;
     }
 
-    final results = await _geocodingService.searchPlaces(query);
-    if (mounted) {
-      setState(() {
-        _searchResults = results;
-        _showSearchResults = true;
-      });
-    }
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () async {
+      final results = await _geocodingService.searchPlaces(query);
+      if (mounted && seq == _searchSeq) {
+        setState(() {
+          _searchResults = results;
+          _showSearchResults = true;
+        });
+      }
+    });
   }
 
   void _onPlaceSelected(PlaceSearchResult place) {
@@ -418,6 +426,7 @@ class _AddPlaceDialogState extends State<_AddPlaceDialog> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _nameController.dispose();
     _searchController.dispose();
     _mapController?.dispose();
