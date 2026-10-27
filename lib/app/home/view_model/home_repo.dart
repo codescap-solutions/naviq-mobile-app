@@ -260,22 +260,31 @@ class HomeRepository extends BaseService {
     return response;
   }
 
+  /// The server has no GET on /parent/restrict-deletion (that call 404'd, so
+  /// the toggle never reflected the server); GET /parent/web-filter returns
+  /// the same child's `isallowdelete`, so read it from there.
   Future<BaseResponse<bool>> getDeletionRestrictionStatus({
     required String childId,
   }) async {
     final response = await get(
-      ApiEndpoints.restrictDeletion,
+      ApiEndpoints.webFilter,
       queryParameters: {'childId': childId},
     );
 
     if (response.isSuccess && response.data != null) {
-      final isAllowDelete = response.data['isallowdelete'] ?? true;
       return BaseResponse.success(
-        data: !isAllowDelete,
+        data: isDeletionRestricted(response.data),
         message: response.message,
       );
     }
     return BaseResponse.error(message: response.message);
+  }
+
+  /// `isallowdelete` false = the parent restricted deleting. A missing value
+  /// means "not restricted", the safe default for the toggle.
+  static bool isDeletionRestricted(dynamic data) {
+    final isAllowDelete = data is Map ? data['isallowdelete'] : null;
+    return isAllowDelete is bool ? !isAllowDelete : false;
   }
 
   Future<BaseResponse<Map<String, dynamic>>>

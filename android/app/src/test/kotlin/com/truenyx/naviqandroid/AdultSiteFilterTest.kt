@@ -42,4 +42,39 @@ class AdultSiteFilterTest {
         assertFalse(AdultSiteFilter.isBlocked(""))
         assertFalse(AdultSiteFilter.isBlocked("   "))
     }
+
+    // What browsers actually put in the address bar.
+
+    @Test
+    fun ignoresCaseAndPortsAndUserInfo() {
+        assertTrue(AdultSiteFilter.isBlocked("PORNHUB.COM"))
+        assertTrue(AdultSiteFilter.isBlocked("https://www.pornhub.com:443/view?x=1"))
+        assertTrue(AdultSiteFilter.isBlocked("http://user@pornhub.com"))
+        assertTrue(AdultSiteFilter.isBlocked("https://pornhub.com#top"))
+    }
+
+    @Test
+    fun blocksAdultSearchesTypedIntoTheBar() {
+        assertTrue(AdultSiteFilter.isBlocked("porn videos"))
+        assertTrue(AdultSiteFilter.isBlocked("google.com/search?q=free+porn"))
+        assertTrue(AdultSiteFilter.isBlocked("nsfw reddit"))
+    }
+
+    @Test
+    fun allowsNormalBrowsing() {
+        assertFalse(AdultSiteFilter.isBlocked("google.com"))
+        assertFalse(AdultSiteFilter.isBlocked("https://www.youtube.com/watch?v=abc"))
+        assertFalse(AdultSiteFilter.isBlocked("en.wikipedia.org/wiki/Sussex"))
+        assertFalse(AdultSiteFilter.isBlocked("bbc.co.uk/news"))
+        assertFalse(AdultSiteFilter.isBlocked("how to learn kotlin"))
+        assertFalse(AdultSiteFilter.isBlocked("amazon.in/dp/B0123"))
+    }
+
+    @Test
+    fun aListedDomainOnlyMatchesAsARealSuffix() {
+        // "notpornhub.com" still trips the "porn" keyword rule on purpose; a
+        // look-alike that merely ends with a listed name must not skip it.
+        assertTrue(AdultSiteFilter.isBlocked("notpornhub.com"))
+        assertTrue(AdultSiteFilter.isBlocked("pornhub.com.evil.example"))
+    }
 }

@@ -150,6 +150,15 @@ class _SettingsViewState extends State<SettingsView> {
                                 );
                                 return;
                               }
+                              // Without a child nothing reaches the server; saving
+                              // the toggle locally anyway looked like it worked.
+                              if (_currentChildId == null) {
+                                AppSnackbar.showError(
+                                  context,
+                                  'Select a child first.',
+                                );
+                                return;
+                              }
                               if (_currentChildId != null) {
                                 final response =
                                     await injector<HomeRepository>()
@@ -203,6 +212,13 @@ class _SettingsViewState extends State<SettingsView> {
                                   message:
                                       'Blocking 18+ websites is available on the Premium plan.',
                                   suggestedTier: SubscriptionTier.premium,
+                                );
+                                return;
+                              }
+                              if (_currentChildId == null) {
+                                AppSnackbar.showError(
+                                  context,
+                                  'Select a child first.',
                                 );
                                 return;
                               }
@@ -826,7 +842,7 @@ class _SettingsViewState extends State<SettingsView> {
     showAboutDialog(
       context: context,
       applicationName: 'NaviQ',
-      applicationVersion: 'Naviq Dev 1.0.10(Oct 17)',
+      applicationVersion: 'Naviq Dev 1.0.10(Oct 22)',
       applicationIcon: Container(
         padding: EdgeInsets.all(8.w),
         decoration: BoxDecoration(
