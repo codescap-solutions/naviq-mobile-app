@@ -579,6 +579,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
   bool _alertOnExit = true;
   bool _alertIfIdle = false;
   late final TextEditingController _nameController;
+  final FocusNode _nameFocus = FocusNode();
 
   int _findClosestStep(int radius) {
     int closestIndex = 0;
@@ -602,6 +603,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
     _nameController.addListener(() {
       setState(() {});
     });
+    _nameFocus.addListener(() => setState(() {}));
 
     // Prefill fields when editing
     if (widget.geofence != null) {
@@ -630,6 +632,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
   @override
   void dispose() {
     _nameController.dispose();
+    _nameFocus.dispose();
     super.dispose();
   }
 
@@ -746,8 +749,13 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
         }
       },
       child: Padding(
+        // Lift the panel above the keyboard only while the name field is being
+        // edited. For the search box (above the map) the keyboard must not grow
+        // the panel: it shrank the map area to nothing and hid the suggestions.
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
+          bottom: _nameFocus.hasFocus
+              ? MediaQuery.of(context).viewInsets.bottom
+              : 0,
         ),
         child: Container(
           padding: EdgeInsets.only(
@@ -779,6 +787,7 @@ class _GeoFenceFormSheetState extends State<GeoFenceFormSheet> {
               // plain text like Figma (no underline, no icon badge).
               TextField(
                 controller: _nameController,
+                focusNode: _nameFocus,
                 style: GoogleFonts.poppins(
                   fontSize: 24.0.sp,
                   fontWeight: FontWeight.w700,
