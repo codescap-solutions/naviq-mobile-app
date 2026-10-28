@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'package:child_track/core/constants/app_strings.dart';
+import 'package:child_track/core/services/maps_proxy_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../core/utils/app_logger.dart';
 
@@ -13,9 +12,7 @@ part 'map_state.dart';
 class MapBloc extends Bloc<MapEvent, MapState> {
   GoogleMapController? _mapController;
   final Completer<GoogleMapController> _controllerCompleter = Completer();
-  final PolylinePoints _polylinePoints = PolylinePoints(
-    apiKey: AppStrings.googleMapsApiKey,
-  );
+  final MapsProxyService _maps = MapsProxyService();
 
   MapBloc() : super(const MapInitial()) {
     on<MapCreated>(_onMapCreated);
@@ -95,52 +92,12 @@ class MapBloc extends Bloc<MapEvent, MapState> {
       final currentState = state;
       if (currentState is! MapLoaded) return;
 
-      final polylineCoordinates = <LatLng>[];
-      final polylineWayPoints = <PolylineWayPoint>[];
-
-      for (var marker in markers) {
-        polylineWayPoints.add(
-          PolylineWayPoint(
-            location:
-                "${marker.position.latitude},${marker.position.longitude}",
-            stopOver: true,
-          ),
-        );
-      }
-
-      // Get route between coordinates
-      final result = await _polylinePoints.getRouteBetweenCoordinates(
-        request: PolylineRequest(
-          origin: PointLatLng(
-            markers.first.position.latitude,
-            markers.first.position.longitude,
-          ),
-          destination: PointLatLng(
-            markers.last.position.latitude,
-            markers.last.position.longitude,
-          ),
-          mode: TravelMode.driving,
-        ),
+      final polylineCoordinates = await _maps.drivingRoute(
+        markers.first.position,
+        markers.last.position,
       );
-
-      if (result.points.isNotEmpty) {
-        for (var point in result.points) {
-          polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-        }
-      } else {
-        final errorMessage = result.errorMessage ?? 'Unknown error';
-        AppLogger.warning('No route found: $errorMessage');
-
-        // Check if it's an API key authorization error
-        if (errorMessage.contains('not authorized') ||
-            errorMessage.contains('API key') ||
-            errorMessage.contains('IP')) {
-          AppLogger.error(
-            'API Key Authorization Error: Please check Google Cloud Console settings. '
-            'Remove IP restrictions or add your IP to allowed list. '
-            'For mobile apps, use Application restrictions instead of IP restrictions.',
-          );
-        }
+      if (polylineCoordinates.isEmpty) {
+        AppLogger.warning('No route found');
       }
 
       final updatedPolylines = _addPolyLine(polylineCoordinates);
@@ -240,24 +197,11 @@ class MapBloc extends Bloc<MapEvent, MapState> {
     // enough.
     if (markers.length < 2) return {};
 
-    final polylineCoordinates = <LatLng>[];
-    final result = await _polylinePoints.getRouteBetweenCoordinates(
-      request: PolylineRequest(
-        origin: PointLatLng(
-          markers.first.position.latitude,
-          markers.first.position.longitude,
-        ),
-        destination: PointLatLng(
-          markers.last.position.latitude,
-          markers.last.position.longitude,
-        ),
-        mode: TravelMode.driving,
-      ),
+    final polylineCoordinates = await _maps.drivingRoute(
+      markers.first.position,
+      markers.last.position,
     );
-    if (result.points.isNotEmpty) {
-      for (var point in result.points) {
-        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-      }
+    if (polylineCoordinates.isNotEmpty) {
       return _addPolyLine(polylineCoordinates);
     }
     return {};

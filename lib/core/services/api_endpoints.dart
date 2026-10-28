@@ -25,6 +25,13 @@ class ApiEndpoints {
   static const String screenTimeApps = 'screen-time/apps';
   static const String appMappings = 'app-mappings';
 
+  // Google Maps proxy (server holds the key)
+  static const String mapsAutocomplete = 'maps/autocomplete';
+  static const String mapsPlace = 'maps/place';
+  static const String mapsSearch = 'maps/search';
+  static const String mapsGeocode = 'maps/geocode';
+  static const String mapsRoute = 'maps/route';
+
   //parent Endpoints
   static const String getHome = 'parent/home';
   static const String parentContacts = 'parent/contacts';

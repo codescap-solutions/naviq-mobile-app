@@ -1,18 +1,23 @@
-import 'dart:convert';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../../../../core/constants/app_strings.dart';
+import '../../../../core/services/maps_proxy_service.dart';
 import '../../model/geofence_model.dart';
 import '../geofence_repository.dart';
 import '../../../home/view_model/home_repo.dart';
 import 'geofence_event.dart';
 import 'geofence_state.dart';
-import 'package:http/http.dart' as http;
+import 'package:uuid/uuid.dart';
 
 class GeofenceBloc extends Bloc<GeofenceEvent, GeofenceState> {
   final GeofenceRepository _repository;
   final HomeRepository _homeRepository;
+
+  // Autocomplete is billed per request while typing; the debounce drops keystrokes
+  // that are superseded within 300 ms, and one session token groups the whole
+  // search (autocomplete requests + the final details call) into one billed session.
+  final MapsProxyService _maps = MapsProxyService();
+  int _searchSeq = 0;
+  String? _placesSessionToken;
 
   GeofenceBloc({
     required GeofenceRepository repository,
@@ -151,6 +156,7 @@ class GeofenceBloc extends Bloc<GeofenceEvent, GeofenceState> {
     Emitter<GeofenceState> emit,
   ) async {
     final query = event.query.trim();
+    final seq = ++_searchSeq;
 
     // If empty → clear suggestions
     if (query.isEmpty) {
@@ -158,51 +164,27 @@ class GeofenceBloc extends Bloc<GeofenceEvent, GeofenceState> {
       return;
     }
 
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (seq != _searchSeq || emit.isDone) return;
+
     try {
-      final apiKey = AppStrings.googleMapsApiKey;
-
-      final uri = Uri.https(
-        "maps.googleapis.com",
-        "/maps/api/place/autocomplete/json",
-        {
-          "input": query,
-          "key": apiKey,
-          "components": "country:in", // optional: restrict country
-        },
+      final predictions = await _maps.autocomplete(
+        query,
+        session: _placesSessionToken ??= const Uuid().v4(),
       );
-
-      final response = await http.get(uri);
-
-      if (response.statusCode != 200) {
-        emit(const LocationSuggestionsCleared());
-        return;
-      }
-
-      final data = json.decode(response.body);
-
-      if (data["status"] != "OK") {
-        emit(const LocationSuggestionsCleared());
-        return;
-      }
-
-      final predictions = data["predictions"] as List;
+      if (seq != _searchSeq || emit.isDone) return;
 
       if (predictions.isEmpty) {
         emit(const LocationSuggestionsCleared());
         return;
       }
 
-      print(
-        "Received ${predictions.toString()} predictions from Google Places API",
-      );
-
       final suggestions = predictions.map((prediction) {
         return PlaceAutocompleteResult(
-          placeId: prediction["place_id"],
-          mainText: prediction["structured_formatting"]["main_text"] ?? "",
-          secondaryText:
-              prediction["structured_formatting"]["secondary_text"] ?? "",
-          description: prediction["description"] ?? "",
+          placeId: prediction["place_id"] as String,
+          mainText: prediction["main_text"] as String? ?? "",
+          secondaryText: prediction["secondary_text"] as String? ?? "",
+          description: prediction["description"] as String? ?? "",
         );
       }).toList();
 
@@ -229,33 +211,12 @@ class GeofenceBloc extends Bloc<GeofenceEvent, GeofenceState> {
   }
 
   Future<LatLng?> getPlaceLatLng(String placeId) async {
-    final apiKey = AppStrings.googleMapsApiKey;
-
-    final uri = Uri.https(
-      "maps.googleapis.com",
-      "/maps/api/place/details/json",
-      {
-        "place_id": placeId,
-        "key": apiKey,
-        "fields": "geometry", // IMPORTANT: only request what you need
-      },
+    final location = await _maps.placeLocation(
+      placeId,
+      session: _placesSessionToken,
     );
-
-    try {
-      final response = await http.get(uri);
-
-      if (response.statusCode != 200) return null;
-
-      final data = json.decode(response.body);
-
-      if (data["status"] != "OK") return null;
-
-      final location = data["result"]["geometry"]["location"];
-
-      return LatLng(location["lat"], location["lng"]);
-    } catch (e) {
-      return null;
-    }
+    _placesSessionToken = null; // the details call ends the billed session
+    return location;
   }
 
   Future<void> _onFetchChildLocationRequested(
