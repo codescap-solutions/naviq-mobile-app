@@ -2,6 +2,7 @@ import 'package:child_track/app/home/view_model/bloc/homepage_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geocoding/geocoding.dart' show placemarkFromCoordinates;
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 
 import '../../../core/utils/responsive_font.dart';
@@ -37,6 +38,31 @@ class _GeoFencingViewState extends State<GeoFencingView> {
   int _defaultRadius = 30;
   String? _lastDateParam;
   late final bool _isPrimaryParent;
+
+  // The server sends "Unknown" when the last fix has no stored address; resolve it
+  // on-device (same approach as the Home card) so the suggestion isn't "(Unknown)".
+  String? _resolvedAddress;
+  String? _resolvingFor;
+
+  Future<void> _resolveCurrentAddress(LatLng at) async {
+    final key = '${at.latitude},${at.longitude}';
+    if (_resolvingFor == key) return;
+    _resolvingFor = key;
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        at.latitude,
+        at.longitude,
+      );
+      if (placemarks.isEmpty || !mounted || _resolvingFor != key) return;
+      final p = placemarks.first;
+      final resolved = [p.street, p.subLocality, p.locality, p.administrativeArea]
+          .where((e) => e != null && e.isNotEmpty)
+          .join(', ');
+      if (resolved.isNotEmpty) setState(() => _resolvedAddress = resolved);
+    } catch (_) {
+      // Keep the plain "Current Location" label; a failed lookup is not an error.
+    }
+  }
 
   String _getChildName() {
     return SharedPrefsService().getString('child_name') ?? 'Your child';
@@ -74,6 +100,10 @@ class _GeoFencingViewState extends State<GeoFencingView> {
       final loc = homeState.currentLocation!;
       currentLatLng = LatLng(loc.lat, loc.lng);
       currentAddress = loc.address;
+      if (currentAddress.isEmpty || currentAddress == 'Unknown') {
+        currentAddress = _resolvedAddress;
+        _resolveCurrentAddress(currentLatLng);
+      }
     }
 
     return Scaffold(
@@ -221,7 +251,9 @@ class _GeoFencingViewState extends State<GeoFencingView> {
                       SizedBox(height: 8.w),
                       if (currentLatLng != null) ...[
                         _buildSuggestedFenceTile(
-                          "Current Location (${_formatAddress(currentAddress)})",
+                          currentAddress == null
+                              ? "Current Location"
+                              : "Current Location (${_formatAddress(currentAddress)})",
                           currentLatLng,
                           isCurrentLocation: true,
                         ),
